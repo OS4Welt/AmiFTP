@@ -40,25 +40,24 @@ char    *other_dir_pattern;
 char    *unix_dir_pattern= "\001 \002 \003 \004 \005 \006 \007 \010 \011";
 char    *defaultanonymouspw;
 
-struct IntuitionBase    *IntuitionBase;
+struct Library    *IntuitionBase;
 struct Library          *UtilityBase;
-struct GfxBase          *GfxBase;
+struct Library          *GfxBase;
 struct Library          *DiskfontBase;
-struct ReqToolsBase     *ReqToolsBase;
 struct Library          *AslBase;
 struct Library          *IFFParseBase;
-struct RexxLib          *RexxSysBase;
-struct IconBase         *IconBase;
-struct WorkbenchBase    *WorkbenchBase;
+struct Library          *RexxSysBase;
+struct Library         *IconBase;
+struct Library    *WorkbenchBase;
 struct Library          *LocaleBase;
 struct Library          *AmigaGuideBase;
-struct Library          *TimerBase;
+struct Device          *TimerBase;
 struct AGInfo ag;
 
 struct MsgPort          *RexxPort;
 struct MsgPort          *TimerPort;
-struct timerequest *TimeRequest;
-ULONG AG_Signal=NULL;
+struct TimeRequest *TimeRequest;
+ULONG AG_Signal=0UL;
 
 struct List *FileList;
 struct List TempList;
@@ -67,4 +66,137 @@ struct CurrentState CurrentState;
 
 BOOL MenuNeedsUpdate=FALSE; /* Tells main idcmp routine to update the menus when it's safe to do so */
 int TransferMode=BINARY;
+           
+//little helper for amigaos4
+#include <gadgets/listbrowser.h>
+#include <gadgets/chooser.h>
+#include <proto/chooser.h>
+#include <proto/requester.h>
+#include <classes/requester.h>
+
+__attribute__((linearvarargs)) void LBEditNode(Object *list, struct Window *window, struct Requester *r, struct Node *n, ULONG tag, ...)
+{
+    static struct lbEditNode msg =
+    {
+        LBM_EDITNODE,      /* LBM_EDITNODE */
+        NULL,     /* to provide rendering info */
+        NULL,      /* modify this node */
+        NULL/* according to this tag list */
+    };
+
+
+    va_list args;
+    va_startlinear (args, tag);
+    msg.lbe_Node = n;
+    msg.lbe_NodeAttrs = va_getlinearva(args, struct TagItem*);
+    IDoMethodA(list, (Msg) &msg);
+    va_end(args);
+}
+
+struct List *ChooserLabelsA(STRPTR *nameList)
+{
+    struct List *newList;
+    newList = (struct List *)AllocSysObjectTags(ASOT_LIST, TAG_DONE);
+
+
+	if (newList && nameList)
+    {
+        while(*nameList)
+        {
+
+          AddTail(newList, AllocChooserNode(CNA_Text, *nameList, TAG_END));
+          nameList++;
+        }
+    }
+
+    return newList;
+}
+
+void FreeChooserLabels(struct List *list)
+{
+    if (list)
+    {
+         FreeSysObject(ASOT_LIST, (APTR)list);
+    }
+}
+
+void strmfp(char *file, char *path, char *node,int size)
+{
+    file[0]='\0';
+	if (path)
+        AddPart(file, path, size);
+
+    if (node) AddPart(file, node, size);
+
+}
+
+int stcgfn(char *node, char *name, int size)
+{
+    CONST_STRPTR fileptr = FilePart(name);
+    if (fileptr)
+    {
+        strncpy(node, fileptr, size);
+        return strlen(node)+1;
+        }
+
+	return 0;
+}
+
+ __attribute__((linearvarargs)) int showRequester(struct Window *window, STRPTR Title, STRPTR Gadget, STRPTR Body, ...)
+{
+     static struct TagItem tags[] = {
+     { REQ_Type, REQTYPE_INFO },
+     { REQ_TitleText, 0UL},
+     { REQ_BodyText, 0UL},
+     { REQ_GadgetText, 0UL },
+     { REQ_VarArgs, 0UL},
+     { REQ_Image, REQIMAGE_QUESTION} ,
+     { TAG_END, 0 }
+     };
+
+    static struct orRequest reqmsg;
+
+    reqmsg.MethodID = RM_OPENREQ;
+	reqmsg.or_Window = window;
+	reqmsg.or_Screen = NULL;
+	reqmsg.or_Attrs = tags;
+
+    int result = 0;
+
+
+
+    Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
+    if (requester==NULL) return result;
+
+
+    va_list ap;
+
+	va_startlinear(ap, Body);
+    tags[1].ti_Data = (Tag)Title;
+	tags[2].ti_Data = (Tag)Body;
+	tags[3].ti_Data = (Tag)Gadget;
+    tags[4].ti_Data = (Tag)va_getlinearva(ap, void *);
+    result = IDoMethodA(requester, (Msg) &reqmsg);
+    va_end(ap);
+
+    DisposeObject(requester);
+    return result;
+}
+
+int getfa(CONST_STRPTR name)
+{
+    int result = 0;
+    struct ExamineData *dat = ExamineObjectTags(EX_StringNameInput,name,TAG_END);
+    if (dat)
+    {
+        if (EXD_IS_DIRECTORY(dat)) result = 1;
+        else if (EXD_IS_FILE(dat)) result = -1;
+
+        FreeDosObject(DOS_EXAMINEDATA,dat);
+        }
+
+    return result;
+}
+
+
 

@@ -3,6 +3,13 @@
 #define TCPFIONBIO 1
 #define TCPFIOASYNC 2
 
+struct mysockaddr_in {
+    u_char sin_family;
+    u_short sin_port;
+    struct in_addr sin_addr;
+    char sin_zero[8];
+};
+
 extern struct hostent *(*tcp_gethostbyname)(const UBYTE *name);
 extern struct servent *(*tcp_getservbyname)(const UBYTE *name, const UBYTE *proto);
 extern char * (*tcp_getlogin)(void);
@@ -27,12 +34,6 @@ extern LONG (*tcp_listen)(LONG s, LONG backlog);
 extern LONG (*tcp_accept)(LONG s, struct sockaddr *addr, LONG *addrlen);
 extern LONG (*tcp_shutdown)(LONG s, LONG how);
 
-struct mysockaddr_in {
-    u_char sin_family;
-    u_short sin_port;
-    struct in_addr sin_addr;
-    char sin_zero[8];
-};
 
 int SetupAmiTCPHooks(void);
 int Setup225Hooks(void);

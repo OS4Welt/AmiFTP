@@ -29,7 +29,7 @@ enum {
     ESG_Proxy, ESG_OK, ESG_Cancel, ESG_ADT,
     NumGadgets_ESG};
 
-struct Gadget *ESG_List[NumGadgets_ESG];
+Object *ESG_List[NumGadgets_ESG];
 
 static STRPTR lsnames[]=
 {
@@ -58,7 +58,7 @@ enum {
     SLG_Cancel, SLG_Up, SLG_Down, SLG_Top, SLG_Bottom,SLG_AddGroup, SLG_BarLabel,
     NumGadgets_SLG};
 
-struct Gadget *SLG_List[NumGadgets_SLG];
+Object *SLG_List[NumGadgets_SLG];
 
 struct Window *OpenSiteWindow(const BOOL Connect);
 void CloseSiteListWindow(void);
@@ -70,9 +70,8 @@ int NewClicked(void);
 
 static ULONG lsecs,lmics;
 
-ULONG __asm __saveds
-PasswordHook(register __a0 struct Hook *Hook, register __a2 struct SGWork *Work,
-	     register __a1 ULONG *Msg)
+ULONG 
+PasswordHook(struct Hook *Hook, struct SGWork *Work, ULONG *Msg)
 {
 //    ObjectNode *Node;
 
@@ -221,9 +220,14 @@ int OpenEditWindow(struct SiteNode *sn)
 ULONG HandleEditSiteIDCMP(void)
 {
     ULONG result, done=FALSE;
-    UWORD code=NULL;
+    struct wmHandle wcode={0};
+    int16 code;
 
-    while ((result=CA_HandleInput(EditSiteWin_Object, &code))!=WMHI_LASTMSG) {
+    //while ((result=CA_HandleInput(EditSiteWin_Object, &code))!=WMHI_LASTMSG) {
+    while ((result=IDoMethod(EditSiteWin_Object, WM_HANDLEINPUT, &wcode))!=WMHI_LASTMSG) {
+        
+        code = result&WMHI_KEYMASK;
+
 	switch (result & WMHI_CLASSMASK) {
 	  case WMHI_CLOSEWINDOW:
 	    done=TRUE;
@@ -241,14 +245,14 @@ ULONG HandleEditSiteIDCMP(void)
 		    ULONG attr;
 
 		    GetAttr(GA_Selected,ESG_List[ESG_Anonymous], &attr);
-		    if (SetGadgetAttrs(ESG_List[ESG_LoginName], EditSiteWindow, NULL,
+		    if (SetGadgetAttrs((struct Gadget*)ESG_List[ESG_LoginName], EditSiteWindow, NULL,
 				       GA_Disabled, attr,
 				       TAG_DONE))
-		      RefreshGList(ESG_List[ESG_LoginName], EditSiteWindow, NULL, 1);
-		    if (SetGadgetAttrs(ESG_List[ESG_Password], EditSiteWindow, NULL,
+		      RefreshGList((struct Gadget*)ESG_List[ESG_LoginName], EditSiteWindow, NULL, 1);
+		    if (SetGadgetAttrs((struct Gadget*)ESG_List[ESG_Password], EditSiteWindow, NULL,
 				       GA_Disabled, attr,
 				       TAG_DONE))
-		      RefreshGList(ESG_List[ESG_Password], EditSiteWindow, NULL, 1);
+		      RefreshGList((struct Gadget*)ESG_List[ESG_Password], EditSiteWindow, NULL, 1);
 		}
 		break;
 	      case ESG_LocGad:
@@ -523,7 +527,8 @@ struct Window *OpenEditSiteWindow(struct SiteNode *sn)
     if (!EditSiteWin_Object)
       return NULL;
 
-    if (EditSiteWindow=CA_OpenWindow(EditSiteWin_Object)) {
+    //if (EditSiteWindow=CA_OpenWindow(EditSiteWin_Object)) {
+    if (EditSiteWindow= (struct Window *)IDoMethod(EditSiteWin_Object, WM_OPEN)){
 	return EditSiteWindow;
     }
     DisposeObject(EditSiteLayout);
@@ -614,15 +619,15 @@ int LocPath_clicked(void)
 {
     struct FileRequester *DirRequester;
     static ULONG tags[]={
-	ASL_Window, NULL,
+	ASLFR_Window, 0UL,
 	ASLFR_PrivateIDCMP, TRUE,
 	ASLFR_SleepWindow, TRUE,
-	ASLFR_InitialDrawer, NULL,
+	ASLFR_InitialDrawer, 0UL,
 	ASLFR_DrawersOnly, TRUE,
 	ASLFR_RejectIcons, TRUE,
-	ASLFR_TitleText, NULL,
-	ASLFR_InitialLeftEdge, NULL,
-	ASLFR_InitialTopEdge, NULL,
+	ASLFR_TitleText, 0UL,
+	ASLFR_InitialLeftEdge, 0UL,
+	ASLFR_InitialTopEdge, 0UL,
 	TAG_END
     };
     tags[1]=(unsigned long)EditSiteWindow;
@@ -635,10 +640,10 @@ int LocPath_clicked(void)
     if (!DirRequester)
       return 1;
     if (AslRequest(DirRequester,(struct TagItem *)tags)) {
-	if (SetGadgetAttrs(ESG_List[ESG_LocString], EditSiteWindow, NULL,
-				    STRINGA_TextVal, DirRequester->rf_Dir,
+	if (SetGadgetAttrs((struct Gadget*)ESG_List[ESG_LocString], EditSiteWindow, NULL,
+				    STRINGA_TextVal, DirRequester->fr_Drawer,
 				    TAG_END))
-	    RefreshGList(ESG_List[ESG_LocString], EditSiteWindow, NULL, 1);
+	    RefreshGList((struct Gadget*)ESG_List[ESG_LocString], EditSiteWindow, NULL, 1);
     }
     FreeAslRequest(DirRequester);
 
@@ -695,9 +700,13 @@ static int SortSiteNodes(const void *a,const void *b)
 ULONG HandleSiteListIDCMP(void)
 {
     ULONG result, done=FALSE;
-    UWORD code=NULL;
+    struct wmHandle wcode={0};
+    int16 code;
 
-    while((result=CA_HandleInput(SiteListWin_Object, &code))!=WMHI_LASTMSG) {
+    //while((result=CA_HandleInput(SiteListWin_Object, &code))!=WMHI_LASTMSG) {
+    while ((result=IDoMethod(SiteListWin_Object, WM_HANDLEINPUT, &wcode))!=WMHI_LASTMSG) {
+
+     code = result&WMHI_KEYMASK;
 	switch (result & WMHI_CLASSMASK) {
 	  case WMHI_CLOSEWINDOW:
 	    done=TRUE;
@@ -706,7 +715,7 @@ ULONG HandleSiteListIDCMP(void)
 	    if (code==69)
 		done=TRUE;
 	    else if (code==RAWKEY_CURSORUP) {
-		if (FirstNode(&SiteList)) {
+		if (GetHead(&SiteList)!=NULL) {
 		    LONG attr;
 		    struct Node *selnode;
 		    struct SiteNode *sn;
@@ -729,7 +738,7 @@ ULONG HandleSiteListIDCMP(void)
 				  GetListBrowserNodeAttrs(node, LBNA_Flags, &flags,
 							  TAG_DONE);
 				else
-				  flags=NULL;
+				  flags=0UL;
 			    }
 			    if (node)
 			      selnode=node;
@@ -739,7 +748,7 @@ ULONG HandleSiteListIDCMP(void)
 			for (i=0,node=GetHead(&SiteList);node;node=GetSucc(node),i++)
 			  if (selnode==node) break;
 
-			SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+			SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 				       LISTBROWSER_Selected, i,
 				       LISTBROWSER_MakeVisible, i,
 				       TAG_DONE);
@@ -753,10 +762,10 @@ ULONG HandleSiteListIDCMP(void)
 			struct SiteNode *sn;
 			struct Node *selnode;
 
-			selnode=FirstNode(&SiteList);
+			selnode=GetHead(&SiteList);
 			GetListBrowserNodeAttrs(selnode, LBNA_UserData, &sn,
 						TAG_DONE);
-			SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+			SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 				       LISTBROWSER_Selected, 0,
 				       LISTBROWSER_MakeVisible, 0,
 				       TAG_DONE);
@@ -765,7 +774,7 @@ ULONG HandleSiteListIDCMP(void)
 		}
 	    }
 	    else if (code==RAWKEY_CURSORDOWN) {
-		if (FirstNode(&SiteList)) {
+		if (GetHead(&SiteList)!=NULL) {
 		    ULONG attr;
 		    struct Node *selnode;
 		    struct SiteNode *sn;
@@ -789,7 +798,7 @@ ULONG HandleSiteListIDCMP(void)
 							  LBNA_Flags, &flags,
 							  TAG_DONE);
 				else
-				  flags=NULL;
+				  flags=0UL;
 			    }
 			    if (node)
 			      selnode=node;
@@ -798,7 +807,7 @@ ULONG HandleSiteListIDCMP(void)
 		    else selnode=GetHead(&SiteList);
 		    for (i=0,node=GetHead(&SiteList);node;node=GetSucc(node),i++)
 		      if (selnode==node) break;
-		    SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+		    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 				   LISTBROWSER_Selected, i,
 				   LISTBROWSER_MakeVisible, i,
 				   TAG_DONE);
@@ -829,6 +838,7 @@ ULONG HandleSiteListIDCMP(void)
 	    }
 	    break;
 	  case WMHI_GADGETUP:
+        code = result&WMHI_GADGETMASK;
 	    switch (result & WMHI_GADGETMASK) {
 	      case SLG_SiteList:
 		{
@@ -905,14 +915,14 @@ ULONG HandleSiteListIDCMP(void)
 		    sn->sn_HotList=1;
 		    sn->sn_MenuType=SLN_REGULAR;
 		    sn->sn_Node.ln_Name=strdup("===============");
-		    SetGadgetAttrs(SLG_List[SLG_SiteList],  SiteListWindow, NULL,
+		    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],  SiteListWindow, NULL,
 				   LISTBROWSER_Labels, ~0,
 				   TAG_DONE);
 		    lbn=AddLBNTail(&SiteList, sn);
 		    for (i=0,lb=GetHead(&SiteList);lb;i++,lb=GetSucc(lb))
 		      if (lb==lbn)
 			break;
-		    SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+		    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 				   LISTBROWSER_Labels, &SiteList,
 				   LISTBROWSER_Selected, i,
 				   LISTBROWSER_MakeVisible, i,
@@ -952,7 +962,7 @@ ULONG HandleSiteListIDCMP(void)
 
 struct Window *OpenSiteWindow(const BOOL Connect)
 {
-    struct Image *l;
+    Object *l;
     struct LayoutLimits limits;
     Object *l1;
 
@@ -971,15 +981,15 @@ struct Window *OpenSiteWindow(const BOOL Connect)
                          LABEL_Justification, LABEL_CENTRE,
                          LABEL_Text, GetAmiFTPString(SLW_SiteList),
                          LabelEnd,
-                         CHILD_MinWidth, l->Width,
-                         CHILD_MinHeight, l->Height,
+                         CHILD_MinWidth, ((struct Image*)l)->Width,
+                         CHILD_MinHeight, ((struct Image*)l)->Height,
                          CHILD_WeightedWidth, 0,
                          CHILD_WeightedHeight, 0,
 
                        StartHGroup, // 1
                          StartVGroup, // 2
 
-                         StartVGroup,CLASSACT_BackFill,LAYERS_BACKFILL,
+                         StartVGroup,LAYOUT_BackFill,LAYERS_BACKFILL,
                            StartMember, SLG_List[SLG_SiteList]=ListBrowserObject,
                            GA_ID, SLG_SiteList,
                            GA_RelVerify, TRUE,
@@ -1124,7 +1134,9 @@ struct Window *OpenSiteWindow(const BOOL Connect)
 	DisposeObject(SiteListLayout);
 	return NULL;
     }
-    if (SiteListWindow=CA_OpenWindow(SiteListWin_Object)) {
+
+    //if (SiteListWindow=CA_OpenWindow(SiteListWin_Object)) {
+    if (SiteListWindow=(struct Window *)IDoMethod(SiteListWin_Object, WM_OPEN)){
 	return SiteListWindow;
     }
     DisposeObject(SiteListWin_Object);
@@ -1163,14 +1175,14 @@ int NewGroup(void)
 	OpenEditWindow(sn);
 	UnlockWindow(SiteListWin_Object);
 	if (AddToSiteList) {
-	    SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+	    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 			   LISTBROWSER_Labels, ~0,
 			   TAG_DONE);
 	    lbn=AddLBNTail(&SiteList, sn);
 	    for (i=0,lb=GetHead(&SiteList);lb;i++,lb=GetSucc(lb))
 	      if (lb==lbn)
 		break;
-	    SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+	    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 			   LISTBROWSER_Labels, &SiteList,
 			   LISTBROWSER_Selected, i,
 			   LISTBROWSER_MakeVisible, i,
@@ -1179,7 +1191,7 @@ int NewGroup(void)
 	    ConfigChanged=TRUE;
 	    HotListChanged=TRUE;
 	    UpdateSLGGadgets(TRUE, sn->sn_MenuType);
-	    RefreshGList(SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
+	    RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
 	}
 	else FreeMem(sn, sizeof(struct SiteNode));
     }
@@ -1240,12 +1252,12 @@ int SL_Up(void)
 			GetListBrowserNodeAttrs(prevnode,LBNA_Generation,&thisgen,TAG_DONE);
 		    }
 		}
-		SetGadgetAttrs(SLG_List[SLG_SiteList],SiteListWindow,NULL,
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,
 			       LISTBROWSER_Labels,~0,
 			       TAG_DONE);
 		Remove(node);
 		Insert(&SiteList,node,prevnode?GetPred(prevnode):NULL);
-		if (FirstNode(&childlist)) {
+		if (GetHead(&childlist)!=NULL) {
 		    nchild=node;
 		    while (child=RemHead(&childlist)) {
 			Insert(&SiteList,child,nchild);
@@ -1256,12 +1268,12 @@ int SL_Up(void)
 		for (i=0,child=GetHead(&SiteList);child;child=GetSucc(child),i++)
 		  if (child==node) break;
 
-		if (SetGadgetAttrs(SLG_List[SLG_SiteList],SiteListWindow,NULL,
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,
 				   LISTBROWSER_Labels,&SiteList,
 				   LISTBROWSER_Selected,i,
 				   LISTBROWSER_MakeVisible,i,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_SiteList],SiteListWindow,NULL,1);
+		  RefreshGList((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,1);
 	    }
 	    else {
 		GetListBrowserNodeAttrs(prevnode,LBNA_Flags,&hidden,LBNA_Generation,&thisgen,TAG_DONE);
@@ -1303,7 +1315,7 @@ int SL_Up(void)
 		      prevnode=GetPred(prevnode);
 		}
 
-		SetGadgetAttrs(SLG_List[SLG_SiteList],SiteListWindow,NULL,
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,
 			       LISTBROWSER_Labels,~0,
 			       TAG_DONE);
 		SetListBrowserNodeAttrs(node,LBNA_Generation,thisgen,TAG_DONE);
@@ -1314,12 +1326,12 @@ int SL_Up(void)
 		for (i=0,prevnode=GetHead(&SiteList);prevnode;prevnode=GetSucc(prevnode),i++)
 		  if (prevnode==node) break;
 		
-		if (SetGadgetAttrs(SLG_List[SLG_SiteList],SiteListWindow,NULL,
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,
 				   LISTBROWSER_Labels,&SiteList,
 				   LISTBROWSER_Selected,i,
 				   LISTBROWSER_MakeVisible,i,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_SiteList],SiteListWindow,NULL,1);
+		  RefreshGList((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,1);
 	    }
 	}
 	HotListChanged=TRUE;
@@ -1348,7 +1360,7 @@ int SL_Down(void)
 		ULONG chldgen;
 
 		NewList(&childlist);
-		SetGadgetAttrs(SLG_List[SLG_SiteList],SiteListWindow,NULL,
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,
 			       LISTBROWSER_Labels,~0,
 			       TAG_DONE);
 		
@@ -1405,7 +1417,7 @@ int SL_Down(void)
 		    }
 		}
 
-		if (FirstNode(&childlist)) {
+		if (GetHead(&childlist)!=NULL) {
 		    nchild=node;
 		    while (child=RemHead(&childlist)) {
 			Insert(&SiteList, child, nchild);
@@ -1416,12 +1428,12 @@ int SL_Down(void)
 		for (i=0,child=GetHead(&SiteList);child;child=GetSucc(child),i++)
 		  if (child==node) break;
 
-		if (SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 				   LISTBROWSER_Labels, &SiteList,
 				   LISTBROWSER_Selected, i,
 				   LISTBROWSER_MakeVisible, i,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
+		  RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
 
 	    }
 	    else {
@@ -1469,7 +1481,7 @@ int SL_Down(void)
 			succnode=GetPred(node);
 		    }
 		}
-		SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 			       LISTBROWSER_Labels, ~0,
 			       TAG_DONE);
 
@@ -1484,12 +1496,12 @@ int SL_Down(void)
 		for (i=0,succnode=GetHead(&SiteList);succnode;succnode=GetSucc(succnode),i++)
 		  if (succnode==node) break;
 
-		if (SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 				   LISTBROWSER_Labels, &SiteList,
 				   LISTBROWSER_Selected, i,
 				   LISTBROWSER_MakeVisible, i,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
+		  RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
 	    }
 	}
 	HotListChanged=TRUE;
@@ -1517,7 +1529,7 @@ int SL_Top(void)
     if (thisgen!=1)
       return 1;
 
-    SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 		   LISTBROWSER_Labels, ~0,
 		   TAG_DONE);
     NewList(&childlist);
@@ -1544,7 +1556,7 @@ int SL_Top(void)
 	}
 	Remove(node);
 	AddHead(&SiteList, node);
-	if (FirstNode(&childlist)) {
+	if (GetHead(&childlist)!=NULL) {
 	    nchild=node;
 	    while (child=RemHead(&childlist)) {
 		Insert(&SiteList, child, nchild);
@@ -1556,12 +1568,12 @@ int SL_Top(void)
 	Remove(node);
 	AddHead(&SiteList, node);
     }
-    if (SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+    if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 		       LISTBROWSER_Labels, &SiteList,
 		       LISTBROWSER_Selected, 0,
 		       LISTBROWSER_MakeVisible, 0,
 		       TAG_DONE))
-      RefreshGList(SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
+      RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
     HotListChanged=TRUE;
     ConfigChanged=TRUE;
     return 1;
@@ -1586,7 +1598,7 @@ int SL_Bottom(void)
     if (thisgen!=1)
       return 1;
 
-    SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 		   LISTBROWSER_Labels, ~0,
 		   TAG_DONE);
     NewList(&childlist);
@@ -1613,7 +1625,7 @@ int SL_Bottom(void)
 	}
 	Remove(node);
 	AddTail(&SiteList, node);
-	if (FirstNode(&childlist)) {
+	if (GetHead(&childlist)!=NULL) {
 	    nchild=node;
 	    while (child=RemHead(&childlist)) {
 		Insert(&SiteList, child, nchild);
@@ -1629,12 +1641,12 @@ int SL_Bottom(void)
     for (thisgen=0,child=GetHead(&SiteList);child;child=GetSucc(child),thisgen++)
       if (child==node) break;
 
-    if (SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+    if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 		       LISTBROWSER_Labels, &SiteList,
 		       LISTBROWSER_Selected, thisgen,
 		       LISTBROWSER_MakeVisible, thisgen,
 		       TAG_DONE))
-      RefreshGList(SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
+      RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
     HotListChanged=TRUE;
     ConfigChanged=TRUE;
     return 1;
@@ -1645,7 +1657,7 @@ int NewClicked(void)
     struct SiteNode *sn;
     struct Node *lbn;
 
-    geta4();
+    //geta4();
     
     sn=AllocMem(sizeof(struct SiteNode), MEMF_CLEAR);
     if (sn) {
@@ -1661,14 +1673,14 @@ int NewClicked(void)
 	    long i;
 	    struct Node *lb;
 
-	    SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+	    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 			   LISTBROWSER_Labels, ~0,
 			   TAG_DONE);
 	    lbn=AddLBNTail(&SiteList,sn);
 	    for (i=0,lb=GetHead(&SiteList);lb;i++,lb=GetSucc(lb))
 	      if (lb==lbn)
 		break;
-	    SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+	    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 			   LISTBROWSER_Labels, &SiteList,
 			   LISTBROWSER_Selected, i,
 			   LISTBROWSER_MakeVisible, i,
@@ -1677,19 +1689,20 @@ int NewClicked(void)
 	    ConfigChanged=TRUE;
 	    HotListChanged=TRUE;
 	    UpdateSLGGadgets(TRUE, sn->sn_MenuType);
-	    RefreshGList(SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
+	    RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
 	}
 	else  FreeMem(sn, sizeof(struct SiteNode));
     }
     return 1;
 }
 
+
 int EditClicked(void)
 {
     struct Node *lbn;
     struct SiteNode *sn;
 
-    geta4();
+    //geta4();
 
     GetAttr(LISTBROWSER_SelectedNode, SLG_List[SLG_SiteList], (ULONG *)&lbn);
 
@@ -1740,17 +1753,17 @@ int RemoveClicked(void)
     struct SiteNode *sn=NULL;
     struct Node *lbns;
 
-    geta4();
+//    geta4();
 
     GetAttr(LISTBROWSER_SelectedNode, SLG_List[SLG_SiteList], (ULONG *)&lbn);
 
     if (lbn) {
-	SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+	SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 		       LISTBROWSER_Labels, ~0,
 		       TAG_DONE);
 	lbns=GetSucc(lbn);
 	Remove(lbn);
-	SetGadgetAttrs(SLG_List[SLG_SiteList], SiteListWindow, NULL,
+	SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 		       LISTBROWSER_Labels, &SiteList,
 		       LISTBROWSER_Selected, -1,
 		       TAG_DONE);
@@ -1782,7 +1795,7 @@ int RemoveClicked(void)
 	ConfigChanged=TRUE;
 	HotListChanged=TRUE;
 	UpdateSLGGadgets(FALSE, 0);
-	RefreshGList(SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
+	RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
     }
     return 1;
 }
@@ -1794,110 +1807,110 @@ void UpdateSLGGadgets(const ULONG selected, const int type)
     ULONG attr=(((struct Gadget *)SLG_List[SLG_Edit])->Flags & GFLG_DISABLED);
 
     if (!selected) {
-	if (SetGadgetAttrs(SLG_List[SLG_Edit], SiteListWindow, NULL, 
+	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,
 			   GA_Disabled, TRUE,
 			   TAG_DONE))
-	  RefreshGList(SLG_List[SLG_Edit], SiteListWindow, NULL,1);
-	if (SetGadgetAttrs(SLG_List[SLG_Remove], SiteListWindow, NULL,
+	  RefreshGList((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,1);
+	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,
 			   GA_Disabled, TRUE,
 			   TAG_DONE))
-	  RefreshGList(SLG_List[SLG_Remove], SiteListWindow, NULL,1);
-	if (SetGadgetAttrs(SLG_List[SLG_Top], SiteListWindow, NULL,
+	  RefreshGList((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,1);
+	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,
 			   GA_Disabled, TRUE,
 			   TAG_DONE))
-	  RefreshGList(SLG_List[SLG_Top], SiteListWindow, NULL,1);
-	if (SetGadgetAttrs(SLG_List[SLG_Up], SiteListWindow, NULL,
+	  RefreshGList((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,1);
+	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,
 			   GA_Disabled, TRUE,
 			   TAG_DONE))
-	  RefreshGList(SLG_List[SLG_Up], SiteListWindow, NULL,1);
-	if (SetGadgetAttrs(SLG_List[SLG_Down], SiteListWindow, NULL,
+	  RefreshGList((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,1);
+	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,
 			   GA_Disabled, TRUE,
 			   TAG_DONE))
-	  RefreshGList(SLG_List[SLG_Down], SiteListWindow, NULL,1);
-	if (SetGadgetAttrs(SLG_List[SLG_Bottom], SiteListWindow, NULL,
+	  RefreshGList((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,1);
+	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,
 			   GA_Disabled, TRUE,
 			   TAG_DONE))
-	  RefreshGList(SLG_List[SLG_Bottom], SiteListWindow, NULL,1);
+	  RefreshGList((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,1);
 	if (SLG_List[SLG_Connect]) {
-	    if (SetGadgetAttrs(SLG_List[SLG_Connect], SiteListWindow, NULL,
+	    if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,
 			       GA_Disabled, TRUE,
 			       TAG_DONE))
-	      RefreshGList(SLG_List[SLG_Connect], SiteListWindow, NULL,1);
+	      RefreshGList((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,1);
 	}
     }
     else {
 	if (type==SLN_PARENT) {
 	    attr=(((struct Gadget *)SLG_List[SLG_Edit])->Flags & GFLG_DISABLED);
 	    if (attr) {
-		if (SetGadgetAttrs(SLG_List[SLG_Edit], SiteListWindow, NULL,
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Edit], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs(SLG_List[SLG_Remove], SiteListWindow, NULL,
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,1);
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Remove], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs(SLG_List[SLG_Top], SiteListWindow, NULL,
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,1);
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Top], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs(SLG_List[SLG_Up], SiteListWindow, NULL,
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,1);
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Up], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs(SLG_List[SLG_Down], SiteListWindow, NULL,
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,1);
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Down], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs(SLG_List[SLG_Bottom], SiteListWindow, NULL,
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,1);
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Bottom], SiteListWindow, NULL,1);
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,1);
 	    }
 	    if (SLG_List[SLG_Connect]) {
 		attr=(((struct Gadget *)SLG_List[SLG_Connect])->Flags & GFLG_DISABLED);
 		if (!attr)
-		  if (SetGadgetAttrs(SLG_List[SLG_Connect], SiteListWindow, NULL,
+		  if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,
 				     GA_Disabled, TRUE,
 				     TAG_DONE))
-		    RefreshGList(SLG_List[SLG_Connect], SiteListWindow, NULL,1);
+		    RefreshGList((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,1);
 	    }
 	}
 	else {
 	    attr=(((struct Gadget *)SLG_List[SLG_Edit])->Flags & GFLG_DISABLED);
 	    if (attr) {
-		if (SetGadgetAttrs(SLG_List[SLG_Edit], SiteListWindow, NULL,
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Edit], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs(SLG_List[SLG_Remove], SiteListWindow, NULL,
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,1);
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Remove], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs(SLG_List[SLG_Top], SiteListWindow, NULL,
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,1);
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Top], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs(SLG_List[SLG_Up], SiteListWindow, NULL,
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,1);
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Up], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs(SLG_List[SLG_Down], SiteListWindow, NULL,
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,1);
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Down], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs(SLG_List[SLG_Bottom], SiteListWindow, NULL,
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,1);
+		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,
 				   GA_Disabled, FALSE,
 				   TAG_DONE))
-		  RefreshGList(SLG_List[SLG_Bottom], SiteListWindow, NULL,1);
+		  RefreshGList((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,1);
 	    }
 	    if (SLG_List[SLG_Connect]) {
 		attr=(((struct Gadget *)SLG_List[SLG_Connect])->Flags & GFLG_DISABLED);
 		if (attr)
-		  if (SetGadgetAttrs(SLG_List[SLG_Connect], SiteListWindow, NULL,
+		  if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,
 				     GA_Disabled, FALSE,
 				     TAG_DONE))
-		    RefreshGList(SLG_List[SLG_Connect], SiteListWindow, NULL,1);
+		    RefreshGList((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,1);
 	    }
 	}
     }

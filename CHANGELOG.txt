@@ -1,0 +1,9 @@
+# Changelog
+
+#fmenzel 12.01.2020
+rewritten old SAS/C helper functions to make the code compileable with gcc.
+replaced AmiTCP code by AmigaOS4 Roadshow code
+replaced the old Reqtools requesters with native AmigaOS4
+ClassAct Gui replaced by AmigaOS4 Reaction
+outdated DOS code has been replaced by newer AmigaOS4 versions and is therefore ready for larger files >4GB
+#

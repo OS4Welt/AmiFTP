@@ -20,7 +20,7 @@ struct TextFont *PropFont;
 struct TextFont *LBFont;
 
 static ULONG lsel=-1;
-static struct Gadget *pagelayout;
+static Object *pagelayout;
 extern struct Menu *menu;
 extern struct List clist;
 
@@ -29,7 +29,7 @@ int prev_state=-1;
 Object *MainWin_Object;
 Object *MainWindowLayout;
 
-struct Gadget *MG_List[NumGadgets_main];
+Object *MG_List[NumGadgets_main];
 extern struct MsgPort *AppPort; /* Move to .h */
 
 static UBYTE sitenamebuffer[100], remotedirbuffer[100], localdirbuffer[100];
@@ -60,11 +60,17 @@ void CreateInfoList(struct List *list);
 ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 {
     ULONG result,done=FALSE;
-    UWORD code=NULL;
+    //UWORD code=NULL;
+    struct wmHandle wcode={0};
+    int16 code;
     Upload=FALSE;
 
     while (MainWin_Object &&
-	   (result=CA_HandleInput(MainWin_Object,&code))!=WMHI_LASTMSG) {
+	   //(result=CA_HandleInput(MainWin_Object,&code))!=WMHI_LASTMSG) {
+        (result=IDoMethod(MainWin_Object, WM_HANDLEINPUT, &wcode))!=WMHI_LASTMSG){
+
+        code = result&WMHI_GADGETMASK;
+       
 	switch (result & WMHI_CLASSMASK) {
 	  case WMHI_CLOSEWINDOW:
 	    done=TRUE;
@@ -75,6 +81,7 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 		  struct Node *node;
 		  ULONG attr;
 		  if (FileList) {
+
 		      for (node=GetHead(FileList);node;node=GetSucc(node)) {
 			  GetListBrowserNodeAttrs(node,
 						  LBNA_Selected, &attr, TAG_DONE);
@@ -86,10 +93,11 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 		      else {
 			  UpdateMainButtons(MB_NONESELECTED);
 		      }
+
 		      if (code!=-1) {
 			  ULONG attr=0;
 			  ULONG action=0;
-			  GetAttrs(MG_List[MG_ListView],
+			  GetAttrs((struct Gadget*)MG_List[MG_ListView],
 				   LISTBROWSER_NumSelected, &attr,
 				   LISTBROWSER_RelEvent, &action,
 				   LISTBROWSER_SelectedNode, &node,
@@ -293,11 +301,13 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 	    break;
 	  case WMHI_ICONIFY:
 	    if (AllowIconify)
-	      if (CA_Iconify(MainWin_Object))
+           IDoMethod(MainWin_Object, WM_ICONIFY);
+	      //if (CA_Iconify(MainWin_Object))
 		MainWindow=NULL;
 	    break;
 	  case WMHI_UNICONIFY:
-	    MainWindow=CA_OpenWindow(MainWin_Object);
+	    MainWindow=(struct Window *)IDoMethod(MainWin_Object, WM_OPEN);
+        //CA_OpenWindow(MainWin_Object);
 	    break;
 	  case WMHI_RAWKEY:
 //	    kprintf("key: %ld\n", code);
@@ -325,9 +335,9 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 struct List dummy_list;
 static struct Hook MainIDCMPHook;
 
-static ULONG __asm __saveds MainIDCMPHookFunc(register __a0 struct Hook *hook,
-					      register __a2 Object *WinObj,
-					      register __a1 struct IntuiMessage *msg)
+static ULONG MainIDCMPHookFunc(struct Hook *hook,
+					      Object *WinObj,
+					      struct IntuiMessage *msg)
 {
     switch (msg->Class) {
       case IDCMP_RAWKEY:
@@ -358,9 +368,9 @@ static ULONG __asm __saveds MainIDCMPHookFunc(register __a0 struct Hook *hook,
 }
 
 static struct Hook AppMessageHook;
-static ULONG __asm __saveds AppMessageHookFunc(register __a0 struct Hook *hook,
-					       register __a2 Object *WinObj,
-					       register __a1 struct AppMessage *msg)
+static ULONG  AppMessageHookFunc(struct Hook *hook,
+					       Object *WinObj,
+					       struct AppMessage *msg)
 {
     int i;
     struct Node *node;
@@ -383,37 +393,51 @@ static ULONG __asm __saveds AppMessageHookFunc(register __a0 struct Hook *hook,
 	if (msg->am_ArgList[i].wa_Lock && msg->am_ArgList[i].wa_Name) {
 	    char path[300];
 	    BPTR lock;
-	    struct FileInfoBlock fib;
+	    //struct FileInfoBlock fib;
 
 	    NameFromLock(msg->am_ArgList[i].wa_Lock, path, 300);
 	    AddPart(path, msg->am_ArgList[i].wa_Name, 300);
 
 	    lock=Lock(path, ACCESS_READ);
-	    if (lock) {
+	    /*
+        if (lock) {
 		if (Examine(lock, &fib)) {
-		    if (fib.fib_DirEntryType<0) {
+            if (fib.fib_DirEntryType<0) {
+        */
+		    
 			struct dirlist *entry;
 			struct Node *node;
+            struct ExamineData *data = ExamineObjectTags(EX_StringNameInput, path, TAG_END);
+            if (data)
+            {
+                if (EXD_IS_FILE(data))
+                {
+    			if (entry=new_direntry(path, NULL, NULL, NULL,
+    					       //S_IFREG, fib.fib_Size)) {
+                               S_IFREG, data->FileSize)) {
+    			    if (node=AllocListBrowserNode(1,
+    							  LBNA_UserData, entry,
+    							  LBNA_Column, 0,
+    							  LBNCA_Text, entry->name,
+    							  LBNA_Selected, TRUE,
+    							  TAG_DONE)) {
+    				node->ln_Name=(void *)entry;
+    				AddTail(&DropUploadList, node);
+    				Upload=TRUE;
+    			    }
+    			    else
+    			      free_direntry(entry);
+    			}
+                }
+                FreeDosObject(DOS_EXAMINEDATA,(APTR)data);
+            }
 
-			if (entry=new_direntry(path, NULL, NULL, NULL,
-					       S_IFREG, fib.fib_Size)) {
-			    if (node=AllocListBrowserNode(1,
-							  LBNA_UserData, entry,
-							  LBNA_Column, 0,
-							  LBNCA_Text, entry->name,
-							  LBNA_Selected, TRUE,
-							  TAG_DONE)) {
-				node->ln_Name=(void *)entry;
-				AddTail(&DropUploadList, node);
-				Upload=TRUE;
-			    }
-			    else
-			      free_direntry(entry);
-			}
-		    }
+        /*
+        }
 		}
 		UnLock(lock);
 	    }
+        */
 	}
     }
     return 0;
@@ -424,7 +448,7 @@ extern struct List SpeedBarList;
 
 struct Window *OpenFTPWindow(const BOOL StartIconified)
 {
-    struct Object *g1,*g2, *g3, *but1, *but2, *buttonlayout;
+    Object *g1,*g2, *g3, *but1, *but2, *buttonlayout;
 
     Screen=LockPubScreen(MainPrefs.mp_OpenOnDefaultScreen?NULL:MainPrefs.mp_PubScreen);
     if (!Screen) {
@@ -537,7 +561,7 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
                            SPEEDBAR_Buttons, &SpeedBarList,
                        SpeedBarEnd,
 
-	               StartVGroup, CLASSACT_BackFill, LAYERS_BACKFILL, StartMember,
+	               StartVGroup, LAYOUT_BackFill, LAYERS_BACKFILL, StartMember,
                          MG_List[MG_ListView]=ListBrowserObject,
 	                 GA_ID, MG_ListView,
 	                 GA_RelVerify, TRUE,
@@ -545,7 +569,7 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 	                 LISTBROWSER_Labels, (ULONG)FileList?FileList:&dummy_list,
 	                 LISTBROWSER_MultiSelect, TRUE,
 	                 LISTBROWSER_ShowSelected, TRUE,
-                         LISTBROWSER_ColumnInfo, (ULONG)FileList?&columninfo:&dummycolumninfo,
+                         LISTBROWSER_ColumnInfo, (ULONG)(FileList?columninfo:dummycolumninfo),
                          LISTBROWSER_Separators, FALSE,
                          LISTBROWSER_AutoFit, TRUE,
                          LISTBROWSER_HorizontalProp, TRUE,
@@ -715,11 +739,12 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 
     if (StartIconified) {
 	MainWindow=NULL;
-	CA_Iconify(MainWin_Object);
+	//CA_Iconify(MainWin_Object);
+    IDoMethod(MainWin_Object, WM_ICONIFY);
 	return (struct Window *)1;
     }
 
-    if (MainWindow=CA_OpenWindow(MainWin_Object)) {
+    if (MainWindow=(struct Window *)IDoMethod(MainWin_Object, WM_OPEN)) {
 	UpdateWindowTitle();
 	UnlockPubScreen(NULL, Screen);
 	return MainWindow;
@@ -783,7 +808,7 @@ void CloseMainWindow()
 }
 
 
-#define DisableGadget(gadget, disable) if (SetGadgetAttrs(gadget, MainWindow, NULL, GA_Disabled, disable, TAG_DONE) && MainWindow) RefreshGList(gadget, MainWindow, NULL, 1);
+#define DisableGadget(gadget, disable) if (SetGadgetAttrs((struct Gadget*)gadget, MainWindow, NULL, GA_Disabled, disable, TAG_DONE) && MainWindow) RefreshGList((struct Gadget*)gadget, MainWindow, NULL, 1);
 
 void UpdateMainButtons(const int state)
 {
@@ -813,12 +838,12 @@ void UpdateMainButtons(const int state)
 	DisableGadget(MG_List[MG_DirName], TRUE);
 	DisableGadget(MG_List[MG_CacheList], TRUE);
 	DisableGadget(MG_List[MG_Reload], TRUE);
-	if (SetGadgetAttrs(MG_List[MG_ListView], MainWindow, NULL,
+	if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 			   LISTBROWSER_Labels, &dummy_list,
 			   LISTBROWSER_ColumnInfo, &dummycolumninfo,
 			   LISTBROWSER_AutoFit, TRUE,
 			   TAG_DONE) && MainWindow)
-	  RefreshGList(MG_List[MG_ListView], MainWindow, NULL, 1);
+	  RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
 	lsel=-1;
 	break;
       case MB_NONESELECTED:
@@ -883,24 +908,24 @@ void UpdateMainButtons(const int state)
     prev_state=state;
 
     if (MainWindow)
-      RefreshGList(MG_List[MG_CacheList], MainWindow, NULL, 1);
+      RefreshGList((struct Gadget*)MG_List[MG_CacheList], MainWindow, NULL, 1);
 }
 #undef DisableGadget
 
 void AttachToolList(const BOOL NoneSelected)
 {
     if (MainWindow) {
-	if (SetGadgetAttrs(MG_List[MG_ListView], MainWindow, NULL,
+	if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 			   LISTBROWSER_Labels, FileList,
 			   LISTBROWSER_ColumnInfo, &columninfo,
 			   NoneSelected?LISTBROWSER_AutoFit:TAG_IGNORE, TRUE,
 			   NoneSelected?LISTBROWSER_Selected:TAG_IGNORE, -1,
 			   NoneSelected?LISTBROWSER_MakeVisible:TAG_IGNORE, 0,
 			   TAG_DONE))
-	  RefreshGList(MG_List[MG_ListView], MainWindow, NULL, 1);
+	  RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
     }
     else
-      SetAttrs(MG_List[MG_ListView],
+      SetAttrs((struct Gadget*)MG_List[MG_ListView],
 	       LISTBROWSER_Labels, FileList,
 	       LISTBROWSER_ColumnInfo, &columninfo,
 	       NoneSelected?LISTBROWSER_AutoFit:TAG_IGNORE, TRUE,
@@ -913,11 +938,11 @@ void AttachToolList(const BOOL NoneSelected)
 void DetachToolList(void)
 {
     if (MainWindow)
-      if (SetGadgetAttrs(MG_List[MG_ListView], MainWindow, NULL,
+      if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 			 LISTBROWSER_Labels, ~0,
 			 LISTBROWSER_AutoFit, TRUE,
 			 TAG_DONE))
-	RefreshGList(MG_List[MG_ListView], MainWindow, NULL, 1);
+	RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
     else
       SetAttrs(MG_List[MG_ListView], LISTBROWSER_Labels, ~0, TAG_DONE);
 }
@@ -928,10 +953,10 @@ void UpdateRemoteDir(const char *dir)
       if (dir!=&CurrentState.CurrentRemoteDir[0])
 	strncpy(CurrentState.CurrentRemoteDir, dir, 255);
     if (MainWindow) {
-	if (SetGadgetAttrs(MG_List[MG_DirName], MainWindow, NULL,
+	if (SetGadgetAttrs((struct Gadget*)MG_List[MG_DirName], MainWindow, NULL,
 			   STRINGA_TextVal, dir,
 			   TAG_END))
-	  RefreshGList(MG_List[MG_DirName], MainWindow, NULL, 1);
+	  RefreshGList((struct Gadget*)MG_List[MG_DirName], MainWindow, NULL, 1);
     }
     UpdateWindowTitle();
 }
@@ -941,10 +966,10 @@ void UpdateLocalDir(const char *dir)
     if (dir!=&CurrentState.CurrentDLDir[0])
       strncpy(CurrentState.CurrentDLDir, dir, 255);
     if (MainWindow) {
-	if (SetGadgetAttrs(MG_List[MG_DLString], MainWindow, NULL,
+	if (SetGadgetAttrs((struct Gadget*)MG_List[MG_DLString], MainWindow, NULL,
 			   STRINGA_TextVal, dir,
 			   TAG_END))
-	    RefreshGList(MG_List[MG_DLString], MainWindow, NULL, 1);
+	    RefreshGList((struct Gadget*)MG_List[MG_DLString], MainWindow, NULL, 1);
     }
     UpdateWindowTitle();
 }
@@ -954,10 +979,10 @@ void UpdateSiteName(const char *site)
     if (site!=CurrentState.CurrentSite)
       strncpy(CurrentState.CurrentSite, site, 50);
     if (MainWindow) {
-	if (SetGadgetAttrs(MG_List[MG_SiteName], MainWindow, NULL,
+	if (SetGadgetAttrs((struct Gadget*)MG_List[MG_SiteName], MainWindow, NULL,
 			   STRINGA_TextVal, site,
 			   TAG_END))
-	    RefreshGList(MG_List[MG_SiteName], MainWindow, NULL, 1);
+	    RefreshGList((struct Gadget*)MG_List[MG_SiteName], MainWindow, NULL, 1);
     }
 }
 
@@ -985,15 +1010,15 @@ void UnlockWindow(Object *window_object)
 	menuitem=mmenu->FirstItem;
 	menuitem=mmenu->FirstItem;
 	
-	menuitem->Flags|=TransferMode==BINARY?CHECKED:NULL;
+	menuitem->Flags|=TransferMode==BINARY?CHECKED:0;
 	menuitem=menuitem->NextItem;
-	menuitem->Flags|=TransferMode==ASCII?CHECKED:NULL;
+	menuitem->Flags|=TransferMode==ASCII?CHECKED:0;
 
 	mmenu=mmenu->NextMenu; /* The sort menu */
 	menuitem=mmenu->FirstItem;
-	menuitem->Flags|=SortMode==SORTBYNAME?CHECKED:NULL;
+	menuitem->Flags|=SortMode==SORTBYNAME?CHECKED:0;
 	menuitem=menuitem->NextItem;
-	menuitem->Flags|=SortMode==SORTBYDATE?CHECKED:NULL;
+	menuitem->Flags|=SortMode==SORTBYDATE?CHECKED:0;
 
 	mmenu=mmenu->NextMenu; /* The settings menu */
 	menuitem=mmenu->FirstItem;
@@ -1001,13 +1026,13 @@ void UnlockWindow(Object *window_object)
 	menuitem=menuitem->NextItem;
 
 	menuitem=menuitem->NextItem;
-	menuitem->Flags|=LogWindow?CHECKED:NULL;
+	menuitem->Flags|=LogWindow?CHECKED:0;
 
 	menuitem=menuitem->NextItem;
-	menuitem->Flags|=MainPrefs.mp_Showdotfiles?CHECKED:NULL;
+	menuitem->Flags|=MainPrefs.mp_Showdotfiles?CHECKED:0;
 
 	menuitem=menuitem->NextItem;
-	menuitem->Flags|=MainPrefs.mp_ShowAllADTFiles?CHECKED:NULL;
+	menuitem->Flags|=MainPrefs.mp_ShowAllADTFiles?CHECKED:0;
 	if (MainWindow)
 	  ResetMenuStrip(MainWindow, menu);
 	else
@@ -1022,16 +1047,16 @@ void UnlockWindow(Object *window_object)
 void ChangeAmiFTPMode(void)
 {
     if (CurrentState.ADTMode) {
-	SetGadgetAttrs(MG_List[MG_Page2], MainWindow, NULL,
+	SetGadgetAttrs((struct Gadget*)MG_List[MG_Page2], MainWindow, NULL,
 		       PAGE_Current, 1, TAG_DONE);
-	RethinkLayout(pagelayout, MainWindow, NULL, TRUE);
+	RethinkLayout((struct Gadget*)pagelayout, MainWindow, NULL, TRUE);
     }
     else {
-	SetGadgetAttrs(MG_List[MG_Page2], MainWindow, NULL,
+	SetGadgetAttrs((struct Gadget*)MG_List[MG_Page2], MainWindow, NULL,
 		       PAGE_Current, 0, TAG_DONE);
-	RethinkLayout(pagelayout, MainWindow, NULL, TRUE);
+	RethinkLayout((struct Gadget*)pagelayout, MainWindow, NULL, TRUE);
     }
-    RefreshGList(pagelayout, MainWindow, NULL, 1);
+    RefreshGList((struct Gadget*)pagelayout, MainWindow, NULL, 1);
 }
 
 void UpdateWindowTitle()
@@ -1040,6 +1065,7 @@ void UpdateWindowTitle()
     int numselfiles=0, numselbytes=0;
     char *bytes="kB";
     int freebytes=0;
+    int64 freebytes64=0;
     char *fbytes="kB";
     struct InfoData info;
     BPTR lock;
@@ -1057,14 +1083,22 @@ void UpdateWindowTitle()
 	i++;
 	pathname[i]='\0';
 
-	if (!getdfs(pathname, &info)) {
-	    freebytes=(info.id_NumBlocks-info.id_NumBlocksUsed)*info.id_BytesPerBlock;
-	    if (freebytes < 1000000) {
-		freebytes/=1024;
+    
+
+	//if (!getdfs(pathname, &info)) {
+      if (GetDiskInfoTags(GDI_StringNameInput,pathname,GDI_InfoData, &info)) {
+	    freebytes64=(int64)(info.id_NumBlocks-info.id_NumBlocksUsed)*(int64)info.id_BytesPerBlock;
+        if (freebytes64 < 1000000) {
+		freebytes = freebytes64/1024;
 		fbytes="kB";
 	    }
-	    else {
-		freebytes/=(1024*1024);
+        if (freebytes64 >= 1000000000) {
+		freebytes = freebytes64/(1024*1024*1024);
+		fbytes="GB";
+	    }
+        else
+        {
+		freebytes = freebytes64/(1024*1024);
 		fbytes="MB";
 	    }
 	}
@@ -1073,7 +1107,7 @@ void UpdateWindowTitle()
     if (FileList) {
 	struct Node *node;
 
-	for (node=FirstNode(FileList); node; node=NextNode(node)) {
+	for (node=GetHead(FileList); node != NULL; node = GetSucc(node)) {
 	    ULONG sel;
 	    struct dirlist *ptr;
 
@@ -1102,15 +1136,15 @@ void UpdateWindowTitle()
 static void ScrollListbrowser(ULONG direction)
 {
     if (FileList) {
-	if (!EmptyList(FileList)) {
-	    SetGadgetAttrs(MG_List[MG_ListView], MainWindow, NULL,
+	if (GetHead(FileList)!=NULL) {
+	    SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 			   LISTBROWSER_Position, direction,
 			   TAG_DONE);
 	}
     }
 }
 
-static struct Image *listimage;
+static Object *listimage;
 static UWORD listmapping[4];
 
 void CreateInfoList(struct List *list)
@@ -1130,7 +1164,7 @@ void CreateInfoList(struct List *list)
     listmapping[2]=DrawInfo->dri_Pens[SHINEPEN];
     listmapping[3]=DrawInfo->dri_Pens[FILLPEN];
 
-    if (listimage=(struct Image *)NewObject(LABEL_GetClass(), NULL,
+    if (listimage=NewObject(LABEL_GetClass(), NULL,
 					   LABEL_Mapping, listmapping,
 					   LABEL_Image, &im,
 					   TAG_END))

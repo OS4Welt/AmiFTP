@@ -30,11 +30,22 @@ extern struct Library *SocketBase;
 #include <stdarg.h>
 #include <time.h>
 
-#include <dos.h>
-#include <ios1.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <clib/rexxsyslib_protos.h>
+#include <proto/amigaguide.h>
+#include <proto/rexxsyslib.h>
+#include <proto/intuition.h>
+#include <proto/gadtools.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+#include <proto/wb.h>
+#include <proto/asl.h>
+#include <proto/iffparse.h>
+#include <proto/icon.h>
+#include <proto/timer.h>
+#include <proto/diskfont.h>
+#include <devices/timer.h>
+
 #include <rexx/storage.h>
 #include <rexx/rxslib.h>
 #include <rexx/errors.h>
@@ -50,48 +61,22 @@ extern struct Library *SocketBase;
 #include <intuition/gadgetclass.h>
 #include <libraries/gadtools.h>
 #include <libraries/asl.h>
-#include <libraries/reqtools.h>
 #include <libraries/iffparse.h>
 #include <libraries/amigaguide.h>
+#include <libraries/diskfont.h>
 #include <graphics/displayinfo.h>
 #include <graphics/gfxbase.h>
 #include <graphics/rpattr.h>
+#include <graphics/text.h>
 #include <exec/types.h>
 #include <exec/devices.h>
 #include <exec/memory.h>
 #include <utility/hooks.h>
-#include <clib/exec_protos.h>
-#include <clib/intuition_protos.h>
-#include <clib/gadtools_protos.h>
-#include <clib/graphics_protos.h>
-#include <clib/utility_protos.h>
-#include <clib/diskfont_protos.h>
-#include <clib/asl_protos.h>
-#include <clib/reqtools_protos.h>
-#include <clib/icon_protos.h>
-#include <clib/wb_protos.h>
-#include <clib/alib_protos.h>
-#include <clib/iffparse_protos.h>
-#include <clib/amigaguide_protos.h>
 #include <string.h>
 #include <workbench/startup.h>
 #include <workbench/workbench.h>
-#include <pragmas/exec_pragmas.h>
-#include <pragmas/intuition_pragmas.h>
-#include <pragmas/gadtools_pragmas.h>
-#include <pragmas/graphics_pragmas.h>
-#include <pragmas/utility_pragmas.h>
-#include <pragmas/asl_pragmas.h>
-#include <pragmas/reqtools.h>
-#include <pragmas/icon_pragmas.h>
-#include <pragmas/wb_pragmas.h>
-#include <pragmas/iffparse_pragmas.h>
-#include <pragmas/amigaguide_pragmas.h>
 
-#include <wb2cli.h>
-#include <clib/asyncio_protos.h>
-#include "dh1:tcp/tcphook/tcphooks.h"
-#include <lists.h>
+#include "../tcphook/tcphooks.h"
 #include "dirlist_struct.h"
 #include "AmiFTP_Cat.h"
 
@@ -289,8 +274,6 @@ extern struct RDArgs *argsptr;
 extern struct CurrentState CurrentState;
 extern struct MainPrefs MainPrefs;
 extern struct List SiteList;
-extern struct Node *GetPred(struct Node *);
-extern struct Node *GetTail(struct List *);
 extern struct   sockaddr_in data_addr;
 extern struct sockaddr_in myctladdr;
 extern int      connected;
@@ -334,26 +317,39 @@ extern struct TextAttr *ListViewAttrF;
 extern struct TextFont *PropFont;
 extern struct TextFont *LBFont;
 
-extern struct IntuitionBase    *IntuitionBase;
+extern struct Library    *IntuitionBase;
 extern struct Library          *UtilityBase;
-extern struct GfxBase          *GfxBase;
+extern struct Library          *GfxBase;
 extern struct Library          *DiskfontBase;
-extern struct ReqToolsBase     *ReqToolsBase;
 extern struct Library          *AslBase;
 extern struct Library          *IFFParseBase;
-extern struct IconBase         *IconBase;
-extern struct RexxLib          *RexxSysBase;
-extern struct WorkbenchBase    *WorkbenchBase;
+extern struct Library         *IconBase;
+extern struct Library          *RexxSysBase;
+extern struct Library    *WorkbenchBase;
 extern struct Library          *LocaleBase;
 extern struct Library          *AmigaGuideBase;
-extern struct Library           *TimerBase;
+extern struct Device           *TimerBase;
+
+extern struct IntuitionIFace	*IIntuition;
+extern struct UtilityIFace		*IUtility;
+extern struct GraphicsIFace		*IGraphics;
+extern struct DiskfontIFace		*IDiskfont;
+extern struct AslIFace			*IAsl;
+extern struct IFFParseIFace		*IIFFParse;
+extern struct IconIFace			*IIcon;
+extern struct RexxSysIFace		*IRexxSys;
+extern struct WorkbenchIFace  	*IWorkbench;
+extern struct LocaleIFace		*ILocale;
+extern struct AmigaGuideIFace	*IAmigaGuide;
+extern struct TimerIFace		*ITimer;
+
 
 extern struct MsgPort *RexxPort;
 extern struct MsgPort *TimerPort;
 extern struct MsgPort *AppPort;
 
 extern struct Hook IDCMPHook;
-extern struct timerequest *TimeRequest;
+extern struct TimeRequest *TimeRequest;
 extern struct List *FileList;
 extern struct List TempList;
 extern struct Window *MainWindow;
@@ -425,9 +421,9 @@ struct List *read_remote_dir(void);
 
 /* dirlist.c */
 struct dirlist *new_direntry(char *name, char *date, char *owner,
-			     char *group, mode_t mode, size_t size);
+			     char *group, mode_t mode, int64 size);
 BOOL add_direntry(struct List *filelist, char *name, char *date,
-		  char *owner, char *group, mode_t mode, size_t size, int sort_mode,
+		  char *owner, char *group, mode_t mode, int64 size, int sort_mode,
 		  int sort_direction);
 void add_direntry_struct(struct List *filelist,
 			 struct dirlist *dlist, int sort_mode, int sort_direction);
@@ -435,10 +431,10 @@ void free_dirlist(struct List *filelist);
 void free_direntry(struct dirlist *tmp);
 struct dirlist *sortupbyname(struct List *filelist, char *name,int dir);
 struct dirlist *sortupbydate(struct List *filelist, char *date);
-struct dirlist *sortupbysize(struct List *filelist, size_t size);
+struct dirlist *sortupbysize(struct List *filelist, int64 size);
 struct dirlist *sortdownbyname(struct List *filelist, char *name, int dir);
 struct dirlist *sortdownbydate(struct List *filelist, char *date);
-struct dirlist *sortdownbysize(struct List *filelist, size_t size);
+struct dirlist *sortdownbysize(struct List *filelist, int64 size);
 struct List *sort_filelist(struct List *old_filelist,int sort_mode,
 			   int sort_direction);
 void hour_time(char *date, struct tm *tm);
@@ -462,6 +458,7 @@ int Reconnect(void);
 int File_clicked(void);
 int Get_clicked(void);
 int DLPath_clicked(void);
+int DLPathString_clicked(void);
 int Put_clicked(void);
 int Connect_clicked(void);
 int Disconnect_clicked(void);
@@ -469,7 +466,7 @@ int View_clicked(BOOL Readme);
 int Site_clicked(void);
 int Dir_clicked(void);
 void RemoteCDFailed(void);
-void __stdargs ShowErrorReq(char *str,...);
+void ShowErrorReq(char *str,...);
 char *GetPassword(char *user,char *passbuf);
 int About(void);
 int SavePrefs(void);
@@ -559,3 +556,9 @@ void InitSpeedBarList(void);
 void FreeSpeedBarList(void);
 int HandleSpeedBar(int button);
 void UpdateSpeedBar(int state);
+extern struct Window *TransferWindow;
+void strmfp(char *file, char *path, char *node,int size);
+
+int stcgfn(char *node, char *name, int size);
+int getfa(CONST_STRPTR name);
+int showRequester(struct Window *window, STRPTR Title, STRPTR Gadget, STRPTR Body, ...);

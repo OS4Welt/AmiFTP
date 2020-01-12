@@ -161,7 +161,7 @@ int	parse_line_ls(struct List *filelist, char *line)
 		type = S_IFDIR;
 
 	if (add_direntry(filelist, name, "unknown", "unknown", "unknown", type,
-		(size_t)-1, SortMode, remote_sort_direction) == NULL) {
+		(int64)-1, SortMode, remote_sort_direction) == NULL) {
 		ShowErrorReq(GetAmiFTPString(Str_ErrorBuildingDirList));
 		return 1;
 	}
@@ -183,7 +183,7 @@ int	parse_line_pattern(struct List *filelist, char *pattern,
 	static char	name[MAXPATHLEN + 1];
 	static char owner[25];
 	static char group[25];
-	size_t	size = (size_t)-1;
+	int64  size = (int64)-1;
 	char	*tmp;
 	char	*dirtmp;
 
@@ -264,7 +264,9 @@ int	parse_line_pattern(struct List *filelist, char *pattern,
 					curr++;
 				size = -1;
 			} else {
-				sscanf(curr, "%d", &size);
+
+				//sscanf(curr, "%lu", &size);
+                size = atoll(curr);
 				while (isdigit(*curr))
 					curr++;
 			}
@@ -385,7 +387,7 @@ int	parse_line_vms(struct List *filelist, char *line, int *temp_non_unix)
     static char owner[25];
     static char group[25];
     static int partial = 0;
-    size_t	size = (size_t)-1;
+    int64  size = (int64)-1;
     char	*tmp;
     time_t	curtime, filetime;
     extern int cummonthdays[];
@@ -462,7 +464,8 @@ int	parse_line_vms(struct List *filelist, char *line, int *temp_non_unix)
 	tmp++;
     }
     if (!founddash) {
-	sscanf(curr, "%d", &size);
+	//sscanf(curr, "%d", &size);
+    size = atoll(curr);
 	while (isdigit(*curr))
 	  curr++;
 	size *= 512;
@@ -598,7 +601,7 @@ int	parse_line_dos(struct List *filelist, char *line, int *temp_non_unix)
 	static char	year[10];
 	static char	hour[10];
 	static char	name[MAXPATHLEN + 1];
-	size_t	size = (size_t)-1;
+	int64  size = (int64)-1;
 	char	*tmp;
 	time_t	curtime, filetime;
 	int	i;
@@ -633,7 +636,8 @@ int	parse_line_dos(struct List *filelist, char *line, int *temp_non_unix)
 	if (isdigit(*curr)) {
 		/* file size */
 		mode = S_IFREG;
-		sscanf(curr, "%d", &size);
+		//sscanf(curr, "%d", &size);
+        size=atoll(curr);
 		while (isdigit(*curr))
 			curr++;
 	} else if (!strncmp(curr, "<dir>", 5)) {

@@ -16,8 +16,6 @@ static ULONG lastscanned;
 static char *Pattern;
 
 ULONG MOTDDate;
-struct Node *GetHead(struct List *);
-struct Node *GetSucc(struct Node *);
 
 
 struct List *ReadRecentList(void)
@@ -241,7 +239,7 @@ static int ParseADT(struct List *list, char *buffer)
 				     LBNA_Column, 0,
 				     LBNCA_Text, entry->name,
 				     LBNA_Column, 1,
-				     LBNCA_Integer, &entry->size,
+                     LBNCA_Text, entry->stringSize,
 				     LBNCA_Justification, LCJ_RIGHT,
 				     LBNA_Column, 2,
 				     LBNCA_Text, entry->owner,
@@ -342,7 +340,7 @@ struct List *sort_ADT(struct List *list, int type)
 	 node;
 	 node=GetSucc(node), numnodes++);
     if (numnodes > 1) {
-	if ((array=AllocVec(4*numnodes, MEMF_CLEAR))) {
+	if ((array=AllocVecTags(4*numnodes, AVT_ClearWithValue, 0, TAG_END))) {
 	    for (node=GetHead(list), arrayptr=array;
 		 node;
 		 arrayptr++, node=GetSucc(node))

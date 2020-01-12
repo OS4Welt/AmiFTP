@@ -1,6 +1,7 @@
-#include <clib/socket_protos.h>
-#include <clib/exec_protos.h>
-#include <pragmas/exec_pragmas.h>
+#include <proto/bsdsocket.h>
+#include <proto/socket.h>
+#include <proto/usergroup.h>
+#include <proto/exec.h>
 
 struct hostent *(*tcp_gethostbyname)(const UBYTE *name);
 struct servent *(*tcp_getservbyname)(const UBYTE *name, const UBYTE *proto);
@@ -29,13 +30,37 @@ LONG (*tcp_shutdown)(LONG s, LONG how);
 int Setup225Hooks(void);
 void Shutdown225(void);
 int SetupAmiTCPHooks(void);
+int SetupAOS4Hooks(void);
 
-struct Library *SockBase;
-struct Library *SocketBase=NULL;
+//struct Library *SockBase;
 struct Library *UserGroupBase=NULL;
+struct UserGroupIFace *IUserGroup=NULL;
+struct Library *SocketBase=NULL;
+struct SocketIFace *ISocket=NULL;
+//struct Library *UserGroupBase=NULL;
+
+void CloseTCP(void)
+{
+    if (ISocket) DropInterface(ISocket);
+    if (SocketBase) CloseLibrary(SocketBase);
+
+    if (ISocket) DropInterface(ISocket);
+    if (SocketBase) CloseLibrary(SocketBase);
+    /*
+    if (SockBase) {
+	Shutdown225();
+	CloseLibrary(SockBase);
+    }
+    if (SocketBase)
+      CloseLibrary(SocketBase);
+    if (UserGroupBase)
+      CloseLibrary(UserGroupBase);
+      */
+}
 
 int OpenTCP(BOOL UseAS225)
 {
+    /*
     char *as="inet:libs/socket.library";
     if (UseAS225) {
 	SockBase=OpenLibrary(as,4L);
@@ -61,17 +86,38 @@ int OpenTCP(BOOL UseAS225)
 	      return 0;
 	}
     }
-    return 1;
+    */
+
+    SocketBase=OpenLibrary("bsdsocket.library",4);
+    if (SocketBase)
+    {
+        ISocket = GetInterfaceTags(SocketBase, "main", 1, TAG_END);
+        if (ISocket==NULL)
+        {
+            CloseLibrary(SocketBase);
+            SocketBase = NULL;
+            return 0;
+        }
+    }
+
+    UserGroupBase=OpenLibrary("usergroup.library",4);
+    if (UserGroupBase)
+    {
+        IUserGroup = GetInterfaceTags(UserGroupBase, "main", 1, TAG_END);
+        if (IUserGroup==NULL)
+        {
+            CloseTCP();
+            return 0;
+        }
+        if (SetupAOS4Hooks()==0)
+        {
+            CloseTCP();
+        	return 0;
+        }
+        return 1;
+    }
+
+    
+    return 0;
 }
 
-void CloseTCP(void)
-{
-    if (SockBase) {
-	Shutdown225();
-	CloseLibrary(SockBase);
-    }
-    if (SocketBase)
-      CloseLibrary(SocketBase);
-    if (UserGroupBase)
-      CloseLibrary(UserGroupBase);
-}

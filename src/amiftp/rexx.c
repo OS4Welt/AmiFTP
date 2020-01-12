@@ -6,16 +6,12 @@
 #include "gui.h"
 extern const char Version[];
 
-#define REGA0 register __a0
-#define REGA1 register __a1
-
 struct SiteNode curr_rexx;
 
 BOOL ARexxQuitBit=FALSE;
 Object *ARexx_Object;
 
-static void __saveds __asm rexx_GetFile(REGA0 struct ARexxCmd *ac,
-					REGA1 struct RexxMsg *rexxmsg)
+static void  rexx_GetFile(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	long ascii;
@@ -52,8 +48,7 @@ static void __saveds __asm rexx_GetFile(REGA0 struct ARexxCmd *ac,
     }
 }
 
-static void __saveds __asm rexx_View(REGA0 struct ARexxCmd *ac,
-				     REGA1 struct RexxMsg *rexxmsg)
+static void rexx_View(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	long ascii;
@@ -80,7 +75,7 @@ static void __saveds __asm rexx_View(REGA0 struct ARexxCmd *ac,
 	    node->ln_Name=(void *)&file;
 	    AddTail(&filelist, node);
 	    if (DownloadFile(&filelist,"T:",args->ascii?ASCII:BINARY,0)==TRANS_OK) {
-		strmfp(loc_name, "T:", FilePart(file.name));
+		strmfp(loc_name, "T:", FilePart(file.name), 200);
 		ViewFile(loc_name);
 		ac->ac_RC=RC_OK;
 	    }
@@ -96,8 +91,7 @@ static void __saveds __asm rexx_View(REGA0 struct ARexxCmd *ac,
     }
 }
 
-static void __saveds __asm rexx_DeleteFile(REGA0 struct ARexxCmd *ac,
-					   REGA1 struct RexxMsg *rexxmsg)
+static void rexx_DeleteFile(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	char **files;
@@ -120,8 +114,7 @@ static void __saveds __asm rexx_DeleteFile(REGA0 struct ARexxCmd *ac,
     return;
 }
 
-static void __saveds __asm rexx_MGetFile(REGA0 struct ARexxCmd *ac,
-					 REGA1 struct RexxMsg *rexxmsg)
+static void rexx_MGetFile(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	long ascii;
@@ -176,8 +169,7 @@ static void __saveds __asm rexx_MGetFile(REGA0 struct ARexxCmd *ac,
     return;
 }
 
-static void __saveds __asm rexx_Connect(REGA0 struct ARexxCmd *ac,
-					REGA1 struct RexxMsg *rexxmsg)
+static void  rexx_Connect(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	long noscan;
@@ -242,8 +234,7 @@ static void __saveds __asm rexx_Connect(REGA0 struct ARexxCmd *ac,
     return;
 }
 
-static void __saveds __asm rexx_Disconnect(REGA0 struct ARexxCmd *ac,
-					   REGA1 struct RexxMsg *rexxmsg)
+static void  rexx_Disconnect(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     if (!TCPStack) {
 	ac->ac_RC=RC_WARN;
@@ -256,8 +247,7 @@ static void __saveds __asm rexx_Disconnect(REGA0 struct ARexxCmd *ac,
     return;
 }
 
-static void __saveds __asm rexx_LCD(REGA0 struct ARexxCmd *ac,
-				    REGA1 struct RexxMsg *rexxmsg)
+static void  rexx_LCD(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	long parent;
@@ -272,8 +262,7 @@ static void __saveds __asm rexx_LCD(REGA0 struct ARexxCmd *ac,
     return;
 }
 
-static void __saveds __asm rexx_CD(REGA0 struct ARexxCmd *ac,
-				   REGA1 struct RexxMsg *rexxmsg)
+static void  rexx_CD(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	long noscan;
@@ -313,8 +302,7 @@ static void __saveds __asm rexx_CD(REGA0 struct ARexxCmd *ac,
     return;
 }
 
-static void __saveds __asm rexx_Site(REGA0 struct ARexxCmd *ac,
-				     REGA1 struct RexxMsg *rexxmsg)
+static void rexx_Site(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	char *name;
@@ -323,7 +311,7 @@ static void __saveds __asm rexx_Site(REGA0 struct ARexxCmd *ac,
     struct SiteNode *sn = NULL;
     struct Node *lbn;
 
-    for (lbn=ListHead(&SiteList);ListEnd(lbn);lbn=ListNext(lbn)) {
+    for (lbn=GetHead(&SiteList);lbn!=NULL;lbn=GetSucc(lbn)) {
 	GetListBrowserNodeAttrs(lbn,
 				LBNA_UserData,&sn,
 				TAG_DONE);
@@ -400,8 +388,7 @@ static void __saveds __asm rexx_Site(REGA0 struct ARexxCmd *ac,
     return;
 }
 
-static void __saveds __asm rexx_PutFile(REGA0 struct ARexxCmd *ac,
-					REGA1 struct RexxMsg *rexxmsg)
+static void rexx_PutFile(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	long ascii;
@@ -431,7 +418,7 @@ static void __saveds __asm rexx_PutFile(REGA0 struct ARexxCmd *ac,
 	else free_direntry(entry);
     }
 
-    if (!EmptyList(&UploadList)) {
+    if (GetHead(&UploadList)!=NULL) {
 	if (UploadFile(&UploadList, args->remote, args->ascii?ASCII:BINARY)==TRANS_OK) {
 	    ac->ac_RC=RC_OK;
 	}
@@ -444,8 +431,7 @@ static void __saveds __asm rexx_PutFile(REGA0 struct ARexxCmd *ac,
     return;
 }
 
-static void __saveds __asm rexx_MPutFile(REGA0 struct ARexxCmd *ac,
-					 REGA1 struct RexxMsg *rexxmsg)
+static void rexx_MPutFile(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	long ascii;
@@ -479,7 +465,7 @@ static void __saveds __asm rexx_MPutFile(REGA0 struct ARexxCmd *ac,
 	i++;
     }
 
-    if (FirstNode(&UploadList)) {
+    if (GetHead(&UploadList)) {
 	if (UploadFile(&UploadList, NULL, args->ascii?ASCII:BINARY)==TRANS_OK) {
 	    ac->ac_RC=RC_OK;
 	}
@@ -494,8 +480,7 @@ static void __saveds __asm rexx_MPutFile(REGA0 struct ARexxCmd *ac,
 
 BOOL SilentMode=FALSE;
 
-static void __saveds __asm rexx_SetAttr(REGA0 struct ARexxCmd *ac, 
-					REGA1 struct RexxMsg *rexxmsg)
+static void  rexx_SetAttr(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	char *host;
@@ -554,12 +539,12 @@ static int SetStemVar(struct RexxMsg *rexxmsg, char *value, char *stemname,...)
     vsprintf(Name, stemname, VarArgs);
     va_end(VarArgs);
 
-    return SetRexxVar(rexxmsg, Name, value, strlen(value));
+    //return SetRexxVar(rexxmsg, Name, value, strlen(value));
+    SetRexxVarFromMsg(Name, value, rexxmsg);
 }
 
 
-static void __saveds __asm rexx_GetAttr(REGA0 struct ARexxCmd *ac, 
-					REGA1 struct RexxMsg *rexxmsg)
+static void rexx_GetAttr(struct ARexxCmd *ac,  struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	char *stem;
@@ -597,7 +582,7 @@ static void __saveds __asm rexx_GetAttr(REGA0 struct ARexxCmd *ac,
 	struct SiteNode *sn;
 	struct Node *lbn;
 
-	for (i=0,lbn=ListHead(&SiteList);ListEnd(lbn);i++,lbn=ListNext(lbn)) {
+	for (i=0,lbn=GetHead(&SiteList);lbn != NULL;i++,lbn=GetSucc(lbn)) {
 	    GetListBrowserNodeAttrs(lbn,
 				    LBNA_UserData, &sn,
 				    TAG_DONE);
@@ -627,10 +612,10 @@ static void __saveds __asm rexx_GetAttr(REGA0 struct ARexxCmd *ac,
 	struct dirlist *curr;
 	struct Node *node;
 	if (FileList)
-	  for (i=0,node=ListHead(FileList);
-	       ListEnd(node);
-	       node=ListNext(node),i++) {
-	      curr = node->ln_Name;
+	  for (i=0,node=GetHead(FileList);
+	       node != NULL;
+	       node=GetSucc(node),i++) {
+	      curr = (struct dirlist *)node->ln_Name;
 	      /*kprintf("Rexx: %s %ld\n", curr->name, curr->size);*/
 	      err|=SetStemVar(rexxmsg, curr->name, "%s.FILELIST.%d.NAME", args->stem,
 			      i);
@@ -650,34 +635,31 @@ static void __saveds __asm rexx_GetAttr(REGA0 struct ARexxCmd *ac,
     return;
 }
 
-static void __saveds __asm rexx_Quit(REGA0 struct ARexxCmd *ac,
-				     REGA1 struct RexxMsg *rexxmsg)
+static void  rexx_Quit(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     ARexxQuitBit=TRUE;
     ac->ac_RC=RC_OK;
     return;
 }
 
-static void __saveds __asm rexx_Activate(REGA0 struct ARexxCmd *ac,
-					 REGA1 struct RexxMsg *rexxmsg)
+static void rexx_Activate(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     ac->ac_RC=RC_OK;
     if (!MainWindow)
-      MainWindow=CA_OpenWindow(MainWin_Object);
+      MainWindow=(struct Window *)IDoMethod(MainWin_Object, WM_OPEN);//CA_OpenWindow(MainWin_Object);
     return;
 }
 
-static void __saveds __asm rexx_Deactivate(REGA0 struct ARexxCmd *ac,
-					   REGA1 struct RexxMsg *rexxmsg)
+static void rexx_Deactivate(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     ac->ac_RC=RC_OK;
-    if (CA_Iconify(MainWin_Object))
+    //if (CA_Iconify(MainWin_Object))
+    if (IDoMethod(MainWin_Object, WM_ICONIFY))
       MainWindow=NULL;
     return;
 }
 
-static void __saveds __asm rexx_FTPCommand(REGA0 struct ARexxCmd *ac,
-					   REGA1 struct RexxMsg *rexxmsg)
+static void rexx_FTPCommand(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 {
     struct ArgStruct {
 	char *command;
@@ -688,7 +670,8 @@ static void __saveds __asm rexx_FTPCommand(REGA0 struct ARexxCmd *ac,
 	command(args->command);
 	sprintf(errcode, "%ld", code);
 	ac->ac_RC=RC_OK;
-	SetRexxVar(rexxmsg, "RC2", errcode, strlen(errcode));
+	//SetRexxVar(rexxmsg, "RC2", errcode, strlen(errcode));
+    SetRexxVarFromMsg("RC2", errcode, rexxmsg);
     }
     else
       ac->ac_RC=RC_WARN;
@@ -703,24 +686,24 @@ enum {REXX_GETFILE, REXX_MGETFILE, REXX_PUTFILE, REXX_MPUTFILE,
 
 static struct ARexxCmd ARexxCommands[] =
 {
-    {"GET",        REXX_GETFILE,   rexx_GetFile,    "ASCII/S,BIN/S,FILE/A,LOCAL", NULL},
-    {"MGET",       REXX_MGETFILE,  rexx_MGetFile,   "ASCII/S,BIN/S,FILE/M", NULL},
-    {"PUT",        REXX_PUTFILE,   rexx_PutFile,    "ASCII/S,BIN/S,FILE/A,REMOTE", NULL},
-    {"MPUT",       REXX_MPUTFILE,  rexx_MPutFile,   "ASCII/S,BIN/S,FILE/M", NULL},
-    {"DELETE",     REXX_DELETEFILE,rexx_DeleteFile, "FILE/M", NULL},
-    {"CONNECT",    REXX_CONNECT,   rexx_Connect,    "NOSCAN/S", NULL},
-    {"DISCONNECT", REXX_DISCONNECT,rexx_Disconnect,  NULL, NULL},
-    {"LCD",        REXX_LCD,       rexx_LCD,        "PARENT/S,DIR", NULL},
-    {"CD",         REXX_CD,        rexx_CD,         "NOSCAN/S,PARENT/S,DIR", NULL},
-    {"SITE",       REXX_SITE,      rexx_Site,       "SITE/A/F", NULL},
-    {"QUIT",       REXX_QUIT,      rexx_Quit,        NULL, NULL},
-    {"GETATTR",    REXX_GETATTR,   rexx_GetAttr,    "STEM/A,HOTLIST/S,FILELIST/S", NULL},
-    {"SETATTR",    REXX_SETATTR,   rexx_SetAttr,    "HOST/K,PORT/K,PROXYHOST/K,PROXYPORT/K,USEPROXY/S,REMOTEDIR/K,LOCALDIR/K,USERNAME/K,PASSWORD/K,ANONYMOUS/S,QUIET/K", NULL},
-    {"ACTIVATE",   REXX_ACTIVATE,  rexx_Activate,   NULL, NULL},
-    {"DEACTIVATE", REXX_DEACTIVATE,rexx_Deactivate, NULL, NULL},
-    {"VIEW",       REXX_VIEW,      rexx_View,       "ASCII/S,BIN/S,FILE/A",NULL},
-    {"FTPCOMMAND", REXX_FTPCOMMAND,rexx_FTPCommand, "COMMAND/F",NULL},
-    {NULL,NULL,NULL,NULL,NULL,}
+    {"GET",        REXX_GETFILE,   rexx_GetFile,    "ASCII/S,BIN/S,FILE/A,LOCAL", 0UL},
+    {"MGET",       REXX_MGETFILE,  rexx_MGetFile,   "ASCII/S,BIN/S,FILE/M",  0UL},
+    {"PUT",        REXX_PUTFILE,   rexx_PutFile,    "ASCII/S,BIN/S,FILE/A,REMOTE", 0UL},
+    {"MPUT",       REXX_MPUTFILE,  rexx_MPutFile,   "ASCII/S,BIN/S,FILE/M", 0UL},
+    {"DELETE",     REXX_DELETEFILE,rexx_DeleteFile, "FILE/M", 0UL},
+    {"CONNECT",    REXX_CONNECT,   rexx_Connect,    "NOSCAN/S", 0UL},
+    {"DISCONNECT", REXX_DISCONNECT,rexx_Disconnect,  NULL, 0UL},
+    {"LCD",        REXX_LCD,       rexx_LCD,        "PARENT/S,DIR", 0UL},
+    {"CD",         REXX_CD,        rexx_CD,         "NOSCAN/S,PARENT/S,DIR", 0UL},
+    {"SITE",       REXX_SITE,      rexx_Site,       "SITE/A/F", 0UL},
+    {"QUIT",       REXX_QUIT,      rexx_Quit,        NULL, 0UL},
+    {"GETATTR",    REXX_GETATTR,   rexx_GetAttr,    "STEM/A,HOTLIST/S,FILELIST/S", 0UL},
+    {"SETATTR",    REXX_SETATTR,   rexx_SetAttr,    "HOST/K,PORT/K,PROXYHOST/K,PROXYPORT/K,USEPROXY/S,REMOTEDIR/K,LOCALDIR/K,USERNAME/K,PASSWORD/K,ANONYMOUS/S,QUIET/K",  0UL},
+    {"ACTIVATE",   REXX_ACTIVATE,  rexx_Activate,   NULL, 0UL},
+    {"DEACTIVATE", REXX_DEACTIVATE,rexx_Deactivate, NULL, 0UL},
+    {"VIEW",       REXX_VIEW,      rexx_View,       "ASCII/S,BIN/S,FILE/A",0UL},
+    {"FTPCOMMAND", REXX_FTPCOMMAND,rexx_FTPCommand, "COMMAND/F",0UL},
+    {NULL,0,NULL,NULL,0UL,}
 };
 
 BOOL InitRexx(void)

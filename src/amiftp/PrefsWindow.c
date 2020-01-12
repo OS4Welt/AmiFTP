@@ -29,14 +29,14 @@ enum {
     MPG_OK, MPG_Cancel,
     NumGadgets_MPG};
 
-struct Gadget *MPG_List[NumGadgets_MPG];
+Object *MPG_List[NumGadgets_MPG];
 
 static char buf1[100],buf2[100],buf3[100],buf4[100],buf5[100],buf6[513];
 static char pubscreen[256];
 
 static struct DrawInfo *drinfo;
 static struct List tablist;
-static struct Gadget *pagelayout;
+static Object *pagelayout;
 static BOOL MainInterfaceRestart=FALSE;
 static ULONG LastPage=0;
 
@@ -111,9 +111,12 @@ int OpenPrefsWindow(void)
 ULONG HandleMainPrefsIDCMP(void)
 {
     ULONG result,done=FALSE;
-    UWORD code=NULL;
+    struct wmHandle wcode={0};
+    int16 code;
+    //while ((result=CA_HandleInput(MainPrefsWin_Object, &code))!=WMHI_LASTMSG) {
+    while ((result=IDoMethod(MainPrefsWin_Object, WM_HANDLEINPUT, &wcode))!=WMHI_LASTMSG) {
 
-    while ((result=CA_HandleInput(MainPrefsWin_Object, &code))!=WMHI_LASTMSG) {
+         code = result&WMHI_KEYMASK;
 	switch (result & WMHI_CLASSMASK) {
 	  case WMHI_CLOSEWINDOW:
 	    done=TRUE;
@@ -132,28 +135,28 @@ ULONG HandleMainPrefsIDCMP(void)
 		  GetAttrs(MPG_List[MPG_Tab], CLICKTAB_Current, &tabnum, TAG_DONE);
 		  GetAttrs(MPG_List[MPG_Page], PAGE_Current, &pagenum, TAG_DONE);
 		  if (tabnum!=pagenum) {
-		      SetGadgetAttrs(MPG_List[MPG_Page], MainPrefsWindow, NULL,
+		      SetGadgetAttrs((struct Gadget*)MPG_List[MPG_Page], MainPrefsWindow, NULL,
 				     PAGE_Current, tabnum, TAG_DONE);
-		      RethinkLayout(pagelayout, MainPrefsWindow, NULL, TRUE);
+		      RethinkLayout((struct Gadget*)pagelayout, MainPrefsWindow, NULL, TRUE);
 		  }
 		  break;
 	      }
 	      case MPG_FilelistFontB:
 		if (SelectFont(&listfont[0], &listsize)) {
 		    sprintf(listfontname, "%s/%d", listfont, listsize);
-		    SetGadgetAttrs(MPG_List[MPG_FilelistFont], MainPrefsWindow, NULL,
+		    SetGadgetAttrs((struct Gadget*)MPG_List[MPG_FilelistFont], MainPrefsWindow, NULL,
 				   GA_Text, listfontname,
 				   TAG_DONE);
-		    RefreshGList(MPG_List[MPG_FilelistFont], MainPrefsWindow, NULL,1);
+		    RefreshGList((struct Gadget*)MPG_List[MPG_FilelistFont], MainPrefsWindow, NULL,1);
 		}
 		break;
 	      case MPG_InterfaceFontB:
 		if (SelectFont(&intfont[0], &intsize)) {
 		    sprintf(intfontname, "%s/%d", intfont, intsize);
-		    SetGadgetAttrs(MPG_List[MPG_InterfaceFont], MainPrefsWindow, NULL,
+		    SetGadgetAttrs((struct Gadget*)MPG_List[MPG_InterfaceFont], MainPrefsWindow, NULL,
 				   GA_Text, intfontname,
 				   TAG_DONE);
-		    RefreshGList(MPG_List[MPG_InterfaceFont], MainPrefsWindow, NULL,1);
+		    RefreshGList((struct Gadget*)MPG_List[MPG_InterfaceFont], MainPrefsWindow, NULL,1);
 		}
 		break;
 	      case MPG_DefaultDLDirGad:
@@ -161,11 +164,11 @@ ULONG HandleMainPrefsIDCMP(void)
 		    char tbuf[255];
 
 		    if (DLPath(MainPrefsWin_Object,
-			       GetString(MPG_List[MPG_DefaultDLDir]), tbuf)) {
-			if (SetGadgetAttrs(MPG_List[MPG_DefaultDLDir],
+			       GetString(((struct Gadget*)MPG_List[MPG_DefaultDLDir])), tbuf)) {
+			if (SetGadgetAttrs((struct Gadget*)MPG_List[MPG_DefaultDLDir],
 					   MainPrefsWindow, NULL,
 					   STRINGA_TextVal, tbuf, TAG_END))
-			  RefreshGList(MPG_List[MPG_DefaultDLDir],
+			  RefreshGList((struct Gadget*)MPG_List[MPG_DefaultDLDir],
 				       MainPrefsWindow, NULL, 1);
 		    }
 		}
@@ -174,10 +177,10 @@ ULONG HandleMainPrefsIDCMP(void)
 		{
 		    ULONG attr;
 		    GetAttr(GA_Selected, MPG_List[MPG_DefaultScreen], &attr);
-		    SetGadgetAttrs(MPG_List[MPG_PublicScreen], MainPrefsWindow, NULL,
+		    SetGadgetAttrs((struct Gadget*)MPG_List[MPG_PublicScreen], MainPrefsWindow, NULL,
 				       GA_Disabled, attr?TRUE:FALSE,
 				       TAG_DONE);
-			RefreshGList(MPG_List[MPG_PublicScreen], MainPrefsWindow, NULL, 1);
+			RefreshGList((struct Gadget*)MPG_List[MPG_PublicScreen], MainPrefsWindow, NULL, 1);
 		}
 		break;
 	      case MPG_DefaultFonts:
@@ -187,10 +190,10 @@ ULONG HandleMainPrefsIDCMP(void)
 
 		    GetAttr(GA_Selected, MPG_List[MPG_DefaultFonts], &attr);
 		    for (i=MPG_InterfaceFont; i<MPG_InterfaceFont+4; i++) {
-			SetGadgetAttrs(MPG_List[i], MainPrefsWindow, NULL,
+			SetGadgetAttrs((struct Gadget*)MPG_List[i], MainPrefsWindow, NULL,
 				       GA_Disabled, attr?TRUE:FALSE,
 				       TAG_DONE);
-			RefreshGList(MPG_List[i], MainPrefsWindow, NULL, 1);
+			RefreshGList((struct Gadget*)MPG_List[i], MainPrefsWindow, NULL, 1);
 		    }
 		}
 		break;
@@ -606,7 +609,7 @@ struct Window *OpenMainPrefsWindow(void)
     if (!MainPrefsWin_Object)
       return NULL;
 
-    if (MainPrefsWindow=CA_OpenWindow(MainPrefsWin_Object)) {
+    if (MainPrefsWindow=(struct Window *)IDoMethod(MainPrefsWin_Object, WM_OPEN)){ //CA_OpenWindow(MainPrefsWin_Object)) {
 	return MainPrefsWindow;
     }
     DisposeObject(MainPrefsLayout);
@@ -847,14 +850,14 @@ static int SelectFont(char *FontName, UWORD *YSize)
 {
     struct FontRequester *FontRequester;
     static ULONG font_tags[]={
-	ASL_Window, NULL,
+	ASLFO_Window, 0UL,
 	ASLFO_PrivateIDCMP, TRUE,
 	ASLFO_SleepWindow, TRUE,
-	ASLFO_TitleText, NULL,
-	ASLFO_InitialLeftEdge, NULL,
-	ASLFO_InitialTopEdge, NULL,
-	ASLFO_InitialName, NULL,
-	ASLFO_InitialSize, NULL,
+	ASLFO_TitleText,  0UL,
+	ASLFO_InitialLeftEdge, 0UL,
+	ASLFO_InitialTopEdge, 0UL,
+	ASLFO_InitialName, 0UL,
+	ASLFO_InitialSize, 0UL,
 	TAG_END
       };
     int retval=0;
@@ -898,7 +901,7 @@ int BuildClicktabList(void)
 						  TAG_DONE))
 	  AddTail(&tablist, node);
 	else
-	  return NULL;
+	  return 0;
     }
     return 1;
 }

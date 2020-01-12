@@ -13,21 +13,7 @@
 #include <graphics/displayinfo.h>
 #include <graphics/gfxbase.h>
 #include <graphics/rpattr.h>
-#include <clib/macros.h>
-#include <clib/alib_protos.h>
-#include <clib/exec_protos.h>
-#include <clib/intuition_protos.h>
-#include <clib/gadtools_protos.h>
-#include <clib/graphics_protos.h>
-#include <clib/utility_protos.h>
-#include <clib/diskfont_protos.h>
 #include <string.h>
-#include <pragmas/exec_pragmas.h>
-#include <pragmas/intuition_pragmas.h>
-#include <pragmas/gadtools_pragmas.h>
-#include <pragmas/graphics_pragmas.h>
-#include <pragmas/utility_pragmas.h>
-#include <dos.h>
 #include <math.h>
 
 #include <proto/window.h>
@@ -51,13 +37,37 @@
 #include <proto/speedbar.h>
 #include <gadgets/speedbar.h>
 
+#include <proto/checkbox.h>
+#include <gadgets/checkbox.h>
+
+#include <proto/fuelgauge.h>
+#include <gadgets/fuelgauge.h>
+
+#include <proto/integer.h>
+#include <gadgets/integer.h>
+
+#include <proto/chooser.h>
+#include <gadgets/chooser.h>
+
+#include <proto/listbrowser.h>
+#include <gadgets/listbrowser.h>
+
 #include <proto/penmap.h>
 #include <images/penmap.h>
 
+#include <proto/bevel.h>
+#include <images/bevel.h>
+
+#include <proto/label.h>
+#include <images/label.h>
+
+#include <proto/requester.h>
+#include <classes/requester.h>
+
+#include <reaction/reaction_macros.h>
+
 #include <libraries/gadtools.h>
-#include <classact.h>
-#include <classact_author.h>
-#include <classact_lib_protos.h>
+
 
 #ifndef QUALIFIER_SHIFT
 #define RAWKEY_CURSORUP 76
@@ -70,10 +80,6 @@
 extern struct RastPort *NonPropRPort,*PropRPort;
 extern UWORD PropFHigh,MinHigh,MinWide,PropBLine;
 extern UWORD NonPropFHigh,NonPropBLine;
-
-extern struct GfxBase *GfxBase;
-extern struct Library *GadToolsBase;
-extern struct IntuitionBase *IntuitionBase;
 
 extern char *PropFontName,*NonPropFontName,*PubScreenName;
 extern int PropFontSize,NonPropFontSize;
@@ -102,7 +108,7 @@ extern struct Screen *Screen;
 extern struct DrawInfo *DrawInfo;
 
 extern Object *MainWin_Object;
-extern struct Gadget *MG_List[];
+extern Object *MG_List[];
 
 extern struct ColumnInfo columninfo[];
 
@@ -116,5 +122,7 @@ enum {
     MG_Page2, MG_SpeedBar,
     NumGadgets_main
   };
-
+void LBEditNode(Object *list, struct Window *window, struct Requester *r, struct Node *n, ULONG tag, ...);
+struct List *ChooserLabelsA(STRPTR *nameList);
+void FreeChooserLabels(struct List *list);
 /* EOF */

@@ -4,6 +4,7 @@
 
 #include "AmiFTP.h"
 
+
 STRPTR context[]=
 {
     "MAIN",
@@ -86,7 +87,7 @@ int SendAGMessage(LONG ContextNumber)
 	    if (!(ag.ag_AmigaGuide=OpenAmigaGuideAsync(&ag.ag_NAG,NULL)))
 	      return 0;
 	    else {
-		struct Msg *msg;
+		struct AmigaGuideMsg *msg;
 		AG_Signal=AmigaGuideSignal(ag.ag_AmigaGuide);
 		Wait(AG_Signal);
 		while (msg=GetAmigaGuideMsg(ag.ag_AmigaGuide))

@@ -28,7 +28,7 @@ void CloseLogWindow()
 {
     if (LogWindow) {
 	Close(LogWindow);
-	LogWindow=NULL;
+	LogWindow=0;
     }
 }
 
@@ -219,7 +219,7 @@ void FixSiteList(void)
     struct Node *lbn;
     struct SiteNode *parent,*sn;
 
-    lbn=FirstNode(&SiteList);
+    lbn=GetHead(&SiteList);
     while (lbn) {
 	GetListBrowserNodeAttrs(lbn, LBNA_UserData, &parent, TAG_DONE);
 	if (parent->sn_MenuType==SLN_PARENT) {
@@ -228,7 +228,7 @@ void FixSiteList(void)
 		GetListBrowserNodeAttrs(lbn, LBNA_UserData, &sn, TAG_DONE);
 		while (sn->sn_MenuType==SLN_CHILD) {
 		    SetListBrowserNodeAttrs(lbn,
-					    LBNA_Flags,parent->sn_ShowChildren?NULL:LBFLG_HIDDEN,
+					    LBNA_Flags,parent->sn_ShowChildren?0:LBFLG_HIDDEN,
 					    TAG_DONE);
 		    if (lbn=GetSucc(lbn)) {
 			GetListBrowserNodeAttrs(lbn, LBNA_UserData, &sn, TAG_DONE);
@@ -246,15 +246,15 @@ int DLPath(Object *winobject, char *initialpath, char *newpath)
     struct FileRequester *DirRequester;
     struct Window *window;
     static ULONG dlpath_tags[]={
-	ASL_Window, NULL,
+	ASLFR_Window, 0UL,
 	ASLFR_PrivateIDCMP, TRUE,
 	ASLFR_SleepWindow, TRUE,
-	ASLFR_InitialDrawer, NULL,
+	ASLFR_InitialDrawer, 0UL,
 	ASLFR_DrawersOnly, TRUE,
 	ASLFR_RejectIcons, TRUE,
-	ASLFR_TitleText, NULL,
-	ASLFR_InitialLeftEdge, NULL,
-	ASLFR_InitialTopEdge, NULL,
+	ASLFR_TitleText, 0UL,
+	ASLFR_InitialLeftEdge, 0UL,
+	ASLFR_InitialTopEdge, 0UL,
 	TAG_END
       };
     int ret=0;
@@ -275,7 +275,7 @@ int DLPath(Object *winobject, char *initialpath, char *newpath)
 
     if (AslRequest(DirRequester, (struct TagItem *)dlpath_tags)) {
 	ret=1;
-	strcpy(newpath, DirRequester->rf_Dir);
+	strcpy(newpath, DirRequester->fr_Drawer);
     }
     FreeAslRequest(DirRequester);
 

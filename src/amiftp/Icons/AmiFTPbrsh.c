@@ -1,6 +1,6 @@
 /* Iff2Src conversion: dh1:Tcp/amiftp/icons/AmiFTP.brsh */
 
-__chip UWORD picdata[170] =
+UWORD picdata[170] =
 	{
 	/* Plane 0 */
 		0x0000,0x0000,0x0000,0x0000,0x0000,
@@ -52,7 +52,7 @@ struct Image im =
 		0,0,
 		71,17,
 		2,
-		&picdata[0],
+		picdata,
 		0xff,0x0,
 		NULL
 	};

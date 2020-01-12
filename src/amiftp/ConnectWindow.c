@@ -16,7 +16,7 @@ enum {
     CG_Host=0, CG_Status, CG_Abort,
     NumGadgets_CG};
 
-struct Gadget *CG_List[NumGadgets_CG];
+Object *CG_List[NumGadgets_CG];
 
 int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 {
@@ -33,14 +33,14 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 
     LockWindow(MainWin_Object);
     if (ConnectWindow) {
-	if (SetGadgetAttrs(CG_List[CG_Status], ConnectWindow, NULL,
+	if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
 			   GA_Text,GetAmiFTPString(CW_Connecting),
 			   TAG_END))
-	  RefreshGList(CG_List[CG_Status],ConnectWindow,NULL,1);
-	if (SetGadgetAttrs(CG_List[CG_Host],ConnectWindow, NULL,
+	  RefreshGList((struct Gadget*)CG_List[CG_Status],ConnectWindow,NULL,1);
+	if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Host],ConnectWindow, NULL,
 			   GA_Text,sn->sn_Node.ln_Name?sn->sn_Node.ln_Name:sn->sn_SiteAddress,
 			   TAG_END))
-	  RefreshGList(CG_List[CG_Host],ConnectWindow,NULL,1);
+	  RefreshGList((struct Gadget*)CG_List[CG_Host],ConnectWindow,NULL,1);
     }
 
     if ((result=doconnect(sn))==CONN_OK) {
@@ -57,10 +57,10 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 	InitCache();
 	if (!noscan) {
 	    if (ConnectWindow) 
-	      if (SetGadgetAttrs(CG_List[CG_Status], ConnectWindow, NULL,
+	      if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
 				 GA_Text, GetAmiFTPString(CW_ReadingDir),
 				 TAG_END))
-		RefreshGList(CG_List[CG_Status], ConnectWindow, NULL, 1);
+		RefreshGList((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL, 1);
 	    if (head=sn->sn_ADT?ReadRecentList():read_remote_dir()) {
 		if (MainWindow)
 		  SetGadgetAttrs(MG_List[MG_ListView], MainWindow, NULL,
@@ -114,19 +114,19 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 	if (timedout)
 	  text=GetAmiFTPString(Str_ConnectionTimedOut);
 	if (text && ConnectWindow)
-	  if (SetGadgetAttrs(CG_List[CG_Status], ConnectWindow, NULL,
+	  if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
 			     GA_Text, text,
 			     TAG_DONE))
-	    RefreshGList(CG_List[CG_Status], ConnectWindow, NULL, 1);
+	    RefreshGList((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL, 1);
 	retcode=CONN_ERROR;
     }
     else retcode=CONN_OK;
 
     if (ConnectWindow) {
-	if  (SetGadgetAttrs(CG_List[CG_Abort], ConnectWindow, NULL,
+	if  (SetGadgetAttrs((struct Gadget*)CG_List[CG_Abort], ConnectWindow, NULL,
 			    GA_Disabled, TRUE,
 			    TAG_DONE))
-	  RefreshGList(CG_List[CG_Abort], ConnectWindow, NULL, 1);
+	  RefreshGList((struct Gadget*)CG_List[CG_Abort], ConnectWindow, NULL, 1);
 	done=Continue?FALSE:TRUE;
 	GetAttr(WINDOW_SigMask, ConnectWin_Object, &signal);
 	GetAttr(WINDOW_SigMask, MainWin_Object, &mainwinsignal);
@@ -179,9 +179,9 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 ULONG HandleConnectIDCMP()
 {
     ULONG result,done=FALSE;
-    UWORD code=NULL;
+    struct wmHandle code={0};
 
-    while ((result=CA_HandleInput(ConnectWin_Object, &code))!=WMHI_LASTMSG) {
+    while ((result=IDoMethod(ConnectWin_Object, WM_HANDLEINPUT, &code))!=WMHI_LASTMSG) {
 	switch (result & WMHI_CLASSMASK) {
 	  case WMHI_CLOSEWINDOW:
 	    done=TRUE;
@@ -190,7 +190,7 @@ ULONG HandleConnectIDCMP()
 	    done=TRUE;
 	    break;
 	  case WMHI_RAWKEY:
-	    if (code==95)
+	    if ((result & WMHI_KEYMASK)==95)
 	      SendAGMessage(AG_CONNECTWIN);
 	    break;
 	}
@@ -267,7 +267,8 @@ struct Window *OpenConnectWindow()
     if (!ConnectWin_Object)
       return NULL;
 
-    if (ConnectWindow=CA_OpenWindow(ConnectWin_Object)) {
+
+    if (ConnectWindow=(struct Window *)IDoMethod(ConnectWin_Object, WM_OPEN)) {
 	return ConnectWindow;
     }
     DisposeObject(ConnectLayout);
@@ -297,10 +298,10 @@ void PrintConnectStatus(char *text)
 	*s=' ';
     
     if (ConnectWindow) {
-	if (SetGadgetAttrs(CG_List[CG_Status], ConnectWindow, NULL,
+	if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
 			   GA_Text, text,
 			   TAG_END))
-	  RefreshGList(CG_List[CG_Status], ConnectWindow, NULL, 1);
+	  RefreshGList((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL, 1);
     }
     else if (!SilentMode)
       ShowErrorReq(text);

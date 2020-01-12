@@ -20,7 +20,8 @@ struct dirlist {
     int          readmelength;
     int          readmelen;
     ULONG        adtdate;
-    size_t	 size;
+    int64   size;
+    STRPTR	 stringSize;
 };
 
 #define	SORTBYNAME	0

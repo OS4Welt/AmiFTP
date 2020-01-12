@@ -6,6 +6,8 @@
 #include "gui.h"
 
 BOOL AskGetDir(void);
+
+
 int GetDir(char *remote_parent, char *local_parent, char *name, char *localname);
 void UpdateTransTitle(struct Node *node);
 
@@ -21,7 +23,7 @@ enum {
     TG_Gauge, TG_Abort,
     NumGadgets_TG};
 
-struct Gadget *TG_List[NumGadgets_TG];
+Object *TG_List[NumGadgets_TG];
 ULONG fuelargs[]={0,0};
 static int OverwriteAll=0;
 
@@ -43,7 +45,7 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
       if (!OpenTransferWindow())
 	return TRANS_GUI;
 
-    for (node=ListHead(flist);ListEnd(node);node=ListNext(node)) {
+    for (node=GetHead(flist);node != NULL; node=GetSucc(node)) {
 	ULONG sel=0;
 	GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
 	if (sel) {
@@ -73,25 +75,25 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 	      case S_IFREG:
 		memset(localfile,0,sizeof(localfile));
 		if (!localname) {
-		    stcgfn(tmp,curr->name);
-		    strmfp(localfile,CurrentState.CurrentDLDir,tmp);
+		    stcgfn(tmp,curr->name, 1024);
+		    strmfp(localfile,CurrentState.CurrentDLDir,tmp, MAXPATHLEN);
 		}
 		else {
 		    if (localname[strlen(localname)-1]=='/'||localname[strlen(localname)-1]==':') {
 			strcpy(localfile,localname);
-			stcgfn(localfile+strlen(localfile),curr->name);
+			stcgfn(localfile+strlen(localfile),curr->name, MAXPATHLEN-strlen(localfile));
 		    }
 		    else {
 			if (getfa(localname)==1) {
 			    strcpy(localfile,localname);
 			    strcat(localfile,"/");
-			    stcgfn(localfile+strlen(localfile),curr->name);
+			    stcgfn(localfile+strlen(localfile),curr->name, MAXPATHLEN-strlen(localfile));
 			}
 			else {
 			    if (index(localname,'/')||index(localname,':'))
 			      strcpy(localfile,localname);
 			    else
-			      strmfp(localfile,CurrentState.CurrentDLDir,localname);
+			      strmfp(localfile,CurrentState.CurrentDLDir,(char*)localname, MAXPATHLEN);
 			}
 		    }
 		}
@@ -103,7 +105,7 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 			char *readme=NameToReadme(curr->name, curr->readmelength);
 			char lname[64];
 			sprintf(aname, "%s/%s", curr->owner, readme);
-			strmfp(lname, CurrentState.CurrentDLDir, readme);
+			strmfp(lname, CurrentState.CurrentDLDir, readme, 64);
 			result=get_file(aname, lname, curr->readmelen);
 		    }
 		}
@@ -127,20 +129,20 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 		    if (name) {
 			memset(localfile,0,sizeof(localfile));
 			if (!localname) {
-			    stcgfn(tmp,name);
-			    strmfp(localfile, CurrentState.CurrentDLDir, tmp);
+			    stcgfn(tmp,name, 1024);
+			    strmfp(localfile, CurrentState.CurrentDLDir, tmp, MAXPATHLEN);
 			}
 			else {
 			    if (localname[strlen(localname)-1]=='/'||
 				localname[strlen(localname)-1]==':') {
 				strcpy(localfile, localname);
-				stcgfn(localfile+strlen(localfile), name);
+				stcgfn(localfile+strlen(localfile), name, MAXPATHLEN-strlen(localfile));
 			    }
 			    else {
 				if (getfa(localname)==1) {
 				    strcpy(localfile, localname);
 				    strcat(localfile,"/");
-				    stcgfn(localfile+strlen(localfile), name);
+				    stcgfn(localfile+strlen(localfile), name, MAXPATHLEN-strlen(localfile));
 				}
 				else {
 				    if (index(localname, '/') ||
@@ -148,7 +150,7 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 				      strcpy(localfile, localname);
 				    else
 				      strmfp(localfile, CurrentState.CurrentDLDir,
-					     localname);
+					     (char*)localname, MAXPATHLEN);
 				}
 			    }
 			}
@@ -185,7 +187,7 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 	}
     }
     UpdateTransTitle(0);
-    for (node=ListHead(flist);ListEnd(node);node=ListNext(node)) {
+    for (node=GetHead(flist);node!=NULL;node=GetSucc(node)) {
 	ULONG t=0;
 	GetListBrowserNodeAttrs(node, LBNA_Selected, &t, TAG_DONE);
 	if (t) {
@@ -209,10 +211,10 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
     if (TransferWin_Object) {
 	GetAttr(WINDOW_SigMask, TransferWin_Object, &signal);
 
-	SetGadgetAttrs(TG_List[TG_Abort], TransferWindow,NULL,
+	SetGadgetAttrs((struct Gadget*)TG_List[TG_Abort], TransferWindow,NULL,
 		       GA_Disabled, TRUE,
 		       TAG_DONE);
-	RefreshGList(TG_List[TG_Abort], TransferWindow, NULL,1);
+	RefreshGList((struct Gadget*)TG_List[TG_Abort], TransferWindow, NULL,1);
 
 	if (!SilentMode) {
 	    while (!done) {
@@ -236,10 +238,13 @@ ULONG HandleTransferIDCMP(void)
 {
     ULONG done=FALSE;
     ULONG result;
-    UWORD code=NULL;
+    struct wmHandle wcode={0};
+    int16 code;
+    //while((result=CA_HandleInput(TransferWin_Object,&code))!=WMHI_LASTMSG) {
+    while((result=IDoMethod(TransferWin_Object, WM_HANDLEINPUT, &wcode))!=WMHI_LASTMSG){
 
-    while((result=CA_HandleInput(TransferWin_Object,&code))!=WMHI_LASTMSG) {
-	switch (result & WMHI_CLASSMASK) {
+        code = result&WMHI_KEYMASK;
+    switch (result & WMHI_CLASSMASK) {
 	  case WMHI_CLOSEWINDOW:
 	    done=TRUE;
 	    break;
@@ -248,11 +253,12 @@ ULONG HandleTransferIDCMP(void)
 	    break;
 	  case WMHI_ICONIFY:
 	    if (MainWindow) {
-		if (CA_Iconify(MainWin_Object))
+		//if (CA_Iconify(MainWin_Object))
+        if (IDoMethod(MainWin_Object, WM_ICONIFY))
 		  MainWindow=NULL;
 	    }
 	    else {
-		MainWindow=CA_OpenWindow(MainWin_Object);
+		MainWindow=(struct Window *)IDoMethod(MainWin_Object, WM_OPEN);//CA_OpenWindow(MainWin_Object);
 		MoveWindowInFrontOf(TransferWindow, MainWindow);
 	    }
 	    break;
@@ -265,10 +271,9 @@ ULONG HandleTransferIDCMP(void)
     return done;
 }
 
-#include "trans.gui"
 struct Window *OpenTransferWindow(void)
 {
-    struct Gadget *g1, *g2;
+    Object *g1, *g2;
     struct LayoutLimits limits;
     extern struct RastPort *ARPort;
     LONG len=TextLength(ARPort,"0",1);
@@ -277,7 +282,100 @@ struct Window *OpenTransferWindow(void)
     if (TransferWindow)
       return TransferWindow;
 
-    TransferLayout=TRANSFERGUI; // Line 256
+    TransferLayout=LayoutObject,
+		GA_DrawInfo, DrawInfo,
+		GA_TextAttr, AmiFTPAttrF,
+		LAYOUT_DeferLayout, TRUE,
+		LAYOUT_SpaceOuter, TRUE,
+		LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+		LAYOUT_HorizAlignment, LALIGN_CENTRE,
+
+		StartHGroup,
+			StartVGroup,
+				StartVGroup,
+					LAYOUT_BevelStyle, BVS_GROUP,
+					LAYOUT_SpaceOuter, TRUE,
+					LOffset(2), ROffset(2), TOffset(1), BOffset(1),
+
+					StartMember, TG_List[TG_RemoteFile]=ButtonObject,
+						GA_ID, TG_RemoteFile,
+						GA_RelVerify, TRUE,
+						GA_ReadOnly, TRUE,
+						GA_Underscore, 0,
+						GA_Text, " ",
+						BUTTON_Justification, BCJ_LEFT,
+					ButtonEnd,
+					CHILD_MinWidth, PropFont->tf_XSize*35,
+					Label(GetAmiFTPString(TW_RemoteFile)),
+
+					StartMember, TG_List[TG_LocalFile]=ButtonObject,
+						GA_ID, TG_LocalFile,
+						GA_RelVerify, TRUE,
+						GA_ReadOnly, TRUE,
+						GA_Underscore, 0,
+						GA_Text, " ",
+						BUTTON_Justification, BCJ_LEFT,
+					ButtonEnd,
+					CHILD_MinWidth, PropFont->tf_XSize*35,
+					Label(GetAmiFTPString(TW_LocalFile)),
+				EndGroup,
+
+				StartVGroup, EvenSized,
+					LAYOUT_BevelStyle, BVS_GROUP,
+					LAYOUT_SpaceOuter, TRUE,
+
+					StartMember, g1=LayoutObject, LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ, EvenSized,
+
+					StartMember, TG_List[TG_ETA]=ButtonObject,
+						GA_ID, TG_ETA,
+						GA_RelVerify, TRUE,
+						GA_ReadOnly, TRUE,
+						GA_Text, "00:00:00",
+						BUTTON_Justification, BCJ_RIGHT,
+					ButtonEnd,
+					CHILD_MinWidth, len*9,
+					Label(GetAmiFTPString(TW_TimeLeft)),
+
+					StartMember, TG_List[TG_CPS]=ButtonObject,
+						GA_ID, TG_CPS,
+						GA_RelVerify, TRUE,
+						GA_ReadOnly, TRUE,
+						GA_Text, " ",
+						BUTTON_Justification, BCJ_RIGHT,
+					ButtonEnd,
+					CHILD_MinWidth, len*10,
+					Label(GetAmiFTPString(TW_Cps)),
+				EndGroup,
+
+				StartMember, g2=LayoutObject, LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+				StartMember, TG_List[TG_Gauge]=FuelGaugeObject,
+					FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL,
+					FUELGAUGE_Justification, FGJ_CENTER,
+					FUELGAUGE_Percent, FALSE,
+					FUELGAUGE_Min, 0,
+					FUELGAUGE_Max, 100,
+					FUELGAUGE_Level, 0,
+	           		FUELGAUGE_Ticks, 0,
+					GA_Text, "%ld/%ld",
+					FUELGAUGE_VarArgs, &fuelargs,
+				FuelGaugeEnd,
+                		 CHILD_MinHeight, len*3,
+	            CHILD_MinWidth, len*18,
+				CHILD_WeightedHeight, 0,
+				Label(GetAmiFTPString(TW_DataTransferred)),
+	            EndGroup,
+			EndGroup,
+			EndGroup,
+		EndGroup,
+
+		StartMember, TG_List[TG_Abort]=ButtonObject,
+			GA_ID, TG_Abort,
+			GA_RelVerify, TRUE,
+			GA_Text, GetAmiFTPString(TW_Abort),
+		ButtonEnd,
+		CHILD_WeightedWidth, 0,
+		CHILD_NominalSize, TRUE,
+	LayoutEnd;
 
     if (!TransferLayout)
       return NULL;
@@ -307,7 +405,7 @@ struct Window *OpenTransferWindow(void)
     if (!TransferWin_Object)
       return NULL;
 
-    if (TransferWindow=CA_OpenWindow(TransferWin_Object)) {
+    if (TransferWindow=(struct Window *)IDoMethod(TransferWin_Object, WM_OPEN)){//CA_OpenWindow(TransferWin_Object)) {
 	return TransferWindow;
     }
     DisposeObject(TransferLayout);
@@ -326,7 +424,7 @@ void CloseTransferWindow(void)
     }
 }
 
-static long FileSize=NULL,last=0;
+static long FileSize=0,last=0;
 
 int UploadFile(struct List *transferlist, const char *remote, const int binary)
 {
@@ -341,11 +439,11 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
       if (!OpenTransferWindow())
 	return TRANS_GUI;
 
-    for (node=ListHead(transferlist);ListEnd(node);node=ListNext(node)) {
+    for (node=GetHead(transferlist);node!=NULL;node=GetSucc(node)) {
 	int size=0;
 	char *rem=0;
-	BPTR lock;
-	struct FileInfoBlock __aligned fib;
+	//BPTR lock;
+	//struct FileInfoBlock __aligned fib;
 	struct dirlist *entry=(void *)node->ln_Name;
 	
 	UpdateTransTitle(node);
@@ -359,32 +457,41 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
 	if (entry->size)
 	  size=entry->size;
 	else {
+        /*
 	    lock=Lock(entry->name,SHARED_LOCK);
 
 	    if (lock) {
 		Examine(lock,&fib);
 		size=fib.fib_Size;
 		UnLock(lock);
-	    }
+        }
+        */
+
+        struct ExamineData *dat = ExamineObjectTags(EX_StringNameInput,entry->name,TAG_END);
+    	if (dat)
+    	{
+            size = dat->FileSize;
+            FreeDosObject(DOS_EXAMINEDATA,dat);
+        }
 	}
 
 	if (TransferWindow) {
 	    sprintf(buf,"%ld",size);
-	    SetGadgetAttrs(TG_List[TG_LocalFile], TransferWindow, NULL,
+	    SetGadgetAttrs((struct Gadget*)TG_List[TG_LocalFile], TransferWindow, NULL,
 			   GA_Text, entry->name,
 			   TAG_DONE);
-	    RefreshGList(TG_List[TG_LocalFile],TransferWindow,NULL,1);
-	    SetGadgetAttrs(TG_List[TG_RemoteFile], TransferWindow, NULL,
+	    RefreshGList((struct Gadget*)TG_List[TG_LocalFile],TransferWindow,NULL,1);
+	    SetGadgetAttrs((struct Gadget*)TG_List[TG_RemoteFile], TransferWindow, NULL,
 			   GA_Text,remote?(char *)remote:(char *)FilePart(entry->name),
 			   TAG_DONE);
-	    RefreshGList(TG_List[TG_RemoteFile],TransferWindow,NULL,1);
-	    SetGadgetAttrs(TG_List[TG_CPS], TransferWindow, NULL,
+	    RefreshGList((struct Gadget*)TG_List[TG_RemoteFile],TransferWindow,NULL,1);
+	    SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
 			   GA_Text,"0",
 			   TAG_DONE);
-	    RefreshGList(TG_List[TG_CPS],TransferWindow,NULL,1);
-	    RefreshGList(TG_List[TG_CPS],TransferWindow,NULL,1);
+	    RefreshGList((struct Gadget*)TG_List[TG_CPS],TransferWindow,NULL,1);
+	    RefreshGList((struct Gadget*)TG_List[TG_CPS],TransferWindow,NULL,1);
 	    fuelargs[0]=fuelargs[1]=0;
-	    SetGadgetAttrs(TG_List[TG_Gauge],TransferWindow,NULL,
+	    SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge],TransferWindow,NULL,
 			       FUELGAUGE_Level,0,
 			       FUELGAUGE_VarArgs,&fuelargs,
 			       TAG_DONE);
@@ -416,10 +523,10 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
     GetAttr(WINDOW_SigMask, TransferWin_Object, &signal);
     GetAttr(WINDOW_SigMask, MainWin_Object, &mainsignal);
 
-    SetGadgetAttrs(TG_List[TG_Abort], TransferWindow,NULL,
+    SetGadgetAttrs((struct Gadget*)TG_List[TG_Abort], TransferWindow,NULL,
 		   GA_Disabled,TRUE,
 		   TAG_DONE);
-    RefreshGList(TG_List[TG_Abort],TransferWindow,NULL,1);
+    RefreshGList((struct Gadget*)TG_List[TG_Abort],TransferWindow,NULL,1);
 
     if (!SilentMode) {
 	while (!done) {
@@ -458,17 +565,17 @@ void UpdateDLGads(const long bytes, const long restart_point, const time_t timee
 	sprintf(buf1, "%ld", bytes);
 	sprintf(buf2, "%ld", cps);
 	sprintf(buf3, "%0.2d:%0.2d:%0.2d", hours, mins, secs);
-	if (SetGadgetAttrs(TG_List[TG_CPS], TransferWindow, NULL,
+	if (SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
 			   GA_Text, buf2, TAG_DONE)){ 
-	    RefreshGList(TG_List[TG_CPS], TransferWindow, NULL, 1);
+	    RefreshGList((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL, 1);
 	}
-	if (SetGadgetAttrs(TG_List[TG_ETA], TransferWindow, NULL,
+	if (SetGadgetAttrs((struct Gadget*)TG_List[TG_ETA], TransferWindow, NULL,
 			   GA_Text, buf3, TAG_DONE)) {
-	    RefreshGList(TG_List[TG_ETA], TransferWindow, NULL, 1);
+	    RefreshGList((struct Gadget*)TG_List[TG_ETA], TransferWindow, NULL, 1);
 	}
 	fuelargs[0]=bytes;//FileSize?(bytes*100)/FileSize:0;
 	fuelargs[1]=FileSize;
-	SetGadgetAttrs(TG_List[TG_Gauge], TransferWindow, NULL,
+	SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
 		       FUELGAUGE_Level, FileSize?(FileSize>10240?bytes/(FileSize/100):(bytes*100)/FileSize):0,
 		       FUELGAUGE_VarArgs, &fuelargs[0],
 		       TAG_DONE);
@@ -478,6 +585,7 @@ void UpdateDLGads(const long bytes, const long restart_point, const time_t timee
 
 BOOL CheckExists(char *lfile,int size, ULONG *restartpoint)
 {
+    /*
     static ULONG tags[]={
 	RTEZ_ReqTitle, NULL,
 	RT_Window, NULL,
@@ -485,43 +593,75 @@ BOOL CheckExists(char *lfile,int size, ULONG *restartpoint)
 	RT_ReqPos, REQPOS_CENTERWIN,
 	TAG_END
       };
+      */
+   
+
+    
+
+    
+
+	/*
     BPTR lock;
     struct FileInfoBlock fib;
-    BOOL ret;
+    */
+    int ret = 0;
     char *Gadgetstring;
 
+    /*
     lock=Lock(lfile,ACCESS_READ);
     if (!lock)
       return FALSE;
     Examine(lock,&fib);
     UnLock(lock);
-
+    */
+    int64 fileSize = 0;
+    struct ExamineData *data = ExamineObjectTags(EX_StringNameInput, lfile, TAG_END);
+    if (data)
+    {
+        fileSize = data->FileSize;
+        FreeDosObject(DOS_EXAMINEDATA, data);
+    }
     if (SilentMode || OverwriteAll) {
 	*restartpoint=0;
 	return FALSE;
     }
 
+    
+    
+
+    /*
     tags[1]=(ULONG)GetAmiFTPString(Str_AmiFTPRequest);
     tags[3]=(ULONG)MainWindow;
+    */
 
     Gadgetstring=malloc(strlen(GetAmiFTPString(TW_OverwriteAll))+
 			strlen(GetAmiFTPString(TW_Overwrite))+
 			strlen(GetAmiFTPString(TW_Resume))+
 			strlen(GetAmiFTPString(TW_CancelTransfer))+6);
     if (!Gadgetstring)
+    {
       return FALSE;
-    if (fib.fib_Size>=size) {
+    }
+    if (fileSize>=size) {
 	sprintf(Gadgetstring,"%s|%s|%s", 
 		GetAmiFTPString(TW_Overwrite),
 		GetAmiFTPString(TW_OverwriteAll),
 		GetAmiFTPString(TW_CancelTransfer));
+
+
+
+        /*
 	ret=(BOOL)rtEZRequest(GetAmiFTPString(TW_FileExists), Gadgetstring, NULL,
 			      (struct TagItem *)tags, lfile, fib.fib_Size, size);
+                  */
+    ret = showRequester(MainWindow, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), fileSize, size);
 	free(Gadgetstring);
 	*restartpoint=0;
 	if (ret==1)
+    {
 	  return FALSE;
-	if (ret==2) {
+	}
+    if (ret==2) {
 	    OverwriteAll = 1;
 	    return FALSE;
 	}
@@ -532,17 +672,22 @@ BOOL CheckExists(char *lfile,int size, ULONG *restartpoint)
 		GetAmiFTPString(TW_OverwriteAll),
 		GetAmiFTPString(TW_Resume),
 		GetAmiFTPString(TW_CancelTransfer));
+        /*
 	ret=(BOOL)rtEZRequest(GetAmiFTPString(TW_FileExists), Gadgetstring, NULL,
 			      (struct TagItem *)tags, lfile, fib.fib_Size, size);
+                  */
+    ret = showRequester(MainWindow, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), fileSize, size);
 	free(Gadgetstring);
 	if (ret==1)
+    {
 	  return FALSE;
+    }
 	if (ret==2) {
 	    OverwriteAll = 1;
 	    return FALSE;
 	}
 	if (ret==3) {
-	    *restartpoint=fib.fib_Size;
+	    *restartpoint=fileSize;
 	    return FALSE;
 	}
     }
@@ -558,10 +703,10 @@ void SetTransferSize(const long size)
     fuelargs[1]=FileSize;
     
     if (TransferWindow) {
-	SetGadgetAttrs(TG_List[TG_Gauge], TransferWindow, NULL,
+	SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
 		       FUELGAUGE_VarArgs, &fuelargs,
 		       TAG_DONE);
-	RefreshGList(TG_List[TG_Gauge], TransferWindow, NULL, 1);
+	RefreshGList((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL, 1);
     }
 }
 
@@ -575,22 +720,22 @@ int get_file(char *name, char *localname, int size)
 	sprintf(buf,"%ld",size);
 	FileSize=size;
 	last=0;
-	if (SetGadgetAttrs(TG_List[TG_LocalFile], TransferWindow, NULL,
-			   CLASSACT_Underscore, '\n',
+	if (SetGadgetAttrs((struct Gadget*)TG_List[TG_LocalFile], TransferWindow, NULL,
+			   GA_Underscore, '\n',
 			   GA_Text, localname,
 			   TAG_DONE))
-	  RefreshGList(TG_List[TG_LocalFile], TransferWindow, NULL, 1);
-	if (SetGadgetAttrs(TG_List[TG_RemoteFile], TransferWindow, NULL,
+	  RefreshGList((struct Gadget*)TG_List[TG_LocalFile], TransferWindow, NULL, 1);
+	if (SetGadgetAttrs((struct Gadget*)TG_List[TG_RemoteFile], TransferWindow, NULL,
 			   GA_Text, name,
 			   TAG_DONE))
-	  RefreshGList(TG_List[TG_RemoteFile], TransferWindow, NULL, 1);
-	if (SetGadgetAttrs(TG_List[TG_CPS], TransferWindow, NULL,
+	  RefreshGList((struct Gadget*)TG_List[TG_RemoteFile], TransferWindow, NULL, 1);
+	if (SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
 			   GA_Text,"0",
 			   TAG_DONE))
-	  RefreshGList(TG_List[TG_CPS], TransferWindow, NULL, 1);
+	  RefreshGList((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL, 1);
 	fuelargs[0]=0;
 	fuelargs[1]=size;
-	SetGadgetAttrs(TG_List[TG_Gauge], TransferWindow, NULL,
+	SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
 		       FUELGAUGE_Level, 0,
 		       FUELGAUGE_VarArgs, &fuelargs,
 		       TAG_DONE);
@@ -622,6 +767,7 @@ char *make_path(char *parent, char *curdir)
 
 BOOL AskGetDir(void)
 {
+    /*
     static ULONG tags[]={
 	RTEZ_ReqTitle, NULL,
 	RT_Window, NULL,
@@ -629,23 +775,22 @@ BOOL AskGetDir(void)
 	RT_ReqPos, REQPOS_CENTERWIN,
 	TAG_END
       };
-    BOOL ret;
+      */
 
     if (!MainWindow)
       return FALSE;
 
+    BOOL ret = showRequester(MainWindow, GetAmiFTPString(Str_AmiFTPRequest), GetAmiFTPString(TW_GetDir), GetAmiFTPString(TW_DownloadDir))==1;
+    /*
     tags[1]=(ULONG)GetAmiFTPString(Str_AmiFTPRequest);
     tags[3]=(ULONG)MainWindow;
     ret=(BOOL)rtEZRequest(GetAmiFTPString(TW_DownloadDir),
 			  GetAmiFTPString(TW_GetDir), NULL, (struct TagItem *)tags);
-    if (ret)
-      return TRUE;
-    return FALSE;
+    */
+    return ret;
 }
 
-void PrintQueue(struct List *queue)
-{
-    struct QueueEntry {
+struct QueueEntry {
 	struct Node qe_Node;
 	struct List *filelist;
 	char *dirname;
@@ -653,10 +798,14 @@ void PrintQueue(struct List *queue)
 	char *remote_parent;
 	char *local_parent;
     };
+
+void PrintQueue(struct List *queue)
+{
+    
     struct QueueEntry *qe;
-    for (qe=(struct QueueEntry *)ListHead(queue);
-	 ListEnd((struct Node *)qe);
-	 qe=(struct QueueEntry *)ListNext((struct Node *)qe)) {
+    for (qe=(struct QueueEntry *)GetHead(queue);
+	 qe != NULL;
+	 qe=(struct QueueEntry *)GetSucc((struct Node *)qe)) {
 	Printf("remote_parent '%s' dirname '%s'\nlocal_parent '%s' localname '%s'\n",
 	       qe->remote_parent,qe->dirname,qe->local_parent,qe->localname);
 	Printf("----------------------------------------------------\n");
@@ -665,14 +814,7 @@ void PrintQueue(struct List *queue)
 
 int GetDir(char *remote_parent, char *local_parent, char *name, char *localname)
 {
-    struct QueueEntry {
-	struct Node qe_Node;
-	struct List *filelist;
-	char *dirname;
-	char *localname;
-	char *remote_parent;
-	char *local_parent;
-    };
+   
     struct List Queue;
     struct QueueEntry *first,*entry;
     struct Node *node;
@@ -711,7 +853,7 @@ int GetDir(char *remote_parent, char *local_parent, char *name, char *localname)
 	return TRSF_FAILED;
     }
 
-    AddHead(&Queue,first);
+    AddHead(&Queue,(struct Node*)first);
     while (entry=(struct QueueEntry *)RemTail(&Queue)) {
 	char *ldir,*rdir;
 	struct dirlist *tmp;
@@ -753,15 +895,16 @@ int GetDir(char *remote_parent, char *local_parent, char *name, char *localname)
 	    goto out;
 	}
 
-	for (node=ListHead(entry->filelist);ListEnd(node);node=ListNext(node)) {
+	for (node=GetHead(entry->filelist); node != NULL;node=GetSucc(node)) {
 	    tmp=(void *)node->ln_Name;
 	    if (S_ISREG(tmp->mode)) {
-		char *tmpname=malloc(strlen(ldir)+strlen(tmp->name)+4);
+        int tmpsize = strlen(ldir)+strlen(tmp->name)+4;
+		char *tmpname=malloc(tmpsize);
 		if (!tmpname) {
 		    rval=TRSF_FAILED;
 		    goto out;
 		}
-		strmfp(tmpname,ldir,tmp->name);
+		strmfp(tmpname,ldir,tmp->name, tmpsize);
 
 		if (get_file(tmp->name,tmpname,tmp->size)!=TRSF_OK) {
 		    free(tmpname);
@@ -772,7 +915,7 @@ int GetDir(char *remote_parent, char *local_parent, char *name, char *localname)
 		}
 	    }
 	}
-	for (node=ListHead(entry->filelist);ListEnd(node);node=ListNext(node)) {
+	for (node=GetHead(entry->filelist); node != NULL;node=GetSucc(node)) {
 	    tmp=(void *)node->ln_Name;
 	    if (S_ISDIR(tmp->mode)) {
 		struct QueueEntry *qentry;
@@ -804,11 +947,11 @@ int GetDir(char *remote_parent, char *local_parent, char *name, char *localname)
 			free(qentry);
 			goto out;
 		    }
-		    AddHead(&Queue,qentry);
+		    AddHead(&Queue,(struct Node*)qentry);
 		}
 	    }
 	}
-	for (node=ListHead(entry->filelist);ListEnd(node);node=ListNext(node)) {
+	for (node=GetHead(entry->filelist); node != NULL;node=GetSucc(node)) {
 	    tmp=(void *)node->ln_Name;
 	    if (S_ISLNK(tmp->mode)) {
 		char *lname;
@@ -856,7 +999,7 @@ int GetDir(char *remote_parent, char *local_parent, char *name, char *localname)
 			free(rdir);
 			goto out;
 		    }
-		    AddHead(&Queue,qentry);
+		    AddHead(&Queue,(struct Node*)qentry);
 		}
 		if (lname)
 		  free(lname);

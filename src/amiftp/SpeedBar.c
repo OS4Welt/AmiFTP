@@ -72,7 +72,8 @@ int HandleSpeedBar(int button)
 	return 0;
 	break;
       case SB_ZZZ:
-	if (CA_Iconify(MainWin_Object))
+	//if (CA_Iconify(MainWin_Object))
+    if (IDoMethod(MainWin_Object, WM_ICONIFY))
 	  MainWindow=NULL;
 	break;
       case SB_Connect:
@@ -109,7 +110,7 @@ void UpdateSpeedBar(int state)
 
 #if 0
 	for (i=SB_Disconnect; i < 7; i++)
-	  SetGadgetAttrs(MG_List[MG_SpeedBar], MainWindow, NULL,
+	  SetGadgetAttrs((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL,
 			 SPEEDBAR_OffButton, i,
 			 TAG_DONE);
 #endif
@@ -122,14 +123,14 @@ void UpdateSpeedBar(int state)
 	    }
 	}
 	if (MainWindow)
-	  RefreshGList(MG_List[MG_SpeedBar], MainWindow, NULL, 1);
+	  RefreshGList((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL, 1);
     }
     else if (prev_state==MB_DISCONNECTED && state!=MB_DISCONNECTED) {
 	int i;
 
 #if 0
 	for (i=SB_Disconnect; i < 7; i++)
-	  SetGadgetAttrs(MG_List[MG_SpeedBar], MainWindow, NULL,
+	  SetGadgetAttrs((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL,
 			 SPEEDBAR_OnButton, i,
 			 TAG_DONE);
 #endif
@@ -142,6 +143,6 @@ void UpdateSpeedBar(int state)
 	    }
 	}
 	if (MainWindow)
-	  RefreshGList(MG_List[MG_SpeedBar], MainWindow, NULL, 1);
+	  RefreshGList((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL, 1);
     }
 }

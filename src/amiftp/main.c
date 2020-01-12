@@ -17,7 +17,7 @@ void ConvertFontName(char *dest, int *size, char *source);
 extern struct Screen *myScn;
 
 long __stack = 20480;
-extern struct WBStartup *_WBenchMsg;
+struct WBStartup *wBenchMsg;
 extern STRPTR _ProgramName;
 
 char *ConfigName;
@@ -38,13 +38,15 @@ void chkabort(void){return;}
 char *ErrorOpenLib="Couldn't open version %ld of %s.";
 char *ErrorNoPort="Couldn't open messageport.";
 
-void PrintError(const STRPTR errmsg, ...)
+ __attribute__((linearvarargs)) void PrintError(const STRPTR errmsg, ...)
 {
-    ULONG *args=((ULONG *)&errmsg)+1;
+    va_list ap;
+	va_startlinear(ap, errmsg);
+    APTR args = va_getlinearva(ap, APTR);
     struct EasyStruct req= {
 	sizeof(struct EasyStruct), 0, NULL, NULL, NULL};
 
-    if (_WBenchMsg && IntuitionBase) {
+    if (wBenchMsg && IntuitionBase) {
 	req.es_Title="AmiFTP Error";
 	req.es_TextFormat=errmsg;
 	req.es_GadgetFormat="Ok";
@@ -54,6 +56,7 @@ void PrintError(const STRPTR errmsg, ...)
 	VPrintf(errmsg, args);
 	Printf("\n");
     }
+     va_end(ap);
 }
 
 struct as225passwd {
@@ -67,6 +70,23 @@ struct as225passwd {
 	char	*pw_comment;
 };
 
+
+
+extern struct ListBrowserIFace *IListBrowser;
+extern struct LayoutIFace	   *ILayout;
+extern struct LabelIFace	   *ILabel;
+extern struct WindowIFace	   *IWindow;
+extern struct ChooserIFace	   *IChooser;
+extern struct StringIFace	   *IString;
+extern struct ClickTabIFace	   *IClickTab;
+extern struct CheckBoxIFace	   *ICheckBox;
+extern struct BevelIFace	   *IBevel;
+extern struct ARexxIFace	   *IARexx;
+extern struct SpeedBarIFace	   *ISpeedBar;
+extern struct FuelGaugeIFace   *IFuelGauge;
+extern struct IntegerIFace	   *IInteger;
+extern struct GadToolsIFace	   *IGadTools;
+
 BOOL UseAS225=FALSE;
 static struct Process *ME;
 
@@ -75,20 +95,15 @@ int main(int argc, char **argv)
     struct servent *servent;
     APTR oldwptr;
 
-    if (!ButtonBase)
-      return 10;
+ 
 
-    if (!PenMapBase)
-      return 10;
-
-    if (!DOSBase)
+    if (!IDOS||!IListBrowser||!ILayout||!ILabel||!IWindow||!IChooser||!IString||!IClickTab||!ICheckBox||!IBevel||!IARexx||!ISpeedBar||!IFuelGauge||!IInteger||!IGadTools)
       return 10;
 
     ME=(struct Process *)FindTask(NULL);
     oldwptr=ME->pr_WindowPtr;
-
+    
     MyOpenLibs();
-
     ag.ag_NAG.nag_BaseName="AmiFTP";
     ag.ag_NAG.nag_Name="AmiFTP.guide";
     ag.ag_NAG.nag_ClientPort="AMIFTP_HELP";
@@ -100,8 +115,9 @@ int main(int argc, char **argv)
     MainPrefs.mp_DeleteFiles=TRUE;
 
     if (!argc) {
-	WB2CLI(_WBenchMsg, __stack, DOSBase);
-	GetToolTypes(_WBenchMsg);
+	//WB2CLI(_WBenchMsg, __stack, DOSBase);
+    wBenchMsg = (struct WBStartup *) argv;
+	GetToolTypes(wBenchMsg);
     }
     else {
 	argsptr=ReadArgs(TEMPLATE, opts, NULL);
@@ -137,7 +153,7 @@ int main(int argc, char **argv)
 
     /* This has to be here, can't put this in MyOpenLibs() */
     /* Has to check for mlink */
-    ME->pr_WindowPtr=-1;
+    ME->pr_WindowPtr=(APTR)-1;
     if (UseAS225==FALSE) {
 	if (FindPort("MLINK")) {
 	    UseAS225=TRUE;
@@ -226,7 +242,7 @@ int main(int argc, char **argv)
 			}
 			memset(dirname, 0, sizeof(dirname));
 			if (pw->pw_dir)
-			  strmfp(dirname, pw->pw_dir, AMIFTPPREFS);
+			  strmfp(dirname, pw->pw_dir, AMIFTPPREFS, MAXPATHLEN+1);
 			tcp_endpwent();
 		    }
 		}
@@ -241,7 +257,7 @@ int main(int argc, char **argv)
 			}
 			memset(dirname, 0, sizeof(dirname));
 			if (as225pw->pw_dir)
-			  strmfp(dirname, as225pw->pw_dir, AMIFTPPREFS);
+			  strmfp(dirname, as225pw->pw_dir, AMIFTPPREFS, MAXPATHLEN+1);
 			tcp_endpwent();
 		    }
 		}
@@ -322,7 +338,7 @@ int main(int argc, char **argv)
 	struct Node *node;
 	while (node=RemHead(&TempList)) {
 	    if (MainPrefs.mp_DeleteFiles)
-	      DeleteFile(node->ln_Name);
+	      Delete(node->ln_Name);
 	    free(node->ln_Name);
 	    free(node);
 	}
@@ -331,13 +347,35 @@ int main(int argc, char **argv)
     CleanUp();
 }
 
+
+struct IntuitionIFace	*IIntuition = NULL;
+struct UtilityIFace		*IUtility = NULL;
+struct GraphicsIFace	*IGraphics = NULL;
+struct DiskfontIFace	*IDiskfont = NULL;
+struct AslIFace			*IAsl = NULL;
+struct IFFParseIFace	*IIFFParse = NULL;
+struct IconIFace		*IIcon = NULL;
+struct RexxSysIFace		*IRexxSys = NULL;
+struct WorkbenchIFace  	*IWorkbench = NULL;
+struct LocaleIFace		*ILocale = NULL;
+struct AmigaGuideIFace	*IAmigaGuide = NULL;
+struct TimerIFace		*ITimer = NULL;
+
+
+
 void MyOpenLibs()
 {
     char *lib;
 
     lib="intuition.library";
-    IntuitionBase=(struct IntuitionBase *)OpenLibrary(lib, 36);
-    if(!IntuitionBase) {
+    IntuitionBase=OpenLibrary(lib, 36);
+	if (IntuitionBase)
+    	IIntuition = (struct IntuitionIFace*) GetInterfaceTags(IntuitionBase, "main", 1, TAG_END);
+
+    if(!IntuitionBase || !IIntuition) {
+
+    if (IntuitionBase) CloseLibrary(IntuitionBase);
+
 	PrintError(ErrorOpenLib,36, lib);
 	CleanUp();
 	exit(10);
@@ -345,9 +383,27 @@ void MyOpenLibs()
 
     LocaleBase=OpenLibrary("locale.library", 38L);
 
+    if (LocaleBase)
+    	ILocale = (struct LocaleIFace*) GetInterfaceTags(LocaleBase, "main", 1, TAG_END);
+
+    if(!LocaleBase || !ILocale) {
+
+    if (LocaleBase) CloseLibrary(LocaleBase);
+
+	PrintError(ErrorOpenLib,38, lib);
+	CleanUp();
+	exit(10);
+    }
+
     lib="graphics.library";
-    GfxBase=(struct GfxBase *)OpenLibrary(lib, 36);
-    if (!GfxBase) {
+    GfxBase=OpenLibrary(lib, 36);
+
+    if (GfxBase)
+    	IGraphics = (struct GraphicsIFace *) GetInterfaceTags(GfxBase, "main", 1, TAG_END);
+
+    if (!GfxBase || !IGraphics) {
+
+        if (GfxBase) CloseLibrary(GfxBase);
 	PrintError(ErrorOpenLib, 36, lib);
 	CleanUp();	
 	exit(10);
@@ -355,7 +411,14 @@ void MyOpenLibs()
 
     lib="utility.library";
     UtilityBase=OpenLibrary(lib, 36);
-    if (!UtilityBase) {
+
+    if (UtilityBase)
+    	IUtility = (struct UtilityIFace *) GetInterfaceTags(UtilityBase, "main", 1, TAG_END);
+
+    if (!UtilityBase || !IUtility) {
+
+    if (UtilityBase) CloseLibrary(UtilityBase);
+
 	PrintError(ErrorOpenLib, 36, lib);
 	CleanUp();
 	exit(10);
@@ -363,28 +426,43 @@ void MyOpenLibs()
 
     lib="diskfont.library";
     DiskfontBase=OpenLibrary(lib, 36);
-    if (!DiskfontBase) {
+
+    if (DiskfontBase)
+    	IDiskfont = (struct DiskfontIFace *) GetInterfaceTags(DiskfontBase, "main", 1, TAG_END);
+
+    if (!DiskfontBase || !IDiskfont) {
+        if (DiskfontBase) CloseLibrary(DiskfontBase);
 	PrintError(ErrorOpenLib, 36, lib);
 	CleanUp();
 	exit(10);
     }
 
     lib="icon.library";
-    IconBase = (struct IconBase *)OpenLibrary(lib, 36);
-    if (!IconBase) {
+    IconBase = OpenLibrary(lib, 36);
+
+    if (IconBase)
+    	IIcon = (struct IconIFace *) GetInterfaceTags(IconBase, "main", 1, TAG_END);
+
+    if (!IconBase || !IIcon) {
+        if (IconBase) CloseLibrary(IconBase);
+
 	PrintError(ErrorOpenLib, 36, lib);
 	CleanUp();
 	exit(10);
     }
-
     lib="workbench.library";
-    WorkbenchBase = (struct WorkbenchBase *)OpenLibrary(lib, 36);
-    if (!WorkbenchBase) {
+    WorkbenchBase = OpenLibrary(lib, 36);
+    if (WorkbenchBase)
+    	IWorkbench = (struct WorkbenchIFace *) GetInterfaceTags(WorkbenchBase, "main", 1, TAG_END);
+
+    if (!WorkbenchBase || !IWorkbench) {
+        if (WorkbenchBase) CloseLibrary(WorkbenchBase);
 	PrintError(ErrorOpenLib, 36, lib);
 	CleanUp();
 	exit(10);
     }
 
+    /*
     lib="reqtools.library";
     ReqToolsBase=(struct ReqToolsBase *)OpenLibrary(lib, 38);
     if (!ReqToolsBase) {
@@ -392,10 +470,16 @@ void MyOpenLibs()
 	CleanUp();
 	exit(10);
     }
+    */
 
     lib="asl.library";
     AslBase = OpenLibrary(lib, 36);
-    if (!AslBase) {
+
+    if (AslBase)
+    	IAsl = (struct AslIFace *) GetInterfaceTags(AslBase, "main", 1, TAG_END);
+
+    if (!AslBase || !IAsl) {
+        if (AslBase) CloseLibrary(AslBase);
 	PrintError(ErrorOpenLib, 36, lib);
 	CleanUp();
 	exit(10);
@@ -403,22 +487,40 @@ void MyOpenLibs()
 
     lib="iffparse.library";
     IFFParseBase = OpenLibrary(lib, 36);
-    if (!IFFParseBase) {
+    if (IFFParseBase)
+    	IIFFParse = (struct IFFParseIFace *) GetInterfaceTags(IFFParseBase, "main", 1, TAG_END);
+
+    if (!IFFParseBase || !IIFFParse) {
+        if (IFFParseBase) CloseLibrary(IFFParseBase);
 	PrintError(ErrorOpenLib, 36, lib);
 	CleanUp();
 	exit(10);
     }
-
+ 
+   
     lib="rexxsyslib.library";
-    RexxSysBase = (struct RexxLib *)OpenLibrary(lib, 0L);
-    if (!RexxSysBase) {
-	PrintError(ErrorOpenLib, 0, lib);
+    RexxSysBase = OpenLibrary(lib, 0L);
+    if (RexxSysBase)
+    	IRexxSys = (struct RexxSysIFace *) GetInterfaceTags(RexxSysBase, "main", 1, TAG_END);
+
+    if (!RexxSysBase || !IRexxSys) {
+        if (RexxSysBase) CloseLibrary(RexxSysBase);
+	PrintError(ErrorOpenLib, 45, lib);
 	CleanUp();
 	exit(10);
     }
 
-    AmigaGuideBase = (struct Library *)OpenLibrary("amigaguide.library", 36);
+    AmigaGuideBase = OpenLibrary("amigaguide.library", 36);
+    if (AmigaGuideBase)
+    	IAmigaGuide = (struct AmigaGuideIFace *) GetInterfaceTags( AmigaGuideBase, "main", 1, TAG_END);
 
+    if (!AmigaGuideBase || !IAmigaGuide) {
+        if (AmigaGuideBase) CloseLibrary(AmigaGuideBase);
+	PrintError(ErrorOpenLib, 0, lib);
+	CleanUp();
+	exit(10);
+    }
+  
     AppPort = (struct MsgPort *)CreateMsgPort();
     if (!AppPort) {
 	PrintError(ErrorNoPort);
@@ -432,8 +534,8 @@ void MyOpenLibs()
 	CleanUp();
 	exit(10);
     }
-    if (!(TimeRequest=(struct timerequest *)CreateIORequest(TimerPort,
-							    sizeof(struct timerequest)))) {
+    if (!(TimeRequest=(struct TimeRequest *)CreateIORequest(TimerPort,
+							    sizeof(struct TimeRequest)))) {
 	PrintError("Couldn't allocate timerreq");
 	CleanUp();
 	exit(10);
@@ -445,8 +547,10 @@ void MyOpenLibs()
 	exit(10);
     }
 
-    TimerBase=&TimeRequest->tr_node.io_Device->dd_Library;
+    TimerBase=&TimeRequest->Request.io_Device->dd_Library;
 
+    ITimer = (struct TimerIFace *)GetInterface((struct Library *)TimerBase,(CONST_STRPTR) "main", 1, NULL);
+    
     OpenAmiFTPCatalog(NULL, NULL);
 
     SetupLocaleStrings();
@@ -471,8 +575,15 @@ void CleanUp()
 #undef FREE
 
 
+    if (ITimer)
+    {
+        DropInterface((struct Interface *) ITimer);
+        ITimer = NULL;
+
+    }
+
     if (TimeRequest) {
-	if (TimeRequest->tr_node.io_Device)
+	if (TimeRequest->Request.io_Device)
 	  CloseDevice(TimeRequest);
 
 	DeleteIORequest(TimeRequest);
@@ -491,6 +602,9 @@ void CleanUp()
 
     CloseAmiFTPCatalog();
 
+
+    if (ILocale) DropInterface((struct Interface*)ILocale);
+
     if (LocaleBase)
       CloseLibrary(LocaleBase);
 
@@ -500,6 +614,8 @@ void CleanUp()
     if (AppPort)
       DeleteMsgPort(AppPort);
 
+
+    if (IRexxSys) DropInterface((struct Interface*)IRexxSys);
     if (RexxSysBase)
       CloseLibrary((struct Library *)RexxSysBase);
 
@@ -507,30 +623,36 @@ void CleanUp()
       FreeArgs(argsptr);
     }
 
+    if (IWorkbench) DropInterface((struct Interface*)IWorkbench);
+
     if (WorkbenchBase)
       CloseLibrary((struct Library *)WorkbenchBase);
 
+    if (IIntuition) DropInterface((struct Interface*)IIntuition);
     if (IntuitionBase)
       CloseLibrary((struct Library *)IntuitionBase);
 
+    if (IGraphics) DropInterface((struct Interface*)IGraphics);
     if (GfxBase)
       CloseLibrary((struct Library *)GfxBase);
 
+    if (IUtility) DropInterface((struct Interface*)IUtility);
     if (UtilityBase)
       CloseLibrary((struct Library *)UtilityBase);
 
+    if (IDiskfont) DropInterface((struct Interface*)IDiskfont);
     if (DiskfontBase)
       CloseLibrary((struct Library *)DiskfontBase);
 
-    if (ReqToolsBase)
-      CloseLibrary((struct Library *)ReqToolsBase);
-
+    if (IAsl) DropInterface((struct Interface*) IAsl);
     if (AslBase)
       CloseLibrary((struct Library *)AslBase);
 
+    if (IIFFParse) DropInterface((struct Interface*)IIFFParse);
     if (IFFParseBase)
       CloseLibrary((struct Library *)IFFParseBase);
 
+    if (IIcon) DropInterface((struct Interface*)IIcon);
     if (IconBase)
       CloseLibrary((struct Library *)IconBase);
 }
@@ -540,7 +662,7 @@ void PrintSiteList()
     struct SiteNode *sn;
     struct Node *lbn;
 
-    for(lbn=ListHead(&SiteList);ListEnd(lbn);lbn=ListNext(lbn)) {
+    for(lbn=GetHead(&SiteList);lbn != NULL; lbn=GetSucc(lbn)) {
 	GetListBrowserNodeAttrs(lbn,
 				LBNA_UserData, &sn,
 				TAG_DONE);
@@ -561,7 +683,7 @@ void GetToolTypes(struct WBStartup *msg)
     if(msg->sm_NumArgs!=0) {
 	BPTR olddir;
 	struct DiskObject *infoobj;
-	olddir=CurrentDir(msg->sm_ArgList->wa_Lock);
+	olddir=SetCurrentDir(msg->sm_ArgList->wa_Lock);
 	if(infoobj=GetDiskObject(msg->sm_ArgList->wa_Name)) {
 	    if(key=FindToolType(infoobj->do_ToolTypes, "PUBSCREEN")) {
 		strncpy(CurrentState.ScreenName, key, 255);
@@ -580,7 +702,7 @@ void GetToolTypes(struct WBStartup *msg)
 	    }
 	    FreeDiskObject(infoobj);
 	}
-	CurrentDir(olddir);
+	SetCurrentDir(olddir);
     }
 }
 

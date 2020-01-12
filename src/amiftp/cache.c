@@ -10,7 +10,7 @@ static void UpdateCList(void);
 static struct List CacheList;
 struct List clist;
 
-static numcachedirs;
+static int numcachedirs;
 
 void InitCache(void)
 {
@@ -39,7 +39,7 @@ void RemoveCacheEntry(char *dirname)
 {
     struct Node *cacheentry;
     if (cacheentry=FindName(&CacheList, dirname)) {
-	Remove(cacheentry);
+	Remove((struct Node *)cacheentry);
 	FreeCacheEntry((struct CacheNode *)cacheentry);
 	numcachedirs--;
     }
@@ -60,13 +60,13 @@ void AddCacheEntry(struct List *dirlist, char *name)
 {
     struct CacheNode *cnode;
     if (cnode=(struct CacheNode *)FindName(&CacheList, name)) {
-	Remove(cnode);
+	Remove((struct Node *)cnode);
 	free(cnode->cn_Node.ln_Name);
 	free_dirlist(cnode->dirlist);
 	free(cnode->dirlist);
 	cnode->cn_Node.ln_Name=strdup(name);
 	cnode->dirlist=dirlist;
-	AddHead(&CacheList,cnode);
+	AddHead(&CacheList,(struct Node *)cnode);
     }
     else {
 	if (numcachedirs>=MainPrefs.mp_CacheSize) {
@@ -82,7 +82,7 @@ void AddCacheEntry(struct List *dirlist, char *name)
 	if (cnode) {
 	    cnode->cn_Node.ln_Name=strdup(name);
 	    cnode->dirlist=dirlist;
-	    AddHead(&CacheList,cnode);
+	    AddHead(&CacheList,(struct Node *)cnode);
 	    numcachedirs++;
 	}
     }
@@ -95,9 +95,9 @@ struct List *LookupCache(char *name)
     struct Node *node;
 
     if (cnode=(struct CacheNode *)FindName(&CacheList, name)) {
-	Remove(cnode);
-	AddHead(&CacheList, cnode);
-	for (node=ListHead(cnode->dirlist);ListEnd(node);node=ListNext(node)) {
+	Remove((struct Node *)cnode);
+	AddHead(&CacheList, (struct Node *)cnode);
+	for (node=GetHead(cnode->dirlist); node != NULL; node=GetSucc(node)) {
 	    struct dirlist *n=(struct dirlist *)node->ln_Name;
 	    if (MainPrefs.mp_Showdotfiles) {
 		SetListBrowserNodeAttrs(node,

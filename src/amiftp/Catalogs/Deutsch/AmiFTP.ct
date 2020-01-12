@@ -635,7 +635,7 @@ Keine neuen Dateien seit letztem Aminet-Besuch
 ;No new files since last Aminet visit
 ;
 Str_WindowTitle
-AmiFTP - %ld Dateien selektiert (%ld %s) %ld %s frei aug Platte
+AmiFTP - %ld Dateien selektiert (%ld %s) %ld %s frei auf Platte
 ;AmiFTP - %ld files selected (%ld %s) %ld %s free on disk
 ; This might look a bit strange, but when the fields are filled the
 ; string looks like:

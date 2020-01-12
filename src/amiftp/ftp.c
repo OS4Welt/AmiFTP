@@ -36,6 +36,7 @@
 
 #include "AmiFTP.h"
 #include "gui.h"
+#include <sys/time.h>
 
 #define AMIGAIO 1
 unsigned char str_buf[2048];
@@ -50,7 +51,7 @@ int ftp_hookup(char *host, short port)
     LONG len;
     static char hostnamebuf[MAXHOSTNAMELEN + 1];
     char	*ftperr;
-    ULONG mask,mainwinsignal=NULL,winmask=NULL;
+    ULONG mask,mainwinsignal=0UL,winmask=0UL;
     extern Object *ConnectWin_Object;
 
     code = 0;
@@ -100,8 +101,8 @@ int ftp_hookup(char *host, short port)
 	FD_SET(s,&ws);
 	FD_ZERO(&es);
 	FD_SET(s,&es);
-	tv.tv_secs=80;
-	tv.tv_micro=0;
+	tv.tv_sec=80;
+	tv.tv_usec=0;
 
 	res=tcp_waitselect(s+1,&rs,&ws,&es,&tv,&mask);
 
@@ -334,17 +335,18 @@ int command(char *fmt, ...)
 
 int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvreq */
 {
-    struct AsyncFile *ASyncFH;
+    //struct AsyncFile *ASyncFH;
+    BPTR fh = 0;
     int sout=-1;
     register int bytes;
     int c;
     long d,bytes_transferred=0,retcode=TRSF_ABORTED;
-    struct timeval starttime,currtime;
+    struct TimeVal starttime,currtime;
     fd_set writemask;
     char buf[512],*bufp;
-    BPTR flock;
-    struct FileInfoBlock fib;
-    ULONG winmask=NULL,mask=NULL,mainsignal,t;
+    //BPTR flock;
+    //struct FileInfoBlock fib;
+    ULONG winmask=0UL,mask=0UL,mainsignal,t;
     BOOL Continue=TRUE;
     long ret,done;
     int error;
@@ -352,8 +354,22 @@ int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvr
     extern struct Window *TransferWindow;
     int timesent=0;
 
+    BOOL bIsFile = FALSE;
+    struct ExamineData *dat = ExamineObjectTags(EX_StringNameInput,local,TAG_END);
+	if (dat)
+    {
+        bIsFile = EXD_IS_FILE(dat);
+        FreeDosObject(DOS_EXAMINEDATA,dat);
+    }
+
+    if (bIsFile==FALSE)
+    {
+        code=-1;
+		return TRSF_BADFILE;
+    }
+    /*
     flock=Lock(local,ACCESS_READ);
-    if (flock==NULL) {
+    if (flock==0) {
 	code=-1;
 	return TRSF_BADFILE;
     }
@@ -363,9 +379,12 @@ int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvr
 	code=-1;
 	return TRSF_BADFILE;
     }
+    */
 
-    ASyncFH=OpenAsync(local,MODE_READ, MainPrefs.mp_BufferSize);
-    if (!ASyncFH) {
+    //ASyncFH=OpenAsync(local,MODE_READ, MainPrefs.mp_BufferSize);
+    fh = FOpen(local, MODE_OLDFILE, MainPrefs.mp_BufferSize);
+    //if (!ASyncFH) {
+    if (!fh) {
 	ShowErrorReq(GetAmiFTPString(Str_LocalfileError), local);
 	code=-1;
 	return TRSF_BADFILE;
@@ -373,13 +392,15 @@ int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvr
 
     if (initconn()) {
 	code=-1;
-	CloseAsync(ASyncFH);
-	return TRSF_INITCONN;
+	//CloseAsync(ASyncFH);
+	FClose(fh);
+    return TRSF_INITCONN;
     }
 
     if (command("%s %s",cmd,remote) != PRELIM) {
-	CloseAsync(ASyncFH);
-	return TRSF_BADFILE;
+	//CloseAsync(ASyncFH);
+    FClose(fh);
+    return TRSF_BADFILE;
     }
 
     sout=dataconn();
@@ -398,11 +419,11 @@ int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvr
 	tcp_ioctl(sout,TCPFIOASYNC,(char *)&true);
     }
     t=1L<<TimerPort->mp_SigBit;
-    TimeRequest->tr_node.io_Command=TR_ADDREQUEST;
-    TimeRequest->tr_time.tv_secs=1;
-    TimeRequest->tr_time.tv_micro=0;
+    TimeRequest->Request.io_Command=TR_ADDREQUEST;
+	TimeRequest->Time.Seconds=1;
+	TimeRequest->Time.Microseconds=0;
     if (TransferWindow) {
-	SendIO(TimeRequest);
+	SendIO((struct IORequest *)TimeRequest);
 	timesent=1;
     }
 
@@ -426,13 +447,14 @@ int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvr
 		  goto abort;
 	    }
 	    if (mask&t) {
-		TimeRequest->tr_node.io_Command=TR_ADDREQUEST;
-		TimeRequest->tr_time.tv_secs=1;
-		TimeRequest->tr_time.tv_micro=0;
+        TimeRequest->Request.io_Command=TR_ADDREQUEST;
+		TimeRequest->Time.Seconds=1;
+		TimeRequest->Time.Microseconds=0;
 		if (TransferWindow) {
-		    UpdateDLGads(bytes_transferred,0,(GetSysTime(&currtime),currtime.tv_sec-starttime.tv_sec));
+            GetSysTime(&currtime);
+		    UpdateDLGads(bytes_transferred,0,currtime.Seconds-starttime.Seconds);
 		}
-		SendIO(TimeRequest);
+		SendIO((struct IORequest *)TimeRequest);
 	    }
 	}
 	if (((SocketBase!=0)&&(!mask)&&(ret>0)) || ((SocketBase==NULL) && (ret>0))) {
@@ -441,7 +463,8 @@ int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvr
 		switch (curtype) {
 		  case TYPE_I:
 		  case TYPE_L:
-		    c=ReadAsync(ASyncFH,buf,sizeof(buf));
+		    //c=ReadAsync(ASyncFH,buf,sizeof(buf));
+            c = FRead(fh, buf, sizeof(buf), 1);
 		    if (c>0) {
 			for (bufp=buf;c>0;c-=d,bufp+=d)
 			  if ((d=tcp_send(sout,bufp,c,0))<=0)
@@ -468,7 +491,8 @@ int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvr
 		    }
 		    break;
 		  case TYPE_A:
-		    c=ReadCharAsync(ASyncFH);
+		    //c=ReadCharAsync(ASyncFH);
+            c = FGetC(fh);
 		    if (c!=EOF) {
 			if (c=='\n') {
 			    tcp_send(sout,"\r",1,0);
@@ -495,19 +519,27 @@ int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvr
 	    
     }
     if (TransferWindow)
-      UpdateDLGads(bytes_transferred,0,(GetSysTime(&currtime),currtime.tv_sec-starttime.tv_sec));
+    {
+        GetSysTime(&currtime);
+    	UpdateDLGads(bytes_transferred,0,currtime.Seconds-starttime.Seconds);
+    }
 
+    /*
     if (ASyncFH)
       CloseAsync(ASyncFH);
+      */
+    if (fh)
+    	FClose(fh);
+
     tcp_closesocket(sout);
     sout=-1;
     data=-1;
 
     getreply(0);
     if (TransferWindow) {
-	if (!CheckIO(TimeRequest))
-	  AbortIO(TimeRequest);
-	WaitIO(TimeRequest);
+	if (!CheckIO((struct IORequest *)TimeRequest))
+	  AbortIO((struct IORequest *)TimeRequest);
+	WaitIO((struct IORequest *)TimeRequest);
     }
     return TRSF_OK;
   abort:
@@ -522,13 +554,18 @@ int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvr
     }
     getreply(0);
     code=-1;
-
+    /*
     if (ASyncFH!=NULL)
       CloseAsync(ASyncFH);
+    */
+
+    if (fh)
+    	FClose(fh);
+
     if (TransferWindow && timesent==1) {
-	if (!CheckIO(TimeRequest))
-	  AbortIO(TimeRequest);
-	WaitIO(TimeRequest);
+	if (!CheckIO((struct IORequest *)TimeRequest))
+	  AbortIO((struct IORequest *)TimeRequest);
+	WaitIO((struct IORequest *)TimeRequest);
     }
     return retcode;
 }
@@ -537,18 +574,19 @@ static char tbufs[50];
 int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 		ULONG restartpoint)
 {
-    struct AsyncFile *ASyncFH;
+    //struct AsyncFile *ASyncFH;
+    BPTR fh;
     int sin=-1;
     int is_retr,tcrflag,bare_lfs=0;
     register int bytes;
     register int c;
     long d,bytes_transferred=0;
     int errormsg=0,error;
-    struct timeval starttime,currtime;
+    struct TimeVal starttime,currtime;
     fd_set readmask;
     extern Object *TransferWin_Object;
     ULONG done;
-    ULONG winmask=NULL,mask,mainsignal,t;
+    ULONG winmask=0UL,mask,mainsignal,t;
     long ret;
     BOOL Continue=TRUE;
     int timesent=0;
@@ -556,9 +594,10 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
     is_retr=strcmp(cmd,"RETR")==0;
     tcrflag=!crflag&&is_retr;
 
-    TimeRequest->tr_node.io_Command=TR_ADDREQUEST;
-    TimeRequest->tr_time.tv_secs=1;
-    TimeRequest->tr_time.tv_micro=0;
+
+    TimeRequest->Request.io_Command=TR_ADDREQUEST;
+	TimeRequest->Time.Seconds=1;
+	TimeRequest->Time.Microseconds=0;
 
     if (initconn()) {
 	code=-1;
@@ -616,11 +655,16 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
     sin=dataconn();
     if (sin==-1)
       goto abort;
-
+        /*
     ASyncFH=OpenAsync(local, restartpoint?MODE_APPEND:MODE_WRITE,
 		      MainPrefs.mp_BufferSize);
-    if (!ASyncFH) {
-	ShowErrorReq(GetAmiFTPString(Str_LocalfileError),local);
+              */
+
+    fh = FOpen(local, restartpoint?MODE_OLDFILE:MODE_NEWFILE,MainPrefs.mp_BufferSize);
+
+    //if (!ASyncFH) {
+	if (!fh) {
+    ShowErrorReq(GetAmiFTPString(Str_LocalfileError),local);
 	errormsg=1;
 	goto abort;
     }
@@ -639,7 +683,7 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 
     t=1L<<TimerPort->mp_SigBit;
     if (TransferWindow) {
-	SendIO(TimeRequest);
+	SendIO((struct IORequest *)TimeRequest);
 	timesent=1;
     }
 
@@ -673,13 +717,14 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 		}
 	    }
 	    if (mask&t) {
-		TimeRequest->tr_node.io_Command=TR_ADDREQUEST;
-		TimeRequest->tr_time.tv_secs=1;
-		TimeRequest->tr_time.tv_micro=0;
+		TimeRequest->Request.io_Command=TR_ADDREQUEST;
+		TimeRequest->Time.Seconds=1;
+		TimeRequest->Time.Microseconds=0;
 		if (TransferWindow) {
-		    UpdateDLGads(bytes_transferred,restartpoint,(GetSysTime(&currtime),currtime.tv_sec-starttime.tv_sec));
+            GetSysTime(&currtime);
+		    UpdateDLGads(bytes_transferred,restartpoint,currtime.Seconds-starttime.Seconds);
 		}
-		SendIO(TimeRequest);
+		SendIO((struct IORequest *)TimeRequest);
 	    }
 	} 
 	if (((SocketBase!=0)&&(!mask)&&(ret>0)) || ((SocketBase==NULL) && (ret>0))) {
@@ -690,7 +735,8 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 		  case TYPE_L:
 		    c=tcp_recv(sin,transfer_buf,bufsize,0);
 		    if (c>0) {
-			if ((d=WriteAsync(ASyncFH,transfer_buf,c))<=0)
+			//if ((d=WriteAsync(ASyncFH,transfer_buf,c))<=0)
+            if (d=FWrite(fh, transfer_buf, c, 1) == 0)
 			  {goto abort;}
 		    }
 		    else if (c<0) {
@@ -713,10 +759,12 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 			while (c=='\r') {
 			    bytes++;
 			    if ((c=sgetc(sin))!='\n'||tcrflag) {
-				WriteCharAsync(ASyncFH,'\r');
+				//WriteCharAsync(ASyncFH,'\r');
+                FPutC(fh, '\r');
 			    }
 			}
-			WriteCharAsync(ASyncFH,c);
+			//WriteCharAsync(ASyncFH,c);
+            FPutC(fh, c);
 			bytes++;
 			if (bytes>=1024) {
 			    bytes_transferred+=bytes;
@@ -737,17 +785,25 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 	    
     }
     if (TransferWindow)
-      UpdateDLGads(bytes_transferred,restartpoint,(GetSysTime(&currtime),currtime.tv_sec-starttime.tv_sec));
+    {
+      GetSysTime(&currtime);
+      UpdateDLGads(bytes_transferred,restartpoint, currtime.Seconds-starttime.Seconds);
+    }
+    /*
     if (ASyncFH)
       CloseAsync(ASyncFH);
+      */
+    if (fh)
+    	FClose(fh);
+    fh = 0;
     tcp_closesocket(sin);
     sin=-1;
     data=-1;
     getreply(0);
     if (TransferWindow) {
-	if (!CheckIO(TimeRequest))
-	  AbortIO(TimeRequest);
-	WaitIO(TimeRequest);
+	if (!CheckIO((struct IORequest *)TimeRequest))
+	  AbortIO((struct IORequest *)TimeRequest);
+	WaitIO((struct IORequest *)TimeRequest);
     }
     return TRSF_OK;
   abort:
@@ -763,13 +819,18 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 	data = -1;
     }
 
+    /*
     if (ASyncFH!=NULL)
       CloseAsync(ASyncFH);
+    */
+
+    if (fh)
+    	FClose(fh);
 
     if (TransferWindow && timesent==1) {
-	if (!CheckIO(TimeRequest))
-	  AbortIO(TimeRequest);
-	WaitIO(TimeRequest);
+	if (!CheckIO((struct IORequest *)TimeRequest))
+	  AbortIO((struct IORequest *)TimeRequest);
+	WaitIO((struct IORequest *)TimeRequest);
     }
 
     return TRSF_ABORTED;

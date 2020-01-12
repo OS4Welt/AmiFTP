@@ -245,7 +245,7 @@ BOOL WriteConfigFile(char *filename)
 		    CloseIFF(iff);
 		}
 		Close(iff->iff_Stream);
-		SetProtection(filename,FIBF_EXECUTE);
+		SetProtection(filename,EXDF_NO_EXECUTE);
 	    }
 	    FreeIFF(iff);
 	}

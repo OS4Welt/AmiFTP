@@ -8,7 +8,13 @@
 #if defined(__SASC)  ||  defined(_DCC)
 #include <proto/locale.h>
 #elif defined(__GNUC__)
+#ifdef __amigaos4__
+#include <proto/locale.h>
+extern struct Library          *LocaleBase;
+extern struct LocaleIFace		*ILocale;
+#else
 #include <inline/locale.h>
+#endif
 #else
 #include <clib/locale_protos.h>
 #endif
@@ -239,6 +245,6 @@ STRPTR GetAmiFTPString(APTR fcstr)
   strnum = ((struct FC_Type *) fcstr)->ID;
   defaultstr = ((struct FC_Type *) fcstr)->Str;
 
-  return(AmiFTP_Catalog ? GetCatalogStr(AmiFTP_Catalog, strnum, defaultstr) :
+  return(AmiFTP_Catalog ? (STRPTR)GetCatalogStr(AmiFTP_Catalog, strnum, defaultstr) :
 		      defaultstr);
 }

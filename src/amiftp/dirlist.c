@@ -8,7 +8,7 @@
 #define ISDIR(x) (x)&0x4000
 
 struct dirlist *new_direntry(char *name,char *date,char *owner,
-			     char *group,mode_t mode,size_t size)
+			     char *group,mode_t mode,int64 size)
 {
     struct dirlist *tmp;
 
@@ -65,12 +65,32 @@ struct dirlist *new_direntry(char *name,char *date,char *owner,
 //    tmp->dir  = S_ISDIR(mode);
 //    tmp->file = S_ISREG(mode);
     tmp->size = size;
+
+    tmp->stringSize = ASPrintf("%lld",size);
+    /*
+    if (size >= 1000000000000)
+    {
+        tmp->stringSize = ASPrintf("%ld GB",(int)(size/(1024*1024*1024)));
+    }
+    else if (size>=100000000)
+    {
+        tmp->stringSize = ASPrintf("%ld MB",(int)(size/(1024*1024)));
+    }
+    else if (size > 10000000)
+    {
+        tmp->stringSize = ASPrintf("%ld kB",(int)(size/1024));
+    }
+    else
+    {
+        tmp->stringSize = ASPrintf("%ld B",(int)(size));
+    }
+    */
     return tmp;
 }
 char donk[]="donk";
 
 BOOL add_direntry(struct List *filelist, char *name, char *date,
-		  char *owner, char *group, mode_t mode, size_t size, 
+		  char *owner, char *group, mode_t mode, int64 size,
 		  int sort_mode, int sort_direction)
 {
     struct dirlist *tmp;
@@ -118,7 +138,7 @@ BOOL add_direntry(struct List *filelist, char *name, char *date,
 					       LBNCA_Text,tmp->name,
 					       LBNCA_FGPen,tmp->mode&0x4000?2:1,
 					       LBNA_Column,1,
-					       LBNCA_Integer,&tmp->size,
+					       LBNCA_Text,tmp->stringSize,
 					       LBNCA_Justification,LCJ_RIGHT,
 					       LBNCA_FGPen,tmp->mode&0x4000?2:1,
 					       LBNA_Column,2,
@@ -164,7 +184,7 @@ void add_direntry_struct(struct List *filelist,
 			      LBNCA_Text,dlist->name,
 			      LBNCA_FGPen,dlist->mode&0x4000?2:1,
 			      LBNA_Column,1,
-			      LBNCA_Integer,&dlist->size,
+			      LBNCA_Text,dlist->stringSize,
 			      LBNCA_Justification,LCJ_RIGHT,
 			      LBNCA_FGPen,dlist->mode&0x4000?2:1,
 			      LBNA_Column,2,
@@ -228,7 +248,8 @@ void free_direntry(struct dirlist *tmp)
       free(tmp->owner);
     if (tmp->group)
       free(tmp->group);
-
+    if (tmp->stringSize)
+    	free(tmp->stringSize);
     free(tmp);
 }
 
@@ -262,7 +283,7 @@ struct dirlist *sortupbyname(struct List *filelist,char *name, int dir)
     struct Node *tmp2;
     int rval;
 
-    for (tmp2=ListHead(filelist);ListEnd(tmp2);tmp2=ListNext(tmp2)) {
+    for (tmp2=GetHead(filelist); tmp2 != NULL; tmp2=GetSucc(tmp2)) {
 	tmp=(void *)tmp2->ln_Name;
 	if ((dir)==(ISDIR(tmp->mode))) {
 	    if (MainPrefs.mp_IgnoreCase)
@@ -278,10 +299,14 @@ struct dirlist *sortupbyname(struct List *filelist,char *name, int dir)
     if (tmp2)
       return (struct dirlist *)GetPred((struct Node *)tmp2);
     else {
+
+    return (struct dirlist *)GetTail(filelist);
+        /*
 	if (!EmptyList(filelist))
 	  return (struct dirlist *)GetTail(filelist);
 	else
 	  return NULL;
+      */
     }
 }
 
@@ -291,7 +316,7 @@ struct dirlist *sortdownbyname(struct List *filelist,char *name,int dir)
     struct dirlist *tmp;
     int rval;
 
-    for (tmp2=ListHead(filelist);ListEnd(tmp2);tmp2=ListNext(tmp2)) {
+    for (tmp2=GetHead(filelist); tmp2 != NULL; tmp2=GetSucc(tmp2)) {
 	tmp=(void *)tmp2->ln_Name;
 	if ((dir)==(ISDIR(tmp->mode))) {
 	    if (MainPrefs.mp_IgnoreCase)
@@ -307,10 +332,13 @@ struct dirlist *sortdownbyname(struct List *filelist,char *name,int dir)
     if (tmp2)
       return (struct dirlist *)GetPred((struct Node *)tmp2);
     else {
+        return (struct dirlist *)GetTail(filelist);
+        /*
 	if (!EmptyList(filelist))
 	  return (struct dirlist *)GetTail(filelist);
 	else
 	  return NULL;
+      */
     }
 }
 
@@ -321,7 +349,7 @@ struct dirlist *sortupbydate(struct List *filelist,char *date)
     struct dirlist *tmp;
     struct Node *tmp2;
 
-    for (tmp2=ListHead(filelist);ListEnd(tmp2);tmp2=ListNext(tmp2)) {
+    for (tmp2=GetHead(filelist); tmp2 != NULL; tmp2=GetSucc(tmp2)) {
 	tmp=(void *)tmp2->ln_Name;
 	if (isearlier(date,tmp->date))
 	  break;
@@ -329,10 +357,13 @@ struct dirlist *sortupbydate(struct List *filelist,char *date)
     if (tmp2)
       return (struct dirlist *)GetPred((struct Node *)tmp2);
     else {
+        return (struct dirlist *)GetTail(filelist);
+        /*
 	if (!EmptyList(filelist))
 	  return (struct dirlist *)GetTail(filelist);
 	else
 	  return NULL;
+      */
     }
 }
 
@@ -341,7 +372,7 @@ struct dirlist *sortdownbydate(struct List *filelist, char *date)
     struct dirlist *tmp;
     struct Node *tmp2;
 
-    for (tmp2 = ListHead(filelist); ListEnd(tmp2); tmp2 = ListNext(tmp2)) {
+    for (tmp2 = GetHead(filelist); tmp2 != NULL; tmp2 = GetSucc(tmp2)) {
 	tmp=(void *)tmp2->ln_Name;
 	if (!isearlier(date, tmp->date))
 	  break;		/* need to go before next entry. */
@@ -349,17 +380,20 @@ struct dirlist *sortdownbydate(struct List *filelist, char *date)
     if (tmp2)
       return (struct dirlist *)GetPred((struct Node *)tmp2);
     else {
+        return (struct dirlist *)GetTail(filelist);
+        /*
 	if (!EmptyList(filelist))
 	  return (struct dirlist *)GetTail(filelist);
 	else
 	  return NULL;
+      */
     }
 }
 #if 0
 /* Not used at the moment */
 /* smallest to largest */
 
-struct dirlist *sortupbysize(struct List *filelist,size_t size)
+struct dirlist *sortupbysize(struct List *filelist,int64 size)
 {
     struct dirlist *tmp;
     struct Node *tmp2;
@@ -377,7 +411,7 @@ struct dirlist *sortupbysize(struct List *filelist,size_t size)
 	  return NULL;
     }
 }
-struct dirlist *sortdownbysize(struct List *filelist,size_t size)
+struct dirlist *sortdownbysize(struct List *filelist,int64 size)
 {
     struct dirlist *tmp;
     struct Node *tmp2;
@@ -456,15 +490,15 @@ struct List *sort_filelist(struct List *old_filelist, int sort_mode,
     struct Node *tmp,*next;
     struct List *new_filelist;
 
-    if (!FirstNode(old_filelist))
+    if (!GetHead(old_filelist))
       return old_filelist;
     new_filelist=malloc(sizeof(struct List));
     if (!new_filelist)
       return old_filelist;
     NewList(new_filelist);
-    tmp=FirstNode(old_filelist);
+    tmp=GetHead(old_filelist);
     while(tmp) {
-	next=NextNode(tmp);
+	next=GetSucc(tmp);
 	Remove(tmp);
 	add_direntry_struct(new_filelist, (struct dirlist *)tmp->ln_Name,
 			    sort_mode, sort_direction);
