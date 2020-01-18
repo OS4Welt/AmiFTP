@@ -3,6 +3,7 @@
 */
 
 #include "AmiFTP.h"
+#include "gui.h"
 
 struct sockaddr_in data_addr;
 struct sockaddr_in myctladdr;
@@ -142,7 +143,8 @@ int stcgfn(char *node, char *name, int size)
 	return 0;
 }
 
- __attribute__((linearvarargs)) int showRequester(struct Window *window, STRPTR Title, STRPTR Gadget, STRPTR Body, ...)
+
+ __attribute__((linearvarargs)) int showRequester(struct Window *window, STRPTR icon, STRPTR Title, STRPTR Gadget, STRPTR Body, ...)
 {
      static struct TagItem tags[] = {
      { REQ_Type, REQTYPE_INFO },
@@ -150,10 +152,10 @@ int stcgfn(char *node, char *name, int size)
      { REQ_BodyText, 0UL},
      { REQ_GadgetText, 0UL },
      { REQ_VarArgs, 0UL},
-     { REQ_Image, REQIMAGE_QUESTION} ,
+     { REQ_Image, 0UL} ,
      { TAG_END, 0 }
      };
-
+                
     static struct orRequest reqmsg;
 
     reqmsg.MethodID = RM_OPENREQ;
@@ -163,7 +165,22 @@ int stcgfn(char *node, char *name, int size)
 
     int result = 0;
 
-
+    tags[5].ti_Data = REQIMAGE_INFO;
+    Object *pictureImage = NULL;
+    if ((Tag)icon>REQIMAGE_INSERTDISK)
+    {
+    	pictureImage = NewObject(NULL, "bitmap.image",
+					   BITMAP_SourceFile, icon,
+					   BITMAP_Screen, window->WScreen,
+					   BITMAP_Precision, PRECISION_EXACT,
+					   BITMAP_Masking, TRUE,
+					   TAG_END);
+		if (pictureImage)
+        { 
+        	tags[5].ti_Data = (Tag)pictureImage;
+            }
+    }
+    else tags[5].ti_Data = (Tag)icon;
 
     Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
     if (requester==NULL) return result;
@@ -180,6 +197,7 @@ int stcgfn(char *node, char *name, int size)
     va_end(ap);
 
     DisposeObject(requester);
+    if (pictureImage) DisposeObject(pictureImage);
     return result;
 }
 

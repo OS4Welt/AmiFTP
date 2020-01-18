@@ -654,7 +654,7 @@ BOOL CheckExists(char *lfile,int size, ULONG *restartpoint)
 	ret=(BOOL)rtEZRequest(GetAmiFTPString(TW_FileExists), Gadgetstring, NULL,
 			      (struct TagItem *)tags, lfile, fib.fib_Size, size);
                   */
-    ret = showRequester(MainWindow, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), fileSize, size);
+    ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), fileSize, size);
 	free(Gadgetstring);
 	*restartpoint=0;
 	if (ret==1)
@@ -676,7 +676,7 @@ BOOL CheckExists(char *lfile,int size, ULONG *restartpoint)
 	ret=(BOOL)rtEZRequest(GetAmiFTPString(TW_FileExists), Gadgetstring, NULL,
 			      (struct TagItem *)tags, lfile, fib.fib_Size, size);
                   */
-    ret = showRequester(MainWindow, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), fileSize, size);
+    ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), fileSize, size);
 	free(Gadgetstring);
 	if (ret==1)
     {
@@ -780,7 +780,7 @@ BOOL AskGetDir(void)
     if (!MainWindow)
       return FALSE;
 
-    BOOL ret = showRequester(MainWindow, GetAmiFTPString(Str_AmiFTPRequest), GetAmiFTPString(TW_GetDir), GetAmiFTPString(TW_DownloadDir))==1;
+    BOOL ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), GetAmiFTPString(TW_GetDir), GetAmiFTPString(TW_DownloadDir))==1;
     /*
     tags[1]=(ULONG)GetAmiFTPString(Str_AmiFTPRequest);
     tags[3]=(ULONG)MainWindow;

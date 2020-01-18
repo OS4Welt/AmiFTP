@@ -799,12 +799,17 @@ char *GetPassword(char *user,char *passbuf)
 }
 
 extern char *infotext;
-UWORD mapping[4];
+//UWORD mapping[4];
 #include "icons/AmiFTPbrsh.c"
+
 Object *AboutWin_Object;
 
 int About(void)
 {
+
+    showRequester(MainWindow, "PROGDIR:images/AmiFTP_ICON.png", GetAmiFTPString(Str_AboutAmiFTP), "OK", "%s\n%s\n%s", infotext, CurrentState.RexxPort, GetAmiFTPString(Str_Translator));
+
+#if 0
     Object *AboutLayout;
     struct Window *AboutWindow;
     Object *l;
@@ -867,7 +872,9 @@ int About(void)
 	DisposeObject(AboutLayout);
 	return 1;
     }
+ 
 
+  
     //LockWindow(MainWin_Object);
 
     if (AboutWindow=(struct Window *)IDoMethod(AboutWin_Object, WM_OPEN)){ //CA_OpenWindow(AboutWin_Object)) {
@@ -904,6 +911,7 @@ int About(void)
     }
     DisposeObject(AboutWin_Object);
     //UnlockWindow(MainWin_Object);
+   #endif
     return 1;
 }
 

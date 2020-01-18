@@ -55,6 +55,9 @@
 #include <proto/penmap.h>
 #include <images/penmap.h>
 
+#include <proto/bitmap.h>
+#include <images/bitmap.h>
+
 #include <proto/bevel.h>
 #include <images/bevel.h>
 

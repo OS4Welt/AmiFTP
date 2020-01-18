@@ -561,4 +561,4 @@ void strmfp(char *file, char *path, char *node,int size);
 
 int stcgfn(char *node, char *name, int size);
 int getfa(CONST_STRPTR name);
-int showRequester(struct Window *window, STRPTR Title, STRPTR Gadget, STRPTR Body, ...);
+__attribute__((linearvarargs)) int showRequester(struct Window *window, STRPTR icon, STRPTR Title, STRPTR Gadget, STRPTR Body, ...);

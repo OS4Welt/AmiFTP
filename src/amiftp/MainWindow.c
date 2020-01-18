@@ -1145,7 +1145,6 @@ static void ScrollListbrowser(ULONG direction)
 }
 
 static Object *listimage;
-static UWORD listmapping[4];
 
 void CreateInfoList(struct List *list)
 {
@@ -1153,20 +1152,18 @@ void CreateInfoList(struct List *list)
     extern struct Image im;
     extern char *linfotext;
     int i;
-    char *infostrings[4]={NULL, "Copyright © 1995-1998 by Magnus Lilja", "<lilja@lysator.liu.se>","All Rights Reserved"};
+    char *infostrings[4]={NULL, "Copyright © 1995-1998 by Magnus Lilja","2020 by Frank Menzel for Amiga OS4 community", "<www.OS4Welt.de>"};
 
     infostrings[0]=linfotext;
 
     NewList(list);
 
-    listmapping[0]=DrawInfo->dri_Pens[BACKGROUNDPEN];
-    listmapping[1]=DrawInfo->dri_Pens[SHADOWPEN];
-    listmapping[2]=DrawInfo->dri_Pens[SHINEPEN];
-    listmapping[3]=DrawInfo->dri_Pens[FILLPEN];
 
-    if (listimage=NewObject(LABEL_GetClass(), NULL,
-					   LABEL_Mapping, listmapping,
-					   LABEL_Image, &im,
+    if (listimage=NewObject(NULL, "bitmap.image",
+					   BITMAP_SourceFile, "PROGDIR:images/AmiFTP.png",
+					   BITMAP_Screen, Screen,
+					   BITMAP_Precision, PRECISION_EXACT,
+					   BITMAP_Masking, TRUE,
 					   TAG_END))
       if (node=AllocListBrowserNode(1,
 				    LBNA_Flags, LBFLG_READONLY,
