@@ -53,7 +53,6 @@ int sgetc(const int sock)
     t.tv_sec = 120L;
     t.tv_usec = 0;
 
-
 //    Printf("sgetc: Entered sgetc())\n");
     FD_ZERO(&rd);
     FD_ZERO(&ex);

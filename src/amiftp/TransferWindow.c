@@ -8,7 +8,7 @@
 BOOL AskGetDir(void);
 
 
-int GetDir(char *remote_parent, char *local_parent, char *name, char *localname);
+int GetDir(char *remote_parent, char *local_parent, char *name, char *localname, const int binary);
 void UpdateTransTitle(struct Node *node);
 
 struct Window *TransferWindow;
@@ -41,14 +41,19 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
     fuelargs[0]=fuelargs[1]=0;
     OverwriteAll=0;
 
+
+    if (CurrentState.CurrentDLDir[0]==0) UpdateLocalDir("Ram:");
+
     if (MainWindow)
       if (!OpenTransferWindow())
 	return TRANS_GUI;
 
-    for (node=GetHead(flist);node != NULL; node=GetSucc(node)) {
+    int i = 0;
+    for (node=GetHead(flist);node != NULL; node=GetSucc(node), i++) {
 	ULONG sel=0;
 	GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
 	if (sel) {
+        
 	    static char tmp[1024];
 	    curr=(void *)node->ln_Name;
 	    aborted=0;
@@ -58,7 +63,8 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 		if (AskGetDir()) {
 		    if (result=GetDir(CurrentState.CurrentRemoteDir,
 					  CurrentState.CurrentDLDir,curr->name,
-					  curr->name)) {
+					  curr->name, binary)) {
+                        
 			goto out;
 		    }
 		    if (result==TRSF_OK) {
@@ -75,6 +81,7 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 	      case S_IFREG:
 		memset(localfile,0,sizeof(localfile));
 		if (!localname) {
+           
 		    stcgfn(tmp,curr->name, 1024);
 		    strmfp(localfile,CurrentState.CurrentDLDir,tmp, MAXPATHLEN);
 		}
@@ -157,7 +164,7 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 			result=get_file(name, localfile, curr->size);
 			if (result==TRSF_BADFILE) {
 			    if (AskGetDir()) {
-				if (result==GetDir(CurrentState.CurrentRemoteDir,CurrentState.CurrentDLDir,name,name)!=TRSF_OK) {
+				if (result==GetDir(CurrentState.CurrentRemoteDir,CurrentState.CurrentDLDir,name,name,binary)!=TRSF_OK) {
 				    free(name);
 				    goto out;
 				}
@@ -621,6 +628,8 @@ BOOL CheckExists(char *lfile,int size, ULONG *restartpoint)
         fileSize = data->FileSize;
         FreeDosObject(DOS_EXAMINEDATA, data);
     }
+    else return FALSE;
+
     if (SilentMode || OverwriteAll) {
 	*restartpoint=0;
 	return FALSE;
@@ -654,6 +663,7 @@ BOOL CheckExists(char *lfile,int size, ULONG *restartpoint)
 	ret=(BOOL)rtEZRequest(GetAmiFTPString(TW_FileExists), Gadgetstring, NULL,
 			      (struct TagItem *)tags, lfile, fib.fib_Size, size);
                   */
+             
     ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), fileSize, size);
 	free(Gadgetstring);
 	*restartpoint=0;
@@ -742,6 +752,7 @@ int get_file(char *name, char *localname, int size)
     }
     if (CheckExists(localname, size, &restartpoint))
       return TRSF_OK;
+
     rval = recvrequest("RETR", localname, name, "w", restartpoint);
     return rval;
 }
@@ -812,7 +823,7 @@ void PrintQueue(struct List *queue)
     }
 }
 
-int GetDir(char *remote_parent, char *local_parent, char *name, char *localname)
+int GetDir(char *remote_parent, char *local_parent, char *name, char *localname, const int binary)
 {
    
     struct List Queue;
@@ -888,6 +899,7 @@ int GetDir(char *remote_parent, char *local_parent, char *name, char *localname)
 	    goto out;
 	}
 	entry->filelist=read_remote_dir();
+    settype(binary); // goos switch back to previous type because read_remote_dir set it to ascii -> sloow
 	if (!entry->filelist) {
 	    free(rdir);
 	    free(ldir);

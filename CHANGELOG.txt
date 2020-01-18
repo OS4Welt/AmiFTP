@@ -11,3 +11,4 @@ outdated DOS code has been replaced by newer AmigaOS4 versions and is therefore 
 #fmenzel 18.01.2020
 new Amiga OS4 about window 
 added credits infos in the main start window and replaced the planar image with a 32bit png image.
+File and full directory download now works correctly 

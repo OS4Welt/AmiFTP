@@ -203,7 +203,7 @@ int Parent_clicked(void)
 int Get_clicked(void)
 {
     struct Node *node;
-    ULONG sel;
+    ULONG sel=0;
 
     if (!TCPStack)
       return 1;
@@ -213,6 +213,7 @@ int Get_clicked(void)
 				LBNA_Selected, &sel, TAG_DONE);
 	if (sel) break;
     }
+
     if (node) {
 	LockWindow(MainWin_Object);
 	if (CurrentState.ADTMode)

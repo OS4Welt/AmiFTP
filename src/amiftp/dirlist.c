@@ -12,7 +12,7 @@ struct dirlist *new_direntry(char *name,char *date,char *owner,
 {
     struct dirlist *tmp;
 
-    tmp = (struct dirlist *)malloc(sizeof(struct dirlist));
+    tmp = (struct dirlist *)calloc(sizeof(struct dirlist),1);
     if (!tmp)
       return NULL;
     bzero((char *)tmp,sizeof(struct dirlist));
@@ -249,7 +249,7 @@ void free_direntry(struct dirlist *tmp)
     if (tmp->group)
       free(tmp->group);
     if (tmp->stringSize)
-    	free(tmp->stringSize);
+    	FreeVec(tmp->stringSize);
     free(tmp);
 }
 
@@ -268,7 +268,8 @@ void free_dirlist(struct List *filelist)
 	      free(tmp->owner);
 	    if (tmp->group)
 	      free(tmp->group);
-
+         if (tmp->stringSize)
+    		FreeVec(tmp->stringSize);
 	    free(tmp);
 	}
 	FreeListBrowserNode(node);

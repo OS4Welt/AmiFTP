@@ -464,7 +464,7 @@ int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvr
 		  case TYPE_I:
 		  case TYPE_L:
 		    //c=ReadAsync(ASyncFH,buf,sizeof(buf));
-            c = FRead(fh, buf, sizeof(buf), 1);
+            c = FRead(fh, buf, 1, sizeof(buf));
 		    if (c>0) {
 			for (bufp=buf;c>0;c-=d,bufp+=d)
 			  if ((d=tcp_send(sout,bufp,c,0))<=0)
@@ -661,7 +661,6 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
               */
 
     fh = FOpen(local, restartpoint?MODE_OLDFILE:MODE_NEWFILE,MainPrefs.mp_BufferSize);
-
     //if (!ASyncFH) {
 	if (!fh) {
     ShowErrorReq(GetAmiFTPString(Str_LocalfileError),local);
@@ -696,6 +695,7 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 	FD_ZERO(&exceptmask);
 	ret=0;
 
+                                              
 	FD_SET(sin,&readmask);
 	FD_SET(sin,&exceptmask);
 	ret=tcp_waitselect(sin+1,&readmask,NULL,&exceptmask,NULL,&mask);
@@ -733,6 +733,7 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 		switch (curtype) {
 		  case TYPE_I:
 		  case TYPE_L:
+            
 		    c=tcp_recv(sin,transfer_buf,bufsize,0);
 		    if (c>0) {
 			//if ((d=WriteAsync(ASyncFH,transfer_buf,c))<=0)
@@ -743,11 +744,15 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 			 goto abort;
 		    }
 		    else
+            {
 		      Continue=FALSE;
-		    if (d!=c&&Continue)
+            }
+            /*
+		    if (d!=0&&Continue)
 		      {goto abort;}
+              */
 		    if (c!=0) {
-			bytes_transferred+=(long)d;
+			bytes_transferred+=(long)c;
 		    }
 		    /* plus en massa kod...*/
 		    break;
@@ -771,7 +776,10 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 			    bytes=0;
 			}
 			}
-		    else Continue=FALSE;
+		    else
+            {
+            	Continue=FALSE;
+            }
 		    break;
 		}
 	    }

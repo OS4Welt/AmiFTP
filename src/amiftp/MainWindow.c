@@ -178,9 +178,12 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 		    int i;
 		    char *dir;
 
-		    for (i=0, node=GetHead(&clist); node; node=GetSucc(node), i++)
-		      if (code==i) break;
+            GetAttr(CHOOSER_SelectedNode,MG_List[MG_CacheList],(ULONG*) &node);
+
+            if (node)
+            {
 		    GetChooserNodeAttrs(node, CNA_Text, &dir, TAG_DONE);
+
 		    if (!change_remote_dir(dir, 0)) {
 			if (head=LookupCache(CurrentState.CurrentRemoteDir)) {
 			    DetachToolList();
@@ -192,6 +195,7 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 		    else {
 			RemoteCDFailed();
 		    }
+            }
 		}
 		break;
 	      case MG_SpeedBar:
