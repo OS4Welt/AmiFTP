@@ -119,6 +119,14 @@ extern struct Library *SocketBase;
 #define MAXPATHLEN 1024
 #endif
 
+#ifdef __GNUC__  //goos be compatible with 64k prefs binary
+   #ifdef __PPC__
+    #pragma pack(2)
+   #endif
+#elif defined(__VBCC__)
+   #pragma amiga-align
+#endif
+
 struct MainPrefs {
     char       *mp_LocalDir;
     char       *mp_AnonymousPW;
@@ -163,6 +171,14 @@ struct MainPrefs {
     UWORD       mp_ListFontSize;
     char       *mp_PubScreen;
 };
+
+#ifdef __GNUC__
+   #ifdef __PPC__
+    #pragma pack()
+   #endif
+#elif defined(__VBCC__)
+   #pragma default-align
+#endif
 
 enum {SLN_REGULAR,SLN_PARENT,SLN_CHILD,SLN_BARLABEL};
 

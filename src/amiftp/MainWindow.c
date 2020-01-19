@@ -763,6 +763,17 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
     }
 
     if (MainWindow=(struct Window *)IDoMethod(MainWin_Object, WM_OPEN)) {
+
+    if (firstStart)
+    {
+        ULONG value;
+        GetAttr(WA_Top, MainWin_Object, &value);
+        MainPrefs.mp_TopEdge = (WORD)value;
+
+        GetAttr(WA_Left, MainWin_Object, &value);
+        MainPrefs.mp_LeftEdge = (WORD)value;
+        }
+
 	UpdateWindowTitle();
 	UnlockPubScreen(NULL, Screen);
 	return MainWindow;
@@ -1006,18 +1017,15 @@ void UpdateSiteName(const char *site)
 
 void LockWindow(Object *window_object)
 {
-    /*
     if (window_object==MainWin_Object)
       ClearMenuStrip(MainWindow);
     SetAttrs(window_object,
 	     WA_BusyPointer, TRUE,
 	     TAG_DONE);
-         */
 }
 
 void UnlockWindow(Object *window_object)
 {
- #if 0
     SetAttrs(window_object,
 	     WA_BusyPointer, FALSE,
 	     TAG_DONE);
@@ -1063,7 +1071,6 @@ void UnlockWindow(Object *window_object)
     }
 
     return;
-    #endif
 }
 
 void ChangeAmiFTPMode(void)
@@ -1174,7 +1181,7 @@ void CreateInfoList(struct List *list)
     extern struct Image im;
     extern char *linfotext;
     int i;
-    char *infostrings[4]={NULL, "Copyright © 1995-1998 by Magnus Lilja","2020 by Frank Menzel for Amiga OS4 community", "<www.OS4Welt.de>"};
+    char *infostrings[4]={NULL, "Copyright © 1995-1998 by Magnus Lilja","@2020 by Frank Menzel for Amiga OS4 community", "<www.OS4Welt.de>"};
 
     infostrings[0]=linfotext;
 

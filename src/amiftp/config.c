@@ -451,7 +451,6 @@ static BOOL WriteMainPrefs(struct IFFHandle *iff, UBYTE *buf, struct MainPrefs *
     struct MainPrefsObject *mpo=(struct MainPrefsObject *)buf;
     ULONG sbits=0;
     UBYTE *ptr=(UBYTE *)&mpo[1];
-
     if (PutConfigStr(mp->mp_LocalDir, &ptr)) sbits|=FWPR_LOCALDIR;
     if (PutConfigStr(mp->mp_AnonymousPW, &ptr)) sbits|=FWPR_ANONPW;
     if (PutConfigStr(mp->mp_LoginName, &ptr)) sbits|=FWPR_LOGINNAME;
