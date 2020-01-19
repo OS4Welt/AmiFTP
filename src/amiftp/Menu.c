@@ -731,7 +731,7 @@ static int menu_HostlistPrefs(struct MenuItem *menuitem)
     LockWindow(MainWin_Object);
     OpenSiteListWindow(FALSE);
     UnlockWindow(MainWin_Object);
-    return 1;
+    return 17;
 }
 
 static int menu_BinaryTransferMode(struct MenuItem *menuitem)
@@ -981,7 +981,7 @@ static int menu_Reconnect(struct MenuItem *menuitem)
 static int menu_OpenPrefsWindow(struct MenuItem *menuitem)
 {
     OpenPrefsWindow();
-    return 1;
+    return 17;
 }
 
 static int menu_Connect(struct MenuItem *menuitem)

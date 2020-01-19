@@ -245,10 +245,10 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 	    }
 	    break;
 	  case WMHI_MENUPICK: {
-	      USHORT menunum=code;
+	
+          USHORT menunum=result&WMHI_MENUMASK;
 	      struct CallBackHook *cbh;
 	      struct Window *win = MainWindow;
-
 	      while (MainWindow==win && menunum!=MENUNULL) {
 		  struct MenuItem *menuitem = ItemAddress(menu, menunum);
 		  cbh=(void *)GTMENUITEM_USERDATA(menuitem);
@@ -317,11 +317,16 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 //	    kprintf("key: %ld\n", code);
 	    break;
 	}
-	if (MenuNeedsUpdate) {
+	
+
+    if (MenuNeedsUpdate) {
 	    UpdateMenus();
 	    MenuNeedsUpdate=FALSE;
 	}
+
     }
+
+    
 
     if (Upload) {
 	struct Node *node;
@@ -698,14 +703,23 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 	FreeSpeedBarList();
     }
 
+    BOOL firstStart = CurrentState.Width==0&&MainPrefs.mp_Width==0&&CurrentState.Height==0&&MainPrefs.mp_Height==0;
+
+    if (firstStart)
+    {
+        MainPrefs.mp_Width = 800;
+        MainPrefs.mp_Height = 600;
+        }
+
     MainWin_Object = WindowObject,
                        WA_Title, wintitle,
                        WA_ScreenTitle, wintitle,
                        WA_PubScreen, Screen,
                        WA_SizeGadget, TRUE,
                        WA_SizeBBottom, TRUE,
-                       WA_Top, CurrentState.TopEdge?CurrentState.TopEdge:MainPrefs.mp_TopEdge-Screen->ViewPort.DyOffset,
-                       WA_Left, CurrentState.LeftEdge?CurrentState.LeftEdge:MainPrefs.mp_LeftEdge-Screen->ViewPort.DxOffset,
+                       firstStart?TAG_IGNORE:WA_Top, CurrentState.TopEdge?CurrentState.TopEdge:MainPrefs.mp_TopEdge-Screen->ViewPort.DyOffset,
+                       firstStart?TAG_IGNORE:WA_Left, CurrentState.LeftEdge?CurrentState.LeftEdge:MainPrefs.mp_LeftEdge-Screen->ViewPort.DxOffset,
+                       firstStart?WINDOW_Position:TAG_IGNORE,WPOS_CENTERSCREEN,
                        WA_InnerHeight, CurrentState.Height?CurrentState.Height:MainPrefs.mp_Height,
                        WA_InnerWidth, CurrentState.Width?CurrentState.Width:MainPrefs.mp_Width,
                        WA_DepthGadget, TRUE,
@@ -992,15 +1006,18 @@ void UpdateSiteName(const char *site)
 
 void LockWindow(Object *window_object)
 {
+    /*
     if (window_object==MainWin_Object)
       ClearMenuStrip(MainWindow);
     SetAttrs(window_object,
 	     WA_BusyPointer, TRUE,
 	     TAG_DONE);
+         */
 }
 
 void UnlockWindow(Object *window_object)
 {
+ #if 0
     SetAttrs(window_object,
 	     WA_BusyPointer, FALSE,
 	     TAG_DONE);
@@ -1046,6 +1063,7 @@ void UnlockWindow(Object *window_object)
     }
 
     return;
+    #endif
 }
 
 void ChangeAmiFTPMode(void)

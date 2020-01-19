@@ -100,6 +100,7 @@ int main(int argc, char **argv)
     if (!IDOS||!IListBrowser||!ILayout||!ILabel||!IWindow||!IChooser||!IString||!IClickTab||!ICheckBox||!IBevel||!IARexx||!ISpeedBar||!IFuelGauge||!IInteger||!IGadTools)
       return 10;
 
+    memset(&MainPrefs, 0, sizeof(MainPrefs));
     ME=(struct Process *)FindTask(NULL);
     oldwptr=ME->pr_WindowPtr;
     
