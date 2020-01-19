@@ -6,6 +6,7 @@
 
 struct dirlist {
     char	*name;
+    char	*remoteName;
     char	*date;
     char	*owner;
     char	*group;

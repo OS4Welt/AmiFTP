@@ -333,8 +333,33 @@ int command(char *fmt, ...)
     return getreply(!strcmp(fmt, "QUIT"));
 }
 
-int sendrequest(char *cmd, char *local, char *remote) /*Fixa samma som med recvreq */
+int sendrequest(char *cmd, char *local, char *remotePath) /*Fixa samma som med recvreq */
 {
+
+    static char remote[1024];
+
+   char *tst = remotePath;
+   char *tstStart;
+   char currentDir[64];
+
+   while(tst)
+   {
+        tstStart = tst;
+       	tst = strstr(tstStart,"/");
+
+    	if (tst && tst[1]!='\0')
+        {
+            memset(currentDir, 0, sizeof(currentDir));
+            strncpy(currentDir,remotePath,tst-remotePath);
+            command("%s %s","MKD",currentDir);
+            }
+    	else break;
+        tst++;
+   }
+
+    strncpy(remote, remotePath, 1024);
+
+
     //struct AsyncFile *ASyncFH;
     BPTR fh = 0;
     int sout=-1;

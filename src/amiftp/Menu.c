@@ -508,7 +508,7 @@ static int menu_Delete(struct MenuItem *menuitem)
 		curr=(void *)node->ln_Name; /* The dirlist-structure is in ln_Name */
 		if (curr) {
 		    if (delete_remote(curr->name,
-				      (!S_ISDIR(curr->mode))?"DELE":"RM")) {
+				      (!S_ISDIR(curr->mode))?"DELE":"RMD")) {
             struct lbRemNode msg = {LBM_REMNODE, NULL, node};
             IDoMethodA(MG_List[MG_ListView], (Msg)&msg);
 			//LBRemNode(MG_List[MG_ListView], MainWindow, NULL, node);

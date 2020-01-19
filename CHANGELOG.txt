@@ -18,3 +18,4 @@ Window size and position set to better values at first start
 Fixed crash when adding a new entry in the hotlist menu
 Window position reset if only hotlist has changed fixed
 Prefs header struct has now amiga alignment
+Added support for recursive upload of directories

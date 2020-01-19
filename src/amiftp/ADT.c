@@ -224,7 +224,7 @@ static int ParseADT(struct List *list, char *buffer)
 
     ParseRecentLine(&date, &length, &a, &b, dir, name, desc, buffer);
 
-    if (entry=new_direntry(name, NULL, dir, desc, S_IFREG, length)) {
+    if (entry=new_direntry(name, name, NULL, dir, desc, S_IFREG, length)) {
 	struct Node *tmp;
 	entry->adt=1;
 	entry->readmelength=a;

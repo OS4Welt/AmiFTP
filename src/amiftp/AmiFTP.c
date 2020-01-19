@@ -327,7 +327,7 @@ int Put_clicked(void)
 					FreeDosObject(DOS_EXAMINEDATA, data);
 				}
 
-				if (entry = new_direntry(DummyBuffer, NULL, NULL, NULL, S_IFREG, fileSize))
+				if (entry = new_direntry(DummyBuffer, DummyBuffer, NULL, NULL, NULL, S_IFREG, fileSize))
 				{				//fib.fib_Size)) {
 					if (node = AllocListBrowserNode(1, LBNA_UserData, entry, LBNA_Column, 0, LBNCA_Text, entry->name, LBNA_Selected, TRUE, TAG_DONE))
 					{

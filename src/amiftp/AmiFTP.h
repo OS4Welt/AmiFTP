@@ -436,7 +436,7 @@ int delete_remote(char *name, const char *delcmd);
 struct List *read_remote_dir(void);
 
 /* dirlist.c */
-struct dirlist *new_direntry(char *name, char *date, char *owner,
+struct dirlist *new_direntry(char *localName, char *name, char *date, char *owner,
 			     char *group, mode_t mode, int64 size);
 BOOL add_direntry(struct List *filelist, char *name, char *date,
 		  char *owner, char *group, mode_t mode, int64 size, int sort_mode,

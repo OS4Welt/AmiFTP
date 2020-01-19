@@ -506,6 +506,11 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
 	    FileSize=size;
 	    last=0;
 	}
+    if (remote==NULL) // goos ?aminet mode?
+    {
+    res=sendrequest("STOR",entry->name,entry->remoteName);
+    }
+    else
 	res=sendrequest("STOR",entry->name,remote?(char *)remote:(char *)FilePart(entry->name));
 	if (rem) {
 	    free(rem);

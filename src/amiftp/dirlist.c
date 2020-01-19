@@ -7,7 +7,7 @@
 
 #define ISDIR(x) (x)&0x4000
 
-struct dirlist *new_direntry(char *name,char *date,char *owner,
+struct dirlist *new_direntry(char *remoteName, char *name,char *date,char *owner,
 			     char *group,mode_t mode,int64 size)
 {
     struct dirlist *tmp;
@@ -21,6 +21,13 @@ struct dirlist *new_direntry(char *name,char *date,char *owner,
 	free_direntry(tmp);
 	return NULL;
     }
+
+     tmp->remoteName = (char *)malloc((unsigned int)(strlen(remoteName) + 1));
+    if (tmp->remoteName == NULL) {
+	free_direntry(tmp);
+	return NULL;
+    }
+
     if (date) {
 	tmp->date = (char *)malloc((unsigned int)(strlen(date) + 1));
 	if (tmp->date == NULL) {
@@ -54,6 +61,8 @@ struct dirlist *new_direntry(char *name,char *date,char *owner,
 */
 
     strcpy(tmp->name, name);
+    strcpy(tmp->remoteName, remoteName);
+    
     if (date)
       strcpy(tmp->date, date);
     if (owner)
@@ -130,7 +139,7 @@ BOOL add_direntry(struct List *filelist, char *name, char *date,
 #endif
     }
     
-    tmp = new_direntry(name, date, owner, group, mode, size);
+    tmp = new_direntry(name, name, date, owner, group, mode, size);
     if (tmp) {
 	struct Node *tmp2=AllocListBrowserNode(6,
 					       LBNA_Column,0,
@@ -242,6 +251,8 @@ void free_direntry(struct dirlist *tmp)
 {
     if (tmp->name)
       free(tmp->name);
+     if (tmp->remoteName)
+      free(tmp->remoteName);
     if (tmp->date)
       free(tmp->date);
     if (tmp->owner)

@@ -376,6 +376,103 @@ static ULONG MainIDCMPHookFunc(struct Hook *hook,
     return 0;
 }
 
+
+void processFile(char *remotePath, char *localPath, char* fileName, int64 fileSize)
+{
+    struct dirlist *entry;
+	struct Node *node;
+
+    static char slocalPath[1024];
+    static char sremotePath[1024];
+
+    sprintf(slocalPath, "%s%s", localPath, fileName);
+    sprintf(sremotePath, "%s%s", remotePath, fileName);
+  
+    if (entry=new_direntry(sremotePath, slocalPath, NULL, NULL, NULL,
+           S_IFREG, fileSize))
+    {
+
+        if (node=AllocListBrowserNode(1,
+					  LBNA_UserData, entry,
+					  LBNA_Column, 0,
+					  LBNCA_Text, entry->name,
+					  LBNA_Selected, TRUE,
+					  TAG_DONE))
+		{
+			node->ln_Name=(void *)entry;
+			AddTail(&DropUploadList, node);
+			Upload=TRUE;
+		}
+    	else
+      		free_direntry(entry);
+
+	}
+                               
+}
+
+void processDirectory(char *path)
+{
+     APTR context = ObtainDirContextTags(EX_StringNameInput,(char*)path,
+                    EX_DataFields,(EXF_NAME|EXF_TYPE),TAG_END);
+
+        
+        if (context)
+    	{
+        	struct ExamineData *dat;
+
+			while ((dat = ExamineDir(context)))
+        	{
+
+
+                if( EXD_IS_FILE(dat) )
+                {
+                    char *currentRemotePath = calloc(strlen(path)+2,1);
+                    strcpy(currentRemotePath, path);
+                    char *currentLocalPath = calloc(strlen(path)+2,1);
+                    strcpy(currentLocalPath, path);
+
+                    size_t remoteLen = strlen(currentRemotePath);
+                    size_t localLen = strlen(currentLocalPath);
+
+                    for (int i = 0; i < remoteLen; i++)
+                    {
+                        if (currentRemotePath[i]==':') currentRemotePath[i]='/';
+                        }
+
+                    if (currentRemotePath[remoteLen-1]!='/')
+                    {
+                    	currentRemotePath[remoteLen]='/';
+                    	currentRemotePath[remoteLen+1]='\0';
+                	}
+                    if (currentLocalPath[localLen-1]!='/' && currentLocalPath[localLen-1]!=':')
+                    {
+                    	currentLocalPath[localLen]='/';
+                    	currentLocalPath[localLen+1]='\0';
+                	}
+                    processFile(currentRemotePath, currentLocalPath, dat->Name, dat->FileSize);
+                    free(currentRemotePath);
+                    free(currentLocalPath);
+            	}
+                else if( EXD_IS_DIRECTORY(dat) )
+                {
+                    int len = strlen(path)+strlen(dat->Name)+2;
+                    char *npath = (char*)calloc(len,1);
+                    if (npath)
+                    {
+                        strcpy(npath, path);
+
+                        if (AddPart(npath, dat->Name, len))
+                    		processDirectory(npath);
+                    	free(npath);
+                    }
+                }
+            }
+
+        ReleaseDirContext(context);
+		}
+}
+
+
 static struct Hook AppMessageHook;
 static ULONG  AppMessageHookFunc(struct Hook *hook,
 					       Object *WinObj,
@@ -398,56 +495,31 @@ static ULONG  AppMessageHookFunc(struct Hook *hook,
 	FreeMem(node, sizeof(struct Node));
     }
 
+    
     for (i=0; i<msg->am_NumArgs; i++) {
-	if (msg->am_ArgList[i].wa_Lock && msg->am_ArgList[i].wa_Name) {
-	    char path[300];
-	    BPTR lock;
-	    //struct FileInfoBlock fib;
+    
+    if (msg->am_ArgList[i].wa_Lock && msg->am_ArgList[i].wa_Name) {
+	    char path[1024];
 
-	    NameFromLock(msg->am_ArgList[i].wa_Lock, path, 300);
-	    AddPart(path, msg->am_ArgList[i].wa_Name, 300);
+	    NameFromLock(msg->am_ArgList[i].wa_Lock, path, 1024);
+	    AddPart(path, msg->am_ArgList[i].wa_Name, 1024);
+        
 
-	    lock=Lock(path, ACCESS_READ);
-	    /*
-        if (lock) {
-		if (Examine(lock, &fib)) {
-            if (fib.fib_DirEntryType<0) {
-        */
-		    
-			struct dirlist *entry;
-			struct Node *node;
-            struct ExamineData *data = ExamineObjectTags(EX_StringNameInput, path, TAG_END);
-            if (data)
+
+        struct ExamineData *data = ExamineObjectTags(EX_StringNameInput, path, TAG_END);
+        if (data)
+        {
+            if (EXD_IS_FILE(data))
             {
-                if (EXD_IS_FILE(data))
-                {
-    			if (entry=new_direntry(path, NULL, NULL, NULL,
-    					       //S_IFREG, fib.fib_Size)) {
-                               S_IFREG, data->FileSize)) {
-    			    if (node=AllocListBrowserNode(1,
-    							  LBNA_UserData, entry,
-    							  LBNA_Column, 0,
-    							  LBNCA_Text, entry->name,
-    							  LBNA_Selected, TRUE,
-    							  TAG_DONE)) {
-    				node->ln_Name=(void *)entry;
-    				AddTail(&DropUploadList, node);
-    				Upload=TRUE;
-    			    }
-    			    else
-    			      free_direntry(entry);
-    			}
-                }
-                FreeDosObject(DOS_EXAMINEDATA,(APTR)data);
+				processFile(data->Name, path,"", data->FileSize);
             }
-
-        /*
-        }
-		}
-		UnLock(lock);
-	    }
-        */
-	}
+            else if (EXD_IS_DIRECTORY(data))
+            {
+            	processDirectory(path);
+            }
+            FreeDosObject(DOS_EXAMINEDATA,(APTR)data);
+        }    
+    }
     }
     return 0;
 }
