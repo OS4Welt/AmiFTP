@@ -410,9 +410,9 @@ void processFile(char *remotePath, char *localPath, char* fileName, int64 fileSi
                                
 }
 
-void processDirectory(char *path)
+void processDirectory(char *localPath, char *remotePath)
 {
-     APTR context = ObtainDirContextTags(EX_StringNameInput,(char*)path,
+     APTR context = ObtainDirContextTags(EX_StringNameInput,(char*)localPath,
                     EX_DataFields,(EXF_NAME|EXF_TYPE),TAG_END);
 
         
@@ -426,15 +426,15 @@ void processDirectory(char *path)
 
                 if( EXD_IS_FILE(dat) )
                 {
-                    char *currentRemotePath = calloc(strlen(path)+2,1);
-                    strcpy(currentRemotePath, path);
-                    char *currentLocalPath = calloc(strlen(path)+2,1);
-                    strcpy(currentLocalPath, path);
+                    char *currentRemotePath = calloc(strlen(remotePath)+2,1);
+                    strcpy(currentRemotePath, remotePath);
+                    char *currentLocalPath = calloc(strlen(localPath)+2,1);
+                    strcpy(currentLocalPath, localPath);
 
                     size_t remoteLen = strlen(currentRemotePath);
                     size_t localLen = strlen(currentLocalPath);
-
-                    for (int i = 0; i < remoteLen; i++)
+                    int i = 0;
+                    for (i = 0; i < remoteLen; i++)
                     {
                         if (currentRemotePath[i]==':') currentRemotePath[i]='/';
                         }
@@ -455,15 +455,25 @@ void processDirectory(char *path)
             	}
                 else if( EXD_IS_DIRECTORY(dat) )
                 {
-                    int len = strlen(path)+strlen(dat->Name)+2;
-                    char *npath = (char*)calloc(len,1);
-                    if (npath)
+                    int localLen = strlen(localPath)+strlen(dat->Name)+2;
+                    char *local = (char*)calloc(localLen,1);
+                    if (local)
                     {
-                        strcpy(npath, path);
+                        strcpy(local, localPath);
+                        int remoteLen = strlen(remotePath)+strlen(dat->Name)+2;
+                        char *remote = (char*)calloc(remoteLen,1);
 
-                        if (AddPart(npath, dat->Name, len))
-                    		processDirectory(npath);
-                    	free(npath);
+                        if (remote)
+                        {
+                            strcpy(remote, remotePath);
+
+                            if (AddPart(remote, dat->Name, remoteLen) && AddPart(local, dat->Name, localLen))
+                            {
+                        		processDirectory(local, remote);
+                        	}
+                        	free(remote);
+                        }
+                        free(local);
                     }
                 }
             }
@@ -515,7 +525,9 @@ static ULONG  AppMessageHookFunc(struct Hook *hook,
             }
             else if (EXD_IS_DIRECTORY(data))
             {
-            	processDirectory(path);
+                STRPTR remotePath = ASPrintf("%s/", data->Name);
+            	processDirectory(path, remotePath);
+                FreeVec(remotePath);
             }
             FreeDosObject(DOS_EXAMINEDATA,(APTR)data);
         }    

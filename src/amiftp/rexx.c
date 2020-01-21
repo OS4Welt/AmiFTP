@@ -405,7 +405,7 @@ static void rexx_PutFile(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 	return;
     }
 
-    if (entry=new_direntry(args->file, NULL, NULL, NULL, S_IFREG, 0)) {
+    if (entry=new_direntry(args->file,args->file, NULL, NULL, NULL, S_IFREG, 0)) {
 	if (node=AllocListBrowserNode(1,
 				      LBNA_UserData, entry,
 				      LBNA_Column, 0,
@@ -450,7 +450,7 @@ static void rexx_MPutFile(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 
     NewList(&UploadList);
     while(args->files[i]) {
-	if (entry=new_direntry(args->files[i], NULL, NULL, NULL, S_IFREG, 0)) {
+	if (entry=new_direntry(args->files[i],args->files[i], NULL, NULL, NULL, S_IFREG, 0)) {
 	    if (node=AllocListBrowserNode(1,
 					  LBNA_UserData, entry,
 					  LBNA_Column, 0,
