@@ -446,272 +446,27 @@ static int menu_UnselectAll(struct MenuItem *menuitem)
 
 static int menu_Delete(struct MenuItem *menuitem)
 {
-    struct dirlist *curr;
-    struct Node *node,*nnode;
-    int t=0;
-    int sel=0;
-
-    /*
-    static ULONG tags[]={
-	RTEZ_ReqTitle, NULL,
-	RT_Window, NULL,
-	RT_LockWindow, TRUE,
-	RT_ReqPos, REQPOS_CENTERWIN,
-	TAG_END};
-
-    tags[1]=(ULONG)GetAmiFTPString(Str_AmiFTPRequest);
-    tags[3]=(ULONG)MainWindow;
-    */
-
-    struct orRequest reqmsg;
-    struct TagItem tags[] = {
-     { REQ_Type, REQTYPE_INFO },
-     { REQ_BodyText, (Tag) GetAmiFTPString(MW_DeleteRequest) },
-     { REQ_GadgetText, (Tag) GetAmiFTPString(MW_DeleteCancel) },
-     { TAG_END, 0 }
-     };
-
-    reqmsg.MethodID = RM_OPENREQ;
-	reqmsg.or_Window = MainWindow;
-	reqmsg.or_Screen = NULL;
-	reqmsg.or_Attrs = tags;
-
-    Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
-
-    if (FileList) {
-
-        if (requester)
-        {
-            int result = IDoMethodA(requester, (Msg) & reqmsg);
-            if (result==0)
-            {
-            	DisposeObject(requester);
-            	return 1;
-            }
-        }
-        /*
-	LockWindow(MainWin_Object);
-	if (!rtEZRequest(GetAmiFTPString(MW_DeleteRequest),
-			 GetAmiFTPString(MW_DeleteCancel), NULL,
-			 (struct TagItem *)tags)) {
-	    UnlockWindow(MainWin_Object);
-      
-	    return 1;
-	}
-    */
-	node=GetHead(FileList);
-	while (node) {
-	    nnode=GetSucc(node);
-	    sel=0;
-	    GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
-	    if (sel) {
-		curr=(void *)node->ln_Name; /* The dirlist-structure is in ln_Name */
-		if (curr) {
-		    if (delete_remote(curr->name,
-				      (!S_ISDIR(curr->mode))?"DELE":"RMD")) {
-            struct lbRemNode msg = {LBM_REMNODE, NULL, node};
-            IDoMethodA(MG_List[MG_ListView], (Msg)&msg);
-			//LBRemNode(MG_List[MG_ListView], MainWindow, NULL, node);
-			free_direntry(curr);
-		    }
-		    else
-		      t=1;
-		}
-	    }
-	    node=nnode;
-	}
-	if (t==0)
-	  UpdateMainButtons(MB_NONESELECTED);
-	UnlockWindow(MainWin_Object);
-    }
-    UpdateWindowTitle();
-    DisposeObject(requester);
+    Delete_clicked();
     return 1;
 }
 
 static int menu_CreateDir(struct MenuItem *menuitem)
 {
-    /*
-    static ULONG tags[]={
-	RT_Window, NULL,
-	RT_LockWindow, TRUE,
-	RTGS_TextFmt, NULL,
-	RTGS_Flags, GSREQF_CENTERTEXT,
-	RT_ReqPos, REQPOS_CENTERWIN,
-	TAG_END
-    };  */
-    char dirname[256];
-
-
-     struct orRequest reqmsg;
-    struct TagItem tags[] = {
-     { REQ_Type, REQTYPE_STRING },
-     { REQ_TitleText, (Tag) GetAmiFTPString(Str_AmiFTPRequest) },
-     { REQ_BodyText, (Tag) GetAmiFTPString(Str_RemoteDir) },
-     { REQS_Buffer, (Tag) dirname },
-     { REQS_MaxChars, 255},
-    // { REQ_GadgetText, (Tag) gadgetTxt },
-     { TAG_END, 0 }
-     };
-
-    if (!connected)
-      return 1;
-
-    memset(dirname,0,256);
-
-    /*
-    tags[1]=(ULONG)MainWindow;
-    tags[5]=(ULONG)GetAmiFTPString(Str_RemoteDir);
-    */
-
-    reqmsg.MethodID = RM_OPENREQ;
-	reqmsg.or_Window = MainWindow;
-	reqmsg.or_Screen = NULL;
-	reqmsg.or_Attrs = tags;
-
-    Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
-    int result=0;
-    if (requester) result = IDoMethodA(requester, (Msg) & reqmsg);
-
-   // if (rtGetStringA(dirname, 250, GetAmiFTPString(Str_AmiFTPRequest), NULL,
-	//	       (struct TagItem *)tags)) {
-    if (result){
-	char comm[270];
-	sprintf(comm, "MKD %s", dirname);
-	if (command(comm)==ERROR) {
-	    ShowErrorReq("Couldn't create directory");
-	}
-    }
+    
 
     return 1;
 }
 
 static int menu_RawCommand(struct MenuItem *menuitem)
 {
-    /*
-    static ULONG tags[]={
-	RT_Window, NULL,
-	RT_LockWindow, TRUE,
-	RTGS_TextFmt, NULL,
-	RTGS_Flags, GSREQF_CENTERTEXT,
-	RT_ReqPos, REQPOS_CENTERWIN,
-	TAG_END
-    };
-    */
-    char comm[256];
-
-    struct orRequest reqmsg;
-    struct TagItem tags[] = {
-     { REQ_Type, REQTYPE_STRING },
-     { REQ_TitleText, (Tag) "AmiFTP Request" },
-     { REQ_BodyText, (Tag) "Enter FTP-command:" },
-     { REQS_Buffer, (Tag) comm },
-     { REQS_MaxChars, 255},
-    // { REQ_GadgetText, (Tag) gadgetTxt },
-     { TAG_END, 0 }
-     };
-
-    if (!connected)
-      return 1;
-
-    memset(comm, 0, sizeof(comm));
-    /*
-    tags[1]=(ULONG)MainWindow;
-    tags[5]=(ULONG)"Enter FTP-command:";
-    */
-
-    reqmsg.MethodID = RM_OPENREQ;
-	reqmsg.or_Window = MainWindow;
-	reqmsg.or_Screen = NULL;
-	reqmsg.or_Attrs = tags;
-
-    Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
-    int result=0;
-    if (requester) result = IDoMethodA(requester, (Msg) & reqmsg);
-  //  if (rtGetStringA(comm, 255, "AmiFTP Request", NULL,
-	//	       (struct TagItem *)tags)) {
-    if (result) {
-	if (command(comm) == ERROR) {
-	    ShowErrorReq("Command returned an error.");
-	}
-    }
-
-    DisposeObject(requester);
-
+ 
+    CreateDir_clicked();
     return 1;
 }
 
 static int menu_Rename(struct MenuItem *menuitem)
 {
-    /*
-    static ULONG tags[]={
-	RT_Window, NULL,
-	RT_LockWindow, TRUE,
-	RTGS_TextFmt, NULL,
-	RTGS_Flags, GSREQF_CENTERTEXT,
-	RT_ReqPos, REQPOS_CENTERWIN,
-	TAG_END
-    };
-    */
-    char comm[256];
-    char oldname[256], newname[256];
-    struct Node *node;
-    ULONG sel;
-
-    if (!connected || !FileList)
-      return 1;
-
-    struct orRequest reqmsg;
-    struct TagItem tags[] = {
-     { REQ_Type, REQTYPE_STRING },
-     { REQ_TitleText, (Tag) "AmiFTP Request" },
-     { REQ_BodyText, (Tag) NULL},
-     { REQS_Buffer, (Tag) newname },
-     { REQS_MaxChars, 255},
-    // { REQ_GadgetText, (Tag) gadgetTxt },
-     { TAG_END, 0 }
-     };
-
-    memset(newname, 0, sizeof(newname));
-
-    //tags[1]=(ULONG)MainWindow;
-
-    Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
-    
-    for (node = GetHead(FileList); node; node = GetSucc(node)) {
-	GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
-	if (sel) {
-	    char *filename = ((struct dirlist  *)(node->ln_Name))->name;
-	    sprintf(oldname, "Old name %s:\nEnter new name", filename);
-	    //tags[5] = oldname;
-        tags[2].ti_Data = (Tag)oldname;
-        int result=0;
-
-        reqmsg.MethodID = RM_OPENREQ;
-		reqmsg.or_Window = MainWindow;
-		reqmsg.or_Screen = NULL;
-		reqmsg.or_Attrs = tags;
-        if (requester) result = IDoMethodA(requester, (Msg) & reqmsg);
-        /*
-	    if (rtGetStringA(newname, 255, "AmiFTP Request", NULL,
-			     (struct TagItem *)tags)) {
-                    */
-        if (result) {
-		sprintf(comm, "RNFR %s", filename);
-		if (command(comm) == ERROR) {
-		    ShowErrorReq("Couldn't rename file.");
-		}
-		else {
-		    sprintf(comm, "RNTO %s", newname);
-		    if (command(comm) == ERROR) {
-			ShowErrorReq("Couldn't rename file.");
-		    }
-		}
-	    }
-	}
-    }
-
-    DisposeObject(requester);
+ 	Rename_clicked();
     return 1;
 }
 
@@ -901,9 +656,15 @@ static int menu_LogWindow(struct MenuItem *menuitem)
 {
     if (menuitem) {
 	if (menuitem->Flags&CHECKED)
+    {
 	  OpenLogWindow();
-	else
+      MainPrefs.mp_Log = 1;
+	}
+    else
+    {
 	  CloseLogWindow();
+      MainPrefs.mp_Log = 0;
+    }
     }
     
     return 1;

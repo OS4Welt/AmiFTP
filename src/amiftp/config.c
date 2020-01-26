@@ -70,7 +70,7 @@ struct MainPrefsObject {
     int   mpo_ShowMOTD:1;
     int   mpo_GetReadme:1;
     int   mpo_SortMode:4;
-    int   mpo_ShowButtons:1;
+    int   mpo_ShowLog:1;
     int   mpo_ShowToolBar:1;
     int   mpo_UseCustomFonts:1;
     int   mpo_OpenOnNamedScreen:1;
@@ -428,7 +428,7 @@ static void ReadMainPrefs(UBYTE *buf)
 	MainPrefs.mp_ShowMOTD=mpo->mpo_ShowMOTD;
 	MainPrefs.mp_GetReadme=mpo->mpo_GetReadme;
 	MainPrefs.mp_SortMode=SortMode=mpo->mpo_SortMode;
-	MainPrefs.mp_ShowButtons=!mpo->mpo_ShowButtons;
+	MainPrefs.mp_Log=!mpo->mpo_ShowLog;
 	MainPrefs.mp_ShowToolBar=!mpo->mpo_ShowToolBar;
 	MainPrefs.mp_UseDefaultFonts=!mpo->mpo_UseCustomFonts;
 	MainPrefs.mp_OpenOnDefaultScreen=!mpo->mpo_OpenOnNamedScreen;
@@ -441,6 +441,11 @@ static void ReadMainPrefs(UBYTE *buf)
 	  MainPrefs.mp_BufferSize=8192;
 	else if (MainPrefs.mp_BufferSize<512)
 	  MainPrefs.mp_BufferSize=512;
+
+    if (MainPrefs.mp_LocalDir==NULL) MainPrefs.mp_LocalDir = strdup("Ram:");
+    UpdateLocalDir(MainPrefs.mp_LocalDir);
+
+    
 	return;
     }
     return;
@@ -494,7 +499,7 @@ static BOOL WriteMainPrefs(struct IFFHandle *iff, UBYTE *buf, struct MainPrefs *
     mpo->mpo_ShowMOTD=MainPrefs.mp_ShowMOTD;
     mpo->mpo_GetReadme=MainPrefs.mp_GetReadme;
     mpo->mpo_SortMode=MainPrefs.mp_SortMode;
-    mpo->mpo_ShowButtons=!MainPrefs.mp_ShowButtons;
+    mpo->mpo_ShowLog=!MainPrefs.mp_Log;
     mpo->mpo_ShowToolBar=!MainPrefs.mp_ShowToolBar;
     mpo->mpo_UseCustomFonts=!MainPrefs.mp_UseDefaultFonts;
 

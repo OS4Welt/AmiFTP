@@ -172,6 +172,49 @@ void ftpWindow()
 	CloseMainWindow();
 }
 
+void Delete_clicked()
+{
+ 	struct dirlist *curr;
+    struct Node *node,*nnode;
+    int t=0;
+    int sel=0;
+
+    if (FileList) {
+
+    int result = showRequester(MainWindow, REQTYPE_INFO, NULL, GetAmiFTPString(MW_DeleteCancel), GetAmiFTPString(MW_DeleteRequest));
+    if (result==0) return;
+
+	node=GetHead(FileList);
+	while (node) {
+	    nnode=GetSucc(node);
+	    sel=0;
+	    GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
+	    if (sel) {
+		curr=(void *)node->ln_Name; /* The dirlist-structure is in ln_Name */
+		if (curr) {
+		    if (delete_remote(curr->name,
+				      (!S_ISDIR(curr->mode))?"DELE":"RMD")) {
+            struct lbRemNode msg = {LBM_REMNODE, NULL, node};
+            IDoMethodA(MG_List[MG_ListView], (Msg)&msg);
+			//LBRemNode(MG_List[MG_ListView], MainWindow, NULL, node);
+			free_direntry(curr);
+		    }
+		    else
+		      t=1;
+		}
+	    }
+	    node=nnode;
+	}
+	if (t==0)
+
+        RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
+	  UpdateMainButtons(MB_NONESELECTED);
+	UnlockWindow(MainWin_Object);
+    }
+    UpdateWindowTitle();
+    //DisposeObject(requester);
+}
+
 int Parent_clicked(void)
 {
 	struct List *head;
@@ -236,18 +279,27 @@ int Get_clicked(void)
 
 int DLPath_clicked(void)
 {
-	if (DLPath(MainWin_Object, &CurrentState.CurrentDLDir[0], &CurrentState.CurrentDLDir[0]))
-	{
-		UpdateLocalDir(CurrentState.CurrentDLDir);
-	}
-	return 1;
-}
+    struct gfileRequest pathList = {GFILE_REQUEST, MainWindow};
+    uint32 result = IDoMethodA(MG_List[MG_DLGetFile], (struct _Msg *)&pathList);
 
-int DLPathString_clicked(void)
-{
-	strncpy(CurrentState.CurrentDLDir, GetString(((struct Gadget *) MG_List[MG_DLString])), 255);
-	UpdateWindowTitle();
-
+	if (result)
+    {
+        char *strBuffer = NULL;
+        GetAttr(GETFILE_Drawer, MG_List[MG_DLGetFile], (ULONG*)&strBuffer);
+        if (strBuffer)
+        {
+            if (strlen(strBuffer)>0)
+            {
+                strncpy(CurrentState.CurrentDLDir, strBuffer, sizeof(CurrentState.CurrentDLDir)-1);
+                }
+             else
+             {
+                strncpy(CurrentState.CurrentDLDir, "Ram:", sizeof(CurrentState.CurrentDLDir)-1);
+                SetAttrs(MG_List[MG_DLGetFile], GETFILE_Drawer, "Ram:", TAG_DONE);
+                }
+            UpdateWindowTitle();
+            }
+        }
 	return 1;
 }
 
@@ -578,6 +630,71 @@ int View_clicked(BOOL Readme)
 	return 1;
 }
 
+void CreateDir_clicked()
+{
+    char dirname[256];
+
+    if (!connected)
+      return;
+
+    memset(dirname,0,256);
+
+
+    int result = showStringRequester(MainWindow, FALSE, NULL, GetAmiFTPString(Str_AmiFTPRequest), NULL, dirname, 255, GetAmiFTPString(Str_RemoteDir));
+
+    if (result){
+	char comm[270];
+	sprintf(comm, "MKD %s", dirname);
+	if (command(comm)==ERROR) {
+	    ShowErrorReq("Couldn't create directory");
+        return;
+	}
+    Dir_clicked();
+    }
+}
+
+void Rename_clicked()
+{
+    char comm[256];
+    char newname[256];
+    struct Node *node;
+    ULONG sel;
+
+    if (!connected || !FileList)
+      return;
+    memset(newname, 0, sizeof(newname));
+
+
+    for (node = GetHead(FileList); node; node = GetSucc(node)) {
+	GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
+	if (sel) {
+	    char *filename = ((struct dirlist  *)(node->ln_Name))->name;
+
+        int result = showStringRequester(MainWindow, FALSE, NULL, "AmiFTP Request", NULL, newname, 255, "Old name %s:\nEnter new name", filename);
+
+
+        
+       
+        if (result) {
+		sprintf(comm, "RNFR %s", filename);
+		if (command(comm) == ERROR) {
+		    ShowErrorReq("Couldn't rename file.");
+		}
+		else {
+		    sprintf(comm, "RNTO %s", newname);
+		    if (command(comm) == ERROR) {
+			ShowErrorReq("Couldn't rename file.");
+		    }
+            else
+            {
+                Dir_clicked();
+                }
+		}
+	    }
+	}
+    }
+
+}
 void ViewFile(const char *file)
 {
 	struct Node *node;
@@ -621,7 +738,7 @@ void ViewFile(const char *file)
 		}
 	}
 	*t = 0;
-	//          Printf("Launching '%s'\n",buffer);
+	      
 	SystemTags(buffer, SYS_Input, NULL, SYS_Output, NULL, SYS_Asynch, TRUE, TAG_DONE);
 }
 
@@ -712,33 +829,6 @@ void ShowErrorReq(char *str, ...)
 {
 	va_list ap;
 
-	struct TagItem tags[] = {
-		{REQ_Type, REQTYPE_INFO},
-		{REQ_TitleText, (Tag) GetAmiFTPString(Str_AmiFTPError)},
-		{REQ_BodyText, 0UL},
-		{REQ_GadgetText, (Tag) GetAmiFTPString(Str_OK)},
-		{REQ_Image, REQIMAGE_ERROR},
-		{TAG_END, 0}
-	};
-
-	struct orRequest reqmsg;
-
-	reqmsg.MethodID = RM_OPENREQ;
-	reqmsg.or_Window = MainWindow;
-	reqmsg.or_Screen = NULL;
-	reqmsg.or_Attrs = tags;
-
-	/*
-	   static ULONG tags[]={
-	   RTEZ_ReqTitle, NULL,
-	   RT_Window, NULL,
-	   RT_LockWindow, TRUE,
-	   RT_ReqPos, REQPOS_CENTERWIN,
-	   TAG_END
-	   };  */
-
-
-
 	extern BOOL SilentMode;
 
 	if (!MainWindow)
@@ -746,82 +836,19 @@ void ShowErrorReq(char *str, ...)
 
 	if (SilentMode)
 		return;
-	/*
-	   tags[1]=(ULONG)GetAmiFTPString(Str_AmiFTPError);
-	   tags[3]=(ULONG)MainWindow;
-	 */
 	va_start(ap, str);
-	tags[2].ti_Data = (Tag) str;
-	Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
-	if (requester)
-	{
-		IDoMethodA(requester, (Msg) & reqmsg);
-		DisposeObject(requester);
-	}
-	//rtEZRequestA(str, GetAmiFTPString(Str_OK), NULL, ap, (struct TagItem *)tags);
+    showRequester(MainWindow, REQIMAGE_ERROR, GetAmiFTPString(Str_AmiFTPError), GetAmiFTPString(Str_OK), str);
 	va_end(ap);
 }
 
 char *GetPassword(char *user, char *passbuf)
 {
 	extern struct Window *ConnectWindow;	/* Fix this: Bug in reqtools */
-	struct orRequest reqmsg;
-	struct TagItem tags[] = {
-		{REQ_Type, REQTYPE_STRING},
-		{REQ_TitleText, (Tag) GetAmiFTPString(Str_PasswordRequest)},
-		{REQ_BodyText, (Tag) GetAmiFTPString(Str_PasswordEntry)},
-		{REQ_VarArgs, (Tag) user},
-		{REQS_Buffer, (Tag) passbuf},
-		{REQS_MaxChars, 24},
-		{REQS_Mark, TRUE},
-		{REQS_Invisible, TRUE},
-		// { REQ_GadgetText, (Tag) gadgetTxt },
-		{TAG_END, 0}
-	};
-	/*
-	   static ULONG tags[]={
-	   RT_Window, NULL,
-	   RT_LockWindow, TRUE,
-	   RTGS_Invisible, TRUE,
-	   RTGS_TextFmt, NULL,
-	   RTGS_TextFmtArgs, NULL,
-	   RTGS_Flags, GSREQF_CENTERTEXT,
-	   RT_ReqPos, REQPOS_CENTERWIN,
-	   TAG_END
-	   };         
-
-	   tags[1]=(ULONG)ConnectWindow;
-	   tags[7]=(ULONG)GetAmiFTPString(Str_PasswordEntry);
-	   tags[9]=(ULONG)&user;
-	 */
-
-
-	reqmsg.MethodID = RM_OPENREQ;
-	reqmsg.or_Window = ConnectWindow;
-	reqmsg.or_Screen = NULL;
-	reqmsg.or_Attrs = tags;
-
-	Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
-
-	if (requester)
-	{
-		int result = IDoMethodA(requester, (Msg) & reqmsg);
-
-		DisposeObject(requester);
-		if (result)
+    int result = showStringRequester(ConnectWindow, TRUE, NULL, GetAmiFTPString(Str_PasswordRequest), NULL, passbuf, 24, GetAmiFTPString(Str_PasswordEntry), user);
+    if (result)
 			return passbuf;
-	}
-
 	return NULL;
 
-
-	/*
-	   if (rtGetStringA(passbuf, 24, GetAmiFTPString(Str_PasswordRequest), NULL,
-	   (struct TagItem *)tags))
-	   return passbuf;
-	   else
-	   return NULL;
-	 */
 }
 
 extern char *infotext;
@@ -911,7 +938,7 @@ int About(void)
 			if (mask & aboutwin)
 			{
 				ULONG result;
-				struct wmHandle code = { 0 };
+				uint16 code=;
 				while ((result = IDoMethod(AboutWin_Object, WM_HANDLEINPUT, &code)) != WMHI_LASTMSG)
 				{
 					switch (result & WMHI_CLASSMASK)
@@ -920,9 +947,9 @@ int About(void)
 							done = TRUE;
 							break;
 						case WMHI_RAWKEY:
-							if ((result & WMHI_KEYMASK) == 69)	/* Escape-key */
+							if (code == 69)	 /* Escape-key */
 								done = TRUE;
-							else if ((result & WMHI_KEYMASK) == 95)	/* HELP-key */
+							else if (code == 95) /* HELP-key */
 								SendAGMessage(AG_ABOUTWIN);
 							break;
 					}

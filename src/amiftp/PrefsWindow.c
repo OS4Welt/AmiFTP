@@ -19,21 +19,22 @@ static int SelectFont(char *FontName, UWORD *YSize);
 
 enum {
     MPG_Tab=0, MPG_Page,
-    MPG_AnonymousPW, MPG_ViewCommand, MPG_DefaultDLDir, MPG_DefaultDLDirGad,
+    MPG_AnonymousPW, MPG_ViewCommand, MPG_DefaultDLDir,// MPG_DefaultDLDirGad,
     MPG_ProxyHost, MPG_ProxyPort, MPG_ProxyDefault, MPG_IgnoreCase,
     MPG_BufferSize,MPG_CacheSize,MPG_DeleteOnExit,MPG_DisplayBeep,
     MPG_ADTPattern, MPG_PreserveDir, MPG_ShowMOTD, MPG_GetReadme, 
     MPG_DefaultScreen, MPG_PublicScreen,
-    MPG_DefaultFonts, MPG_InterfaceFont, MPG_InterfaceFontB, MPG_FilelistFont, 
-    MPG_FilelistFontB, MPG_ShowButtons, MPG_ToolBar, MPG_Log, MPG_LogFile,
+    MPG_DefaultFonts, /*MPG_InterfaceFont,*/ MPG_InterfaceGetFontB, /*MPG_FilelistFont,*/
+    MPG_FilelistGetFontB, /*MPG_ShowButtons,*/ MPG_ToolBar, MPG_Log, MPG_LogFile,
     MPG_OK, MPG_Cancel,
     NumGadgets_MPG};
 
 Object *MPG_List[NumGadgets_MPG];
 
 static char buf1[100],buf2[100],buf3[100],buf4[100],buf5[100],buf6[513];
+static char showLog;
 static char pubscreen[256];
-
+struct TextAttr fileListFontTextAttrs, interfaceFontTextAttrs;
 static struct DrawInfo *drinfo;
 static struct List tablist;
 static Object *pagelayout;
@@ -57,7 +58,7 @@ struct cltabs clicktabs[]={
     {MPW_ADT, FALSE},
     {MPW_Display, FALSE},
     {MPW_Proxy, FALSE},
-    {"Log", FALSE},
+    {MENU_LogWindow, FALSE},
 };
 
 int OpenPrefsWindow(void)
@@ -66,6 +67,8 @@ int OpenPrefsWindow(void)
     ULONG signal,wait,mainwinsignal;
 
     MainInterfaceRestart=FALSE;
+
+
 
     if (!BuildClicktabList()) {
 	FreeClicktabList(&tablist);
@@ -79,6 +82,8 @@ int OpenPrefsWindow(void)
 	}
 	return 0;
     }
+
+
 
     GetAttr(WINDOW_SigMask, MainPrefsWin_Object, &signal);
     GetAttr(WINDOW_SigMask, MainWin_Object, &mainwinsignal);
@@ -111,10 +116,9 @@ int OpenPrefsWindow(void)
 ULONG HandleMainPrefsIDCMP(void)
 {
     ULONG result,done=FALSE;
-    struct wmHandle wcode={0};
-    int16 code;
+    uint16 code;
     //while ((result=CA_HandleInput(MainPrefsWin_Object, &code))!=WMHI_LASTMSG) {
-    while ((result=IDoMethod(MainPrefsWin_Object, WM_HANDLEINPUT, &wcode))!=WMHI_LASTMSG) {
+    while ((result=IDoMethod(MainPrefsWin_Object, WM_HANDLEINPUT, &code))!=WMHI_LASTMSG) {
 
          code = result&WMHI_KEYMASK;
 	switch (result & WMHI_CLASSMASK) {
@@ -139,8 +143,11 @@ ULONG HandleMainPrefsIDCMP(void)
 				     PAGE_Current, tabnum, TAG_DONE);
 		      RethinkLayout((struct Gadget*)pagelayout, MainPrefsWindow, NULL, TRUE);
 		  }
-		  break;
+	    	break;
+
+
 	      }
+          /*
 	      case MPG_FilelistFontB:
 		if (SelectFont(&listfont[0], &listsize)) {
 		    sprintf(listfontname, "%s/%d", listfont, listsize);
@@ -158,22 +165,68 @@ ULONG HandleMainPrefsIDCMP(void)
 				   TAG_DONE);
 		    RefreshGList((struct Gadget*)MPG_List[MPG_InterfaceFont], MainPrefsWindow, NULL,1);
 		}
-		break;
-	      case MPG_DefaultDLDirGad:
-		{
-		    char tbuf[255];
+break;  */
 
-		    if (DLPath(MainPrefsWin_Object,
-			       GetString(((struct Gadget*)MPG_List[MPG_DefaultDLDir])), tbuf)) {
-			if (SetGadgetAttrs((struct Gadget*)MPG_List[MPG_DefaultDLDir],
-					   MainPrefsWindow, NULL,
-					   STRINGA_TextVal, tbuf, TAG_END))
-			  RefreshGList((struct Gadget*)MPG_List[MPG_DefaultDLDir],
-				       MainPrefsWindow, NULL, 1);
-		    }
+
+        case MPG_FilelistGetFontB:
+        {
+    	 	struct gfRequest fontRequest = {GFONT_REQUEST, MainPrefsWindow};
+    		uint32 result = IDoMethodA(MPG_List[MPG_FilelistGetFontB], (struct _Msg *)&fontRequest);
+            if (result)
+            {
+                struct TextAttr *newAttrib =NULL;
+    			GetAttr(GETFONT_TextAttr, MPG_List[MPG_FilelistGetFontB], (ULONG*)&newAttrib);
+
+    			if (newAttrib)
+                {
+                    listsize = newAttrib->ta_YSize;
+                    strncpy(listfont, newAttrib->ta_Name, sizeof(listfont)-1);
+    				sprintf(listfontname, "%s/%ld", listfont, listsize);
+                }
+        	}
 		}
-		break;
-	      case MPG_DefaultScreen:
+    	break;
+
+		case MPG_InterfaceGetFontB:
+        {
+    	 	struct gfRequest fontRequest = {GFONT_REQUEST, MainPrefsWindow};
+    		uint32 result = IDoMethodA(MPG_List[MPG_InterfaceGetFontB], (struct _Msg *)&fontRequest);
+            if (result)
+            {
+                     
+                struct TextAttr *newAttrib =NULL;
+    			GetAttr(GETFONT_TextAttr, MPG_List[MPG_InterfaceGetFontB], (ULONG*)&newAttrib);
+         
+    			if (newAttrib)
+                {
+                    intsize = newAttrib->ta_YSize;
+                    strncpy(intfont, newAttrib->ta_Name, sizeof(intfont)-1);
+                    sprintf(intfontname, "%s/%ld", intfont, intsize);
+                }   
+        	}
+		}
+    	break;
+
+		case MPG_DefaultDLDir:
+            {
+                struct gfileRequest pathList = {GFILE_REQUEST, MainPrefsWindow};
+    			uint32 result = IDoMethodA(MPG_List[MPG_DefaultDLDir], (struct _Msg *)&pathList);
+                if (result)
+                {
+                    char *strBuffer = NULL;
+        			GetAttr(GETFILE_Drawer, MPG_List[MPG_DefaultDLDir], (ULONG*)&strBuffer);
+        			if (strBuffer)
+                    {
+                        strncpy(buf3, strBuffer, sizeof(buf3)-1);
+
+                        }
+                    }
+   
+       	
+    		 }
+            break;
+    
+	     case MPG_DefaultScreen:
 		{
 		    ULONG attr;
 		    GetAttr(GA_Selected, MPG_List[MPG_DefaultScreen], &attr);
@@ -187,14 +240,15 @@ ULONG HandleMainPrefsIDCMP(void)
 		{
 		    ULONG attr;
 		    int i;
-
+            /* goos todo disable font gadgets
 		    GetAttr(GA_Selected, MPG_List[MPG_DefaultFonts], &attr);
 		    for (i=MPG_InterfaceFont; i<MPG_InterfaceFont+4; i++) {
 			SetGadgetAttrs((struct Gadget*)MPG_List[i], MainPrefsWindow, NULL,
 				       GA_Disabled, attr?TRUE:FALSE,
 				       TAG_DONE);
 			RefreshGList((struct Gadget*)MPG_List[i], MainPrefsWindow, NULL, 1);
-		    }
+
+		    }*/
 		}
 		break;
 	      case MPG_OK: {
@@ -217,6 +271,8 @@ struct Window *OpenMainPrefsWindow(void)
 {
     struct LayoutLimits limits;
     
+
+
     if (!MainPrefs.mp_FontName) {
 	strcpy(intfont, AmiFTPAttrF->ta_Name);
 	intsize=AmiFTPAttrF->ta_YSize;
@@ -235,8 +291,14 @@ struct Window *OpenMainPrefsWindow(void)
 	listsize=MainPrefs.mp_ListFontSize;
     }
 
+    memcpy(&interfaceFontTextAttrs, AmiFTPAttrF, sizeof(interfaceFontTextAttrs));
+
+    memcpy(&fileListFontTextAttrs, ListViewAttrF, sizeof(fileListFontTextAttrs));
+
     sprintf(intfontname, "%s/%ld", intfont, intsize);
     sprintf(listfontname, "%s/%ld", listfont, listsize);
+
+    showLog = MainPrefs.mp_Log;
 
     if (MainPrefsWindow)
       return MainPrefsWindow;
@@ -309,25 +371,15 @@ struct Window *OpenMainPrefsWindow(void)
                        STRINGA_MaxChars, 50,
                        StringEnd,
                        Label(GetAmiFTPString(MPW_ViewCommand)),
-
-                     StartHGroup, Spacing(FALSE),
-
-                       StartMember, MPG_List[MPG_DefaultDLDir]=StringObject,
-                         GA_ID, MPG_DefaultDLDir,
-                         GA_RelVerify, TRUE,
-                         GA_TabCycle, TRUE,
-                         STRINGA_Buffer, (ULONG)buf3,
-                         STRINGA_MaxChars, 50,
-                         StringEnd,
-
-                       StartMember, MPG_List[MPG_DefaultDLDirGad]=ButtonObject,
-                         GA_ID, MPG_DefaultDLDirGad,
-                         GA_RelVerify, TRUE,
-                         BUTTON_AutoButton, BAG_POPDRAWER,
-                         ButtonEnd,
-                         CHILD_WeightedWidth, 0,
-                         CHILD_WeightedHeight, 0,
-                       EndGroup,
+                       StartMember, MPG_List[MPG_DefaultDLDir] = GetFileObject,
+                       GA_ID, MG_DLGetFile,
+                       GETFILE_DrawersOnly, TRUE,
+                       GETFILE_TitleText, GetAmiFTPString(Str_SelectDLPath),
+                       GA_RelVerify, TRUE,
+                       GETFILE_Drawer, buf3,
+                       GETFILE_ReadOnly, TRUE,
+	                   End,
+         
                        Label(GetAmiFTPString(MPW_DefDownloadDir)),
 
                      StartMember, MPG_List[MPG_BufferSize]=IntegerObject,
@@ -458,6 +510,14 @@ struct Window *OpenMainPrefsWindow(void)
                        CheckBoxEnd,
                        CHILD_WeightMinimum, TRUE,
 
+                       StartMember, MPG_List[MPG_InterfaceGetFontB] = GetFontObject,
+                       GA_ID, MPG_InterfaceGetFontB,
+                       GA_RelVerify, TRUE,
+                       GA_TextAttr, AmiFTPAttrF,
+                       GETFONT_TitleText,"Select font...",
+                       GETFONT_TextAttr, &interfaceFontTextAttrs,
+                       End,
+                        /*
                      StartHGroup, Spacing(FALSE),
                      StartMember, MPG_List[MPG_InterfaceFont]=ButtonObject,
                        GA_ID, MPG_InterfaceFont,
@@ -476,9 +536,17 @@ struct Window *OpenMainPrefsWindow(void)
                        ButtonEnd,
                        CHILD_WeightedWidth, 0,
                        CHILD_WeightedHeight, 0,
-                     EndGroup, CHILD_WeightedHeight, 0,
+                     EndGroup, CHILD_WeightedHeight, 0,   */
                      Label(GetAmiFTPString(MPW_InterfaceFont)),
 
+                     StartMember, MPG_List[MPG_FilelistGetFontB] = GetFontObject,
+                       GA_ID, MPG_FilelistGetFontB,
+                       GA_RelVerify, TRUE,
+                       GA_TextAttr, AmiFTPAttrF,
+                       GETFONT_TitleText,"Select font...",
+                       GETFONT_TextAttr, &fileListFontTextAttrs,
+                       End,
+                     /*
                      StartHGroup, Spacing(FALSE),
                      StartMember, MPG_List[MPG_FilelistFont]=ButtonObject,
                        GA_ID, MPG_FilelistFont,
@@ -497,9 +565,10 @@ struct Window *OpenMainPrefsWindow(void)
                        ButtonEnd,
                        CHILD_WeightedWidth, 0,
                        CHILD_WeightedHeight, 0,
-                     EndGroup, CHILD_WeightedHeight, 0,
+                     EndGroup, CHILD_WeightedHeight, 0,   */
                      Label(GetAmiFTPString(MPW_FilelistFont)),
 
+                                                     /*
                      StartMember, MPG_List[MPG_ShowButtons]=CheckBoxObject,
                        GA_ID, MPG_ShowButtons,
                        GA_RelVerify, TRUE,
@@ -507,7 +576,7 @@ struct Window *OpenMainPrefsWindow(void)
                        GA_Text, GetAmiFTPString(MPW_ShowButtons),
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
                        CheckBoxEnd,
-                       CHILD_WeightMinimum, TRUE,
+                       CHILD_WeightMinimum, TRUE,  */
 
                      StartMember, MPG_List[MPG_ToolBar]=CheckBoxObject,
                        GA_ID, MPG_ToolBar,
@@ -549,6 +618,32 @@ struct Window *OpenMainPrefsWindow(void)
                        GA_Text, GetAmiFTPString(MPW_ProxyDefault),
                        GA_Selected, MainPrefs.mp_DefaultProxy,
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
+                       CheckBoxEnd,
+                       CHILD_WeightMinimum, TRUE,
+                   EndGroup, CHILD_WeightedHeight, 0,
+                   LayoutEnd, /* End of page 2 */
+
+                   PAGE_Add, VGroupObject, TAligned, /* Start of page log */
+                     GA_TextAttr, AmiFTPAttrF,
+                     StartVGroup, TAligned,
+                     /*
+                     StartMember, IntegerObject,
+                       GA_ID, MPG_ProxyPort,
+                       GA_RelVerify, TRUE,
+                       GA_TabCycle, TRUE,
+                       INTEGER_Number, MainPrefs.mp_ProxyPort,
+                       INTEGER_Arrows,FALSE,
+                       INTEGER_MaxChars, 6,
+                       IntegerEnd,
+                       CHILD_NominalSize, TRUE,
+                       CHILD_WeightedWidth, 0,
+                       Label("Log: size"),  */
+                     StartMember, MPG_List[MPG_Log] = CheckBoxObject,
+                       GA_ID, MPG_ProxyDefault,
+                       GA_RelVerify, TRUE,
+                       GA_Text, GetAmiFTPString(MENU_LogWindow),
+                       CHECKBOX_TextPlace, PLACETEXT_LEFT,
+                       GA_Selected, showLog!=0,
                        CheckBoxEnd,
                        CHILD_WeightMinimum, TRUE,
                    EndGroup, CHILD_WeightedHeight, 0,
@@ -802,12 +897,14 @@ void UpdateConfig(void)
 	MainInterfaceRestart=TRUE;
     }
 
+     /*
     GetAttr(GA_Selected, MPG_List[MPG_ShowButtons], &attr);
     if (attr!=MainPrefs.mp_ShowButtons) {
 	MainPrefs.mp_ShowButtons=attr;
 	ConfigChanged=TRUE;
 	MainInterfaceRestart=TRUE;
     }
+    */
 
     GetAttr(GA_Selected, MPG_List[MPG_ToolBar], &attr);
     if (attr!=MainPrefs.mp_ShowToolBar) {
@@ -833,6 +930,24 @@ void UpdateConfig(void)
 	    MainInterfaceRestart=TRUE;
 	}
     }
+
+    extern BPTR LogWindow;
+
+	ULONG logenabled = 0;
+    GetAttr(GA_Selected, MPG_List[MPG_Log], &logenabled);
+
+     if ((logenabled==0) != (LogWindow==0))
+    {
+        MainPrefs.mp_Log = logenabled!=0;
+    	if (logenabled)
+        {
+            OpenLogWindow();
+            }
+        else CloseLogWindow();
+        ConfigChanged=TRUE;
+	    MainInterfaceRestart=TRUE;
+    }
+
 }
 
 void CloseMainPrefsWindow(void)
@@ -893,7 +1008,7 @@ int BuildClicktabList(void)
     int i;
 
     NewList(&tablist);
-    for (i=0; i<4; i++) {
+    for (i=0; i<5; i++) {
 	if (node=(struct Node *)AllocClickTabNode(TNA_Text,GetAmiFTPString(clicktabs[i].String),
 						  TNA_Number, i,
 //						  TNA_Enabled, clicktabs[i].Enabled,
@@ -902,6 +1017,7 @@ int BuildClicktabList(void)
 	  AddTail(&tablist, node);
 	else
 	  return 0;
+
     }
     return 1;
 }

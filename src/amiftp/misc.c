@@ -240,8 +240,11 @@ void FixSiteList(void)
     }
 }
 
+/*
 int DLPath(Object *winobject, char *initialpath, char *newpath)
 {
+
+
     struct FileRequester *DirRequester;
     struct Window *window;
     static ULONG dlpath_tags[]={
@@ -281,6 +284,7 @@ int DLPath(Object *winobject, char *initialpath, char *newpath)
     UnlockWindow(winobject);
     return ret;
 }
+*/
 
 int makeremotedir()
 {

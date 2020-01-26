@@ -397,7 +397,7 @@ char *linkname(char *);
 struct Node *AddLBNTail(struct List *list, struct SiteNode *sn);
 int strecmp(const char *s1, const char *s2);
 void FixSiteList(void);
-int DLPath(Object *winobject, char *initialpath, char *newpath);
+//int DLPath(Object *winobject, char *initialpath, char *newpath);
 
 /* ftp.c */
 
@@ -474,7 +474,7 @@ int Reconnect(void);
 int File_clicked(void);
 int Get_clicked(void);
 int DLPath_clicked(void);
-int DLPathString_clicked(void);
+//int DLPathString_clicked(void);
 int Put_clicked(void);
 int Connect_clicked(void);
 int Disconnect_clicked(void);
@@ -488,6 +488,9 @@ int About(void);
 int SavePrefs(void);
 int SavePrefsAs(void);
 int LoadPrefs(void);
+void Rename_clicked();
+void CreateDir_clicked();
+void Delete_clicked();
 void ViewFile(const char *file);
 char *NameToReadme(char *foo, int readmelen);
 
@@ -578,3 +581,4 @@ void strmfp(char *file, char *path, char *node,int size);
 int stcgfn(char *node, char *name, int size);
 int getfa(CONST_STRPTR name);
 __attribute__((linearvarargs)) int showRequester(struct Window *window, STRPTR icon, STRPTR Title, STRPTR Gadget, STRPTR Body, ...);
+__attribute__((linearvarargs)) int showStringRequester(struct Window *window, BOOL inivsible, STRPTR icon, STRPTR Title, STRPTR Gadget, STRPTR buffer, uint32 maxChars, STRPTR Body, ...);

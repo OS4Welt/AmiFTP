@@ -60,21 +60,17 @@ void CreateInfoList(struct List *list);
 ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 {
     ULONG result,done=FALSE;
-    //UWORD code=NULL;
-    struct wmHandle wcode={0};
-    int16 code;
+    uint16 code;
     Upload=FALSE;
 
     while (MainWin_Object &&
 	   //(result=CA_HandleInput(MainWin_Object,&code))!=WMHI_LASTMSG) {
-        (result=IDoMethod(MainWin_Object, WM_HANDLEINPUT, &wcode))!=WMHI_LASTMSG){
+        (result=IDoMethod(MainWin_Object, WM_HANDLEINPUT, &code))!=WMHI_LASTMSG){
 
-        code = result&WMHI_GADGETMASK;
-       
 	switch (result & WMHI_CLASSMASK) {
 	  case WMHI_CLOSEWINDOW:
 	    done=TRUE;
-	    break;
+    break;
 	  case WMHI_GADGETUP:
 	    switch (result & WMHI_GADGETMASK) {
 	      case MG_ListView: {
@@ -201,7 +197,8 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 	      case MG_SpeedBar:
 		if (!HandleSpeedBar(code))
 		  done=TRUE;
-		break;
+	break;
+    /*
 	      case MG_Get:
 	      case MG_Get2:
 		Get_clicked();
@@ -219,13 +216,17 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 		break;
 	      case MG_Readme:
 		View_clicked(TRUE);
-		break;
+break;
+*/
+    /*
 	      case MG_DLButton:
 		DLPath_clicked();
 		break;
 	      case MG_DLString:
 		DLPathString_clicked();
-		break;
+	break;
+        
+
 	      case MG_Connect:
 		Connect_clicked();
 		break;
@@ -234,7 +235,13 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 		break;
 	      case MG_Reload:
 		Dir_clicked();
-		break;
+	break;
+    */
+
+    	case MG_DLGetFile:
+            DLPath_clicked();
+        break;
+
 	      case MG_DirName:
 		Dir_clicked();
 		break;
@@ -335,6 +342,7 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 	Upload=FALSE;
 	free_dirlist(&DropUploadList);
 	UnlockWindow(MainWin_Object);
+    Dir_clicked();
     }
 
     return done;
@@ -533,12 +541,15 @@ static ULONG  AppMessageHookFunc(struct Hook *hook,
         }    
     }
     }
+    
     return 0;
 }
 
 struct RastPort *ARPort,rastport;
 extern struct List SpeedBarList;
 
+int filePen = 1;
+int drawerPen = 2;
 struct Window *OpenFTPWindow(const BOOL StartIconified)
 {
     Object *g1,*g2, *g3, *but1, *but2, *buttonlayout;
@@ -552,6 +563,14 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 	  free(MainPrefs.mp_PubScreen);
 	MainPrefs.mp_PubScreen=strdup(pubname);*/
     }
+
+    struct DrawInfo *drawInfo = GetScreenDrawInfo(Screen);
+    if (drawInfo)
+	{
+        filePen = drawInfo->dri_Pens[TEXTPEN];
+        drawerPen = drawInfo->dri_Pens[HIGHLIGHTTEXTPEN];
+        FreeScreenDrawInfo(Screen, drawInfo);
+        }
     ScreenFont=OpenFont(Screen->Font);
 
     AmiFTPAttr.ta_Name=Screen->Font->ta_Name;
@@ -607,7 +626,8 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 	               LAYOUT_SpaceOuter, TRUE,
 	               LAYOUT_HorizAlignment, LALIGN_RIGHT,
 	               LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
-
+                   
+                   /*
 	               StartMember,g1=LayoutObject,LAYOUT_Orientation,LAYOUT_ORIENT_VERT,
                          StartMember, MG_List[MG_SiteName]=StringObject,
 	                   GA_ID,MG_SiteName,
@@ -631,28 +651,54 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
                          StartMember, MG_List[MG_CacheList]=ChooserObject,
                            GA_ID, MG_CacheList,
                            GA_RelVerify, TRUE,
-//                           GA_Width, 20,
                            GA_Disabled, TRUE,
                            CHOOSER_Labels, &clist,
                            CHOOSER_AutoFit, TRUE,
                            CHOOSER_DropDown, TRUE,
                          ChooserEnd,
                          CHILD_WeightedWidth, 0,
-
-                         StartMember, MG_List[MG_Reload]=ButtonObject,
-	                   GA_Text,GetAmiFTPString(MW_Reload),
-	                   GA_ID, MG_Reload,
-	                   GA_RelVerify, TRUE,
-                           GA_Disabled, TRUE,
-	                 ButtonEnd,
-                         CHILD_WeightedWidth, 0,
                        EndGroup, CHILD_WeightedHeight, 0,
+                                        */
+
 
                        StartMember, MG_List[MG_SpeedBar]=SpeedBarObject,
                            GA_ID, MG_SpeedBar,
                            GA_RelVerify, TRUE,
+                           SPEEDBAR_EvenSize, TRUE,
                            SPEEDBAR_Buttons, &SpeedBarList,
+                           SPEEDBAR_BevelStyle, BVS_NONE,
                        SpeedBarEnd,
+
+                       StartMember,g1=LayoutObject,LAYOUT_Orientation,LAYOUT_ORIENT_VERT,
+                         StartMember, MG_List[MG_SiteName]=StringObject,
+	                   GA_ID,MG_SiteName,
+	                   GA_RelVerify, TRUE,
+                           STRINGA_Buffer,sitenamebuffer,
+	                   STRINGA_MaxChars, 99,
+                         StringEnd,Label(GetAmiFTPString(MW_SiteName)),
+                       EndGroup,CHILD_WeightedHeight,0,
+
+	               StartHGroup,Spacing(FALSE),
+                         StartMember, g2=VGroupObject,
+                           StartMember, MG_List[MG_DirName]=StringObject,
+	                     GA_ID,MG_DirName,
+	                     GA_RelVerify, TRUE,
+                             GA_Disabled,TRUE,
+                             STRINGA_Buffer,remotedirbuffer,
+	                     STRINGA_MaxChars, 120,
+                           StringEnd,Label(GetAmiFTPString(MW_DirName)),
+                         EndGroup,
+
+                         StartMember, MG_List[MG_CacheList]=ChooserObject,
+                           GA_ID, MG_CacheList,
+                           GA_RelVerify, TRUE,
+                           GA_Disabled, TRUE,
+                           CHOOSER_Labels, &clist,
+                           CHOOSER_AutoFit, TRUE,
+                           CHOOSER_DropDown, TRUE,
+                         ChooserEnd,
+                         CHILD_WeightedWidth, 0,
+                       EndGroup, CHILD_WeightedHeight, 0,
 
 	               StartVGroup, LAYOUT_BackFill, LAYERS_BACKFILL, StartMember,
                          MG_List[MG_ListView]=ListBrowserObject,
@@ -672,8 +718,23 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 
 	               LAYOUT_AddChild, g3=VLayoutObject, EvenSized,
 
-  	                 StartHGroup, StartHGroup, Spacing(FALSE),
 
+
+  	                 StartHGroup, //StartHGroup, Spacing(FALSE),
+
+                       StartMember, MG_List[MG_DLGetFile] = GetFileObject,
+                       GA_ID, MG_DLGetFile,
+                       GETFILE_DrawersOnly, TRUE,
+                       GETFILE_TitleText, GetAmiFTPString(Str_SelectDLPath),
+                       GA_RelVerify, TRUE,
+                       GETFILE_Drawer, CurrentState.CurrentDLDir,
+                       GETFILE_ReadOnly, TRUE,
+	                     //GA_ID, MG_DLString,
+	                     //GA_RelVerify, TRUE,
+                           //  STRINGA_Buffer, localdirbuffer,
+	                     //STRINGA_MaxChars, 80,
+	                   End,
+                       /*
 	                   StartMember, MG_List[MG_DLString]=StringObject,
 	                     GA_ID, MG_DLString,
 	                     GA_RelVerify, TRUE,
@@ -685,14 +746,14 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 	                     BUTTON_AutoButton, BAG_POPDRAWER,
 	                     GA_ID, MG_DLButton,
 	                     GA_RelVerify, TRUE,
-	                     ButtonEnd,
-	                     CHILD_WeightedWidth, 0,
+	                     ButtonEnd,   */
+	                     //CHILD_WeightedWidth, 0,
 	                     CHILD_WeightedHeight, 0,
-	                 EndGroup,
+	                // EndGroup,
                          CHILD_WeightedHeight, 0,
 	                 Label(GetAmiFTPString(MW_DownloadDir)),
                          EndGroup, CHILD_WeightedHeight, 0,
-
+                        /*
 	                 LAYOUT_AddChild, but1=HLayoutObject, EvenSized,
                          LAYOUT_AddChild, pagelayout=LayoutObject,
                          LAYOUT_AddChild, MG_List[MG_Page2]=PageObject,
@@ -750,7 +811,7 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 	                     GA_RelVerify, TRUE,
                              GA_Disabled, TRUE,
 	                   ButtonEnd,
-	                 EndGroup,
+	                 EndGroup,  */
                          CHILD_WeightedHeight, 0,
                        EndGroup,
                        CHILD_WeightedHeight, 0,
@@ -771,6 +832,7 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
     AppMessageHook.h_SubEntry=NULL;
     AppMessageHook.h_Data=NULL;
 
+    /*
     if (!MainPrefs.mp_ShowButtons) {
 	SetAttrs(g3,
 		 LAYOUT_RemoveChild, but1,
@@ -780,6 +842,8 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 	  MG_List[MG_Readme]=MG_List[MG_Get2]=MG_List[MG_Put2]=MG_List[MG_View2]=
 	    MG_List[MG_Connect]=MG_List[MG_Disconnect]=NULL;
     }
+
+    */
     if (!MainPrefs.mp_ShowToolBar) {
 	SetAttrs(MainWindowLayout,
 		 LAYOUT_RemoveChild, MG_List[MG_SpeedBar],
@@ -793,6 +857,7 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
     {
         MainPrefs.mp_Width = 800;
         MainPrefs.mp_Height = 600;
+
         }
 
     MainWin_Object = WindowObject,
@@ -860,6 +925,16 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 
 	UpdateWindowTitle();
 	UnlockPubScreen(NULL, Screen);
+
+    extern BPTR LogWindow;
+    if ((MainPrefs.mp_Log==0) != (LogWindow==0))
+    {
+        if (LogWindow) CloseLogWindow();
+        else OpenLogWindow();
+
+        UpdateMenus();
+        }
+
 	return MainWindow;
     }
 
@@ -930,6 +1005,7 @@ void UpdateMainButtons(const int state)
     if (state == prev_state)
       return;
 
+    /*
     switch (state) {
       case MB_DISCONNECTED:
 	if (MainPrefs.mp_ShowButtons) {
@@ -1014,7 +1090,7 @@ void UpdateMainButtons(const int state)
       default:
 	break;
     }
-
+          */
     if (MainPrefs.mp_ShowToolBar)
       UpdateSpeedBar(state);
 
@@ -1079,10 +1155,8 @@ void UpdateLocalDir(const char *dir)
     if (dir!=&CurrentState.CurrentDLDir[0])
       strncpy(CurrentState.CurrentDLDir, dir, 255);
     if (MainWindow) {
-	if (SetGadgetAttrs((struct Gadget*)MG_List[MG_DLString], MainWindow, NULL,
-			   STRINGA_TextVal, dir,
-			   TAG_END))
-	    RefreshGList((struct Gadget*)MG_List[MG_DLString], MainWindow, NULL, 1);
+         SetAttrs(MG_List[MG_DLGetFile], GETFILE_Drawer, dir, TAG_DONE);
+         RefreshGList((struct Gadget*)MG_List[MG_DLGetFile], MainWindow, NULL, 1);
     }
     UpdateWindowTitle();
 }
@@ -1159,6 +1233,7 @@ void UnlockWindow(Object *window_object)
 
 void ChangeAmiFTPMode(void)
 {
+    /* goos amiganet mode another buttons ?
     if (CurrentState.ADTMode) {
 	SetGadgetAttrs((struct Gadget*)MG_List[MG_Page2], MainWindow, NULL,
 		       PAGE_Current, 1, TAG_DONE);
@@ -1169,7 +1244,7 @@ void ChangeAmiFTPMode(void)
 		       PAGE_Current, 0, TAG_DONE);
 	RethinkLayout((struct Gadget*)pagelayout, MainWindow, NULL, TRUE);
     }
-    RefreshGList((struct Gadget*)pagelayout, MainWindow, NULL, 1);
+    RefreshGList((struct Gadget*)pagelayout, MainWindow, NULL, 1);*/
 }
 
 void UpdateWindowTitle()

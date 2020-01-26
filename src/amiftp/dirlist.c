@@ -97,7 +97,8 @@ struct dirlist *new_direntry(char *remoteName, char *name,char *date,char *owner
     return tmp;
 }
 char donk[]="donk";
-
+extern int filePen;
+extern int drawerPen;
 BOOL add_direntry(struct List *filelist, char *name, char *date,
 		  char *owner, char *group, mode_t mode, int64 size,
 		  int sort_mode, int sort_direction)
@@ -138,33 +139,33 @@ BOOL add_direntry(struct List *filelist, char *name, char *date,
 	break;
 #endif
     }
-    
+                                                                     
     tmp = new_direntry(name, name, date, owner, group, mode, size);
     if (tmp) {
 	struct Node *tmp2=AllocListBrowserNode(6,
 					       LBNA_Column,0,
 					       LBNA_Flags,flags,
 					       LBNCA_Text,tmp->name,
-					       LBNCA_FGPen,tmp->mode&0x4000?2:1,
+					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
 					       LBNA_Column,1,
 					       LBNCA_Text,tmp->stringSize,
 					       LBNCA_Justification,LCJ_RIGHT,
-					       LBNCA_FGPen,tmp->mode&0x4000?2:1,
+					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
 					       LBNA_Column,2,
 					       LBNCA_Text,tmp->mode&0x4000?"(dir)":S_ISLNK(tmp->mode)?"(link)":"",
 					       LBNCA_Justification,LCJ_RIGHT,
-					       LBNCA_FGPen,tmp->mode&0x4000?2:1,
+					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
 					       LBNA_Column,3,
 					       LBNCA_Text,tmp->date,
 					       LBNCA_Justification,LCJ_RIGHT,
-					       LBNCA_FGPen,tmp->mode&0x4000?2:1,
+					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
 					       LBNA_Column,4,
-					       LBNCA_FGPen,tmp->mode&0x4000?2:1,
+					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
 					       LBNCA_Justification,LCJ_RIGHT,	
 					       LBNCA_Text,tmp->owner,
 					       LBNA_Column,5,
 					       LBNCA_Justification,LCJ_RIGHT,
-					       LBNCA_FGPen,tmp->mode&0x4000?2:1,
+					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
 					       LBNCA_Text,tmp->group,
 					       TAG_DONE);
 	if (tmp2) {
@@ -191,27 +192,27 @@ void add_direntry_struct(struct List *filelist,
 			      LBNA_Column,0,
 			      LBNA_Flags,flags,
 			      LBNCA_Text,dlist->name,
-			      LBNCA_FGPen,dlist->mode&0x4000?2:1,
+			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
 			      LBNA_Column,1,
 			      LBNCA_Text,dlist->stringSize,
 			      LBNCA_Justification,LCJ_RIGHT,
-			      LBNCA_FGPen,dlist->mode&0x4000?2:1,
+			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
 			      LBNA_Column,2,
 			      LBNCA_Text,dlist->mode&0x4000?"(dir)":S_ISLNK(dlist->mode)?"(link)":"",
 			      LBNCA_Justification,LCJ_RIGHT,
-			      LBNCA_FGPen,dlist->mode&0x4000?2:1,
+			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
 			      LBNA_Column,3,
 			      LBNCA_Text,dlist->date,
 			      LBNCA_Justification,LCJ_RIGHT,
-			      LBNCA_FGPen,dlist->mode&0x4000?2:1,
+			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
 			      LBNA_Column,4,
 			      LBNCA_Text,dlist->owner,
 			      LBNCA_Justification,LCJ_RIGHT,
-			      LBNCA_FGPen,dlist->mode&0x4000?2:1,
+			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
 			      LBNA_Column,5,
 			      LBNCA_Text,dlist->group,
 			      LBNCA_Justification,LCJ_LEFT,
-			      LBNCA_FGPen,dlist->mode&0x4000?2:1,
+			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
 			      TAG_DONE);
     if (!tmp2)
       return;

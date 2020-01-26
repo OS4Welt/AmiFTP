@@ -24,7 +24,7 @@ int SL_Bottom(void);
 int NewGroup(void);
 
 enum {
-    ESG_SiteName=0, ESG_SiteAddress, ESG_Port, ESG_RemDir, ESG_LocString, ESG_LocGad,
+    ESG_SiteName=0, ESG_SiteAddress, ESG_Port, ESG_RemDir, ESG_LocalDir,//ESG_LocString, ESG_LocGad,
     ESG_Anonymous, ESG_LoginName, ESG_Password, ESG_LSType, ESG_HotList,
     ESG_Proxy, ESG_OK, ESG_Cancel, ESG_ADT,
     NumGadgets_ESG};
@@ -220,11 +220,10 @@ int OpenEditWindow(struct SiteNode *sn)
 ULONG HandleEditSiteIDCMP(void)
 {
     ULONG result, done=FALSE;
-    struct wmHandle wcode={0};
-    int16 code;
+    uint16 code;
 
     //while ((result=CA_HandleInput(EditSiteWin_Object, &code))!=WMHI_LASTMSG) {
-    while ((result=IDoMethod(EditSiteWin_Object, WM_HANDLEINPUT, &wcode))!=WMHI_LASTMSG) {
+    while ((result=IDoMethod(EditSiteWin_Object, WM_HANDLEINPUT, &code))!=WMHI_LASTMSG) {
         
         code = result&WMHI_KEYMASK;
 
@@ -255,8 +254,8 @@ ULONG HandleEditSiteIDCMP(void)
 		      RefreshGList((struct Gadget*)ESG_List[ESG_Password], EditSiteWindow, NULL, 1);
 		}
 		break;
-	      case ESG_LocGad:
-		LocPath_clicked();
+	      case ESG_LocalDir:
+			LocPath_clicked();
 		break;
 	      case ESG_OK:
 		AddToSiteList=TRUE;
@@ -368,6 +367,15 @@ struct Window *OpenEditSiteWindow(struct SiteNode *sn)
 
                      LAYOUT_AddChild, l1=HLayoutObject, Spacing(FALSE),
 
+                     StartMember, ESG_List[ESG_LocalDir]= GetFileObject,
+                       GA_ID, MG_DLGetFile,
+                       GETFILE_DrawersOnly, TRUE,
+                       GETFILE_TitleText, GetAmiFTPString(Str_SelectDLPath),
+                       GA_RelVerify, TRUE,
+                       GETFILE_Drawer, buf4,
+                       GETFILE_ReadOnly, TRUE,
+	                   End,
+                         /*
                        StartMember, ESG_List[ESG_LocString]=StringObject,
                          GA_ID, ESG_LocString,
                          GA_RelVerify, TRUE,
@@ -382,8 +390,8 @@ struct Window *OpenEditSiteWindow(struct SiteNode *sn)
                          GA_RelVerify, TRUE,
                          ButtonEnd,
                          CHILD_WeightedWidth, 0,
-                         CHILD_WeightedHeight, 0,
-                       EndGroup,
+                         CHILD_WeightedHeight, 0, */
+                       EndGroup,    
                        Label(GetAmiFTPString(SCW_LocDir)),
 
                      StartMember, ESG_List[ESG_Anonymous]=CheckBoxObject,
@@ -617,6 +625,29 @@ void CloseEditSiteWindow(struct SiteNode *sn)
 
 int LocPath_clicked(void)
 {
+    struct gfileRequest pathList = {GFILE_REQUEST, EditSiteWindow};
+    uint32 result = IDoMethodA(ESG_List[ESG_LocalDir], (struct _Msg *)&pathList);
+
+	if (result)
+    {
+        char *strBuffer = NULL;
+        GetAttr(GETFILE_Drawer, ESG_List[ESG_LocalDir], (ULONG*)&strBuffer);
+        if (strBuffer)
+        {
+            if (strlen(strBuffer)>0)
+            {
+                strncpy(buf4, strBuffer, sizeof(buf4)-1);
+                }
+             else
+             {
+                strncpy(buf4, "Ram:", sizeof(buf4)-1);
+                SetAttrs(MG_List[MG_DLGetFile], GETFILE_FullFile, "Ram:", TAG_DONE);
+                }
+            }
+        }
+	return 1;
+
+    /*
     struct FileRequester *DirRequester;
     static ULONG tags[]={
 	ASLFR_Window, 0UL,
@@ -646,7 +677,7 @@ int LocPath_clicked(void)
 	    RefreshGList((struct Gadget*)ESG_List[ESG_LocString], EditSiteWindow, NULL, 1);
     }
     FreeAslRequest(DirRequester);
-
+                */
     return 1;
 }
 

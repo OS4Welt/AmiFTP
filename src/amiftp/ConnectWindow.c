@@ -179,7 +179,7 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 ULONG HandleConnectIDCMP()
 {
     ULONG result,done=FALSE;
-    struct wmHandle code={0};
+    uint16 code;
 
     while ((result=IDoMethod(ConnectWin_Object, WM_HANDLEINPUT, &code))!=WMHI_LASTMSG) {
 	switch (result & WMHI_CLASSMASK) {
@@ -190,7 +190,7 @@ ULONG HandleConnectIDCMP()
 	    done=TRUE;
 	    break;
 	  case WMHI_RAWKEY:
-	    if ((result & WMHI_KEYMASK)==95)
+	    if (code==95)
 	      SendAGMessage(AG_CONNECTWIN);
 	    break;
 	}

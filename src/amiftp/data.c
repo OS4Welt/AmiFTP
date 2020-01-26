@@ -143,6 +143,70 @@ int stcgfn(char *node, char *name, int size)
 	return 0;
 }
 
+ __attribute__((linearvarargs)) int showStringRequester(struct Window *window, BOOL invisible, STRPTR icon, STRPTR Title, STRPTR Gadget, STRPTR buffer, uint32 maxChars, STRPTR Body, ...)
+{
+     static struct TagItem tags[] = {
+     { REQ_Type, REQTYPE_STRING },
+     { REQ_TitleText, 0UL},
+     { REQ_BodyText, 0UL},
+     { REQ_GadgetText, (ULONG)"_Ok|_Cancel" },
+     { REQ_VarArgs, 0UL},
+     { REQ_Image, 0UL} ,
+     { REQS_Buffer, 0UL },
+     { REQS_MaxChars, 0UL },
+     {REQS_Invisible, 0UL},
+     { TAG_END, 0 }
+     };
+
+    tags[6].ti_Data = (Tag) buffer;
+    tags[7].ti_Data = (Tag) maxChars;
+    if (invisible)
+        tags[8].ti_Data = 1;
+    static struct orRequest reqmsg;
+
+    reqmsg.MethodID = RM_OPENREQ;
+	reqmsg.or_Window = window;
+	reqmsg.or_Screen = NULL;
+	reqmsg.or_Attrs = tags;
+
+    int result = 0;
+
+    tags[5].ti_Data = REQIMAGE_INFO;
+    Object *pictureImage = NULL;
+    if ((Tag)icon>REQIMAGE_INSERTDISK)
+    {
+    	pictureImage = NewObject(NULL, "bitmap.image",
+					   BITMAP_SourceFile, icon,
+					   BITMAP_Screen, window->WScreen,
+					   BITMAP_Precision, PRECISION_EXACT,
+					   BITMAP_Masking, TRUE,
+					   TAG_END);
+		if (pictureImage)
+        {
+        	tags[5].ti_Data = (Tag)pictureImage;
+            }
+    }
+    else tags[5].ti_Data = (Tag)icon;
+
+    Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
+    if (requester==NULL) return result;
+
+
+    va_list ap;
+
+	va_startlinear(ap, Body);
+    tags[1].ti_Data = (Tag)Title;
+	tags[2].ti_Data = (Tag)Body;
+    if (Gadget)
+		tags[3].ti_Data = (Tag)Gadget;
+    tags[4].ti_Data = (Tag)va_getlinearva(ap, void *);
+    result = IDoMethodA(requester, (Msg) &reqmsg);
+    va_end(ap);
+
+    DisposeObject(requester);
+    if (pictureImage) DisposeObject(pictureImage);
+    return result;
+}
 
  __attribute__((linearvarargs)) int showRequester(struct Window *window, STRPTR icon, STRPTR Title, STRPTR Gadget, STRPTR Body, ...)
 {
@@ -150,7 +214,7 @@ int stcgfn(char *node, char *name, int size)
      { REQ_Type, REQTYPE_INFO },
      { REQ_TitleText, 0UL},
      { REQ_BodyText, 0UL},
-     { REQ_GadgetText, 0UL },
+     { REQ_GadgetText, (ULONG)"_Ok" },
      { REQ_VarArgs, 0UL},
      { REQ_Image, 0UL} ,
      { TAG_END, 0 }
@@ -191,7 +255,8 @@ int stcgfn(char *node, char *name, int size)
 	va_startlinear(ap, Body);
     tags[1].ti_Data = (Tag)Title;
 	tags[2].ti_Data = (Tag)Body;
-	tags[3].ti_Data = (Tag)Gadget;
+    if (Gadget)
+		tags[3].ti_Data = (Tag)Gadget;
     tags[4].ti_Data = (Tag)va_getlinearva(ap, void *);
     result = IDoMethodA(requester, (Msg) &reqmsg);
     va_end(ap);

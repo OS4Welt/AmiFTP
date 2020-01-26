@@ -101,6 +101,7 @@ int main(int argc, char **argv)
       return 10;
 
     memset(&MainPrefs, 0, sizeof(MainPrefs));
+    memset(&CurrentState, 0, sizeof(CurrentState));
     ME=(struct Process *)FindTask(NULL);
     oldwptr=ME->pr_WindowPtr;
     

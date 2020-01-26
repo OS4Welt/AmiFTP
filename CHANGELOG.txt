@@ -22,4 +22,11 @@ Added support for recursive upload of directories
 #
 #fmenzel 21.01.2020 bumprev
 remotepath should now be correct if uploading a dirtree
- 
+#
+#fmenzel 26.01.2020 bumprev
+all remaining getfile and getfont gadgets now replaced by new reaction gadgets
+bottom Buttons removed
+topbar reworked with new buttons with AISS images
+updates now the remote content if user has changed it
+Log window can now activated/deactivated in the settings
+The content of Listview now uses DRI pens and not directly the indexes

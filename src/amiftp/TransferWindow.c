@@ -245,12 +245,10 @@ ULONG HandleTransferIDCMP(void)
 {
     ULONG done=FALSE;
     ULONG result;
-    struct wmHandle wcode={0};
-    int16 code;
+    uint16 code;
     //while((result=CA_HandleInput(TransferWin_Object,&code))!=WMHI_LASTMSG) {
-    while((result=IDoMethod(TransferWin_Object, WM_HANDLEINPUT, &wcode))!=WMHI_LASTMSG){
+    while((result=IDoMethod(TransferWin_Object, WM_HANDLEINPUT, &code))!=WMHI_LASTMSG){
 
-        code = result&WMHI_KEYMASK;
     switch (result & WMHI_CLASSMASK) {
 	  case WMHI_CLOSEWINDOW:
 	    done=TRUE;
