@@ -72,7 +72,7 @@ $(OBJDIR)rexx.o : rexx.c
 $(OBJDIR)SiteWindow.o : SiteWindow.c
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)SiteWindow.o SiteWindow.c
 
-$(OBJDIR)SpeedBar.o : SpeedBar.c 
+$(OBJDIR)SpeedBar.o : SpeedBar.c AmiFTP.h gui.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)SpeedBar.o SpeedBar.c
 
 $(OBJDIR)TransferWindow.o : TransferWindow.c

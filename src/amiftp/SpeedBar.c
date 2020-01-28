@@ -175,7 +175,6 @@ void InitSpeedBarList(void)
 						       SBNA_Spacing, spacing[i],
 						       SBNA_Highlight, SBH_IMAGE,
                                SBNA_Text, text[i],
-                               SBNA_ButtonID, i,
 						       TAG_DONE))
 	  AddTail(&SpeedBarList, node);
     }
