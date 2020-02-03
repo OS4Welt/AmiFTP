@@ -585,8 +585,13 @@ void UpdateDLGads(const long bytes, const long restart_point, const time_t timee
 	}
 	fuelargs[0]=bytes;//FileSize?(bytes*100)/FileSize:0;
 	fuelargs[1]=FileSize;
+    LONG percentage = 0;
+    if (FileSize>0)
+    {
+        percentage = (LONG) ((double)bytes/(double)FileSize*100.0);
+        }
 	SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
-		       FUELGAUGE_Level, FileSize?(FileSize>10240?bytes/(FileSize/100):(bytes*100)/FileSize):0,
+		       FUELGAUGE_Level, percentage,//FileSize?(FileSize>10240?bytes/(FileSize/100):(bytes*100)/FileSize):0,
 		       FUELGAUGE_VarArgs, &fuelargs[0],
 		       TAG_DONE);
     }

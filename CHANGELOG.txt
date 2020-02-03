@@ -30,3 +30,10 @@ topbar reworked with new buttons with AISS images
 updates now the remote content if user has changed it
 Log window can now activated/deactivated in the settings
 The content of Listview now uses DRI pens and not directly the indexes
+#
+#fmenzel 02.02.2020
+Fixed aminet mode 
+Transferwindow in aminet mode fixed
+Localized thousands separator in listview added
+Fixed prefs window (font selection and public screen string)
+Default prefsfile location is now PROGDIR:

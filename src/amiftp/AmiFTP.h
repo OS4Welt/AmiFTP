@@ -20,7 +20,6 @@
 #include <syslog.h>
 #include <unistd.h>
 extern struct Library *SocketBase;
-
 #endif
 
 #include <dirent.h>
@@ -44,6 +43,7 @@ extern struct Library *SocketBase;
 #include <proto/icon.h>
 #include <proto/timer.h>
 #include <proto/diskfont.h>
+#include <proto/locale.h>
 #include <devices/timer.h>
 
 #include <rexx/storage.h>
@@ -119,13 +119,16 @@ extern struct Library *SocketBase;
 #define MAXPATHLEN 1024
 #endif
 
-#ifdef __GNUC__  //goos be compatible with 64k prefs binary
+#ifdef __GNUC__  //goos be compatible with 68k prefs binary
    #ifdef __PPC__
     #pragma pack(2)
    #endif
 #elif defined(__VBCC__)
    #pragma amiga-align
 #endif
+
+extern char decimalSeperator;
+extern uint8 seperatorSize;
 
 struct MainPrefs {
     char       *mp_LocalDir;

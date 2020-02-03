@@ -1005,9 +1005,9 @@ void UpdateMainButtons(const int state)
     if (state == prev_state)
       return;
 
-    /*
     switch (state) {
       case MB_DISCONNECTED:
+        /*
 	if (MainPrefs.mp_ShowButtons) {
 	    if (CurrentState.ADTMode) {
 		DisableGadget(MG_List[MG_Readme], TRUE)
@@ -1023,19 +1023,30 @@ void UpdateMainButtons(const int state)
 	    DisableGadget(MG_List[MG_View2], TRUE);
 	    DisableGadget(MG_List[MG_Disconnect], TRUE);
 	}
-
+              */
 	DisableGadget(MG_List[MG_DirName], TRUE);
 	DisableGadget(MG_List[MG_CacheList], TRUE);
-	DisableGadget(MG_List[MG_Reload], TRUE);
+	//DisableGadget(MG_List[MG_Reload], TRUE);
 	if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 			   LISTBROWSER_Labels, &dummy_list,
 			   LISTBROWSER_ColumnInfo, &dummycolumninfo,
 			   LISTBROWSER_AutoFit, TRUE,
 			   TAG_DONE) && MainWindow)
 	  RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
+   
 	lsel=-1;
 	break;
       case MB_NONESELECTED:
+        if (CurrentState.ADTMode) {
+	    DisableGadget(MG_List[MG_DirName], TRUE);
+	    DisableGadget(MG_List[MG_CacheList], TRUE);
+		}
+        else
+        {
+            DisableGadget(MG_List[MG_DirName], FALSE);
+            DisableGadget(MG_List[MG_CacheList], FALSE);
+            }
+        /*
 	if (CurrentState.ADTMode) {
 	    if (MainPrefs.mp_ShowButtons)
 	      DisableGadget(MG_List[MG_Readme], TRUE);
@@ -1058,10 +1069,16 @@ void UpdateMainButtons(const int state)
 	    DisableGadget(MG_List[MG_Put2], FALSE);
 	    DisableGadget(MG_List[MG_View2], TRUE);
 	    DisableGadget(MG_List[MG_Disconnect], FALSE);
-	}
+	}    */
 	lsel=-1;
 	break;
 	  case MB_FILESELECTED:
+
+        if (CurrentState.ADTMode) {
+	    DisableGadget(MG_List[MG_DirName], TRUE);
+	    DisableGadget(MG_List[MG_CacheList], TRUE);
+		}
+        /*
 	if (CurrentState.ADTMode) {
 	    if (MainPrefs.mp_ShowButtons)
 	      DisableGadget(MG_List[MG_Readme], FALSE);
@@ -1085,12 +1102,12 @@ void UpdateMainButtons(const int state)
 	    DisableGadget(MG_List[MG_Get2], FALSE);
 	    DisableGadget(MG_List[MG_Put2], FALSE);
 	    DisableGadget(MG_List[MG_View2], FALSE);
-	}
+	}       */
 	break;
       default:
 	break;
     }
-          */
+        
     if (MainPrefs.mp_ShowToolBar)
       UpdateSpeedBar(state);
 

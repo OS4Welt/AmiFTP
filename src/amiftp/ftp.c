@@ -644,7 +644,17 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 	    char *ptr;
 	    long size;
 
-	    response_line[strlen(response_line)-9]='\0';
+	    //response_line[strlen(response_line)-9]='\0';
+        int len =strlen(response_line);
+        while(len)
+        {
+            if (isdigit(response_line[len]))
+            {
+                response_line[len+1]='\0';
+                break;
+            }
+                len--;
+		}
 	    ptr=&response_line[strlen(response_line)-1];
 	    while (*ptr && ptr > &response_line[0]) {
 		if (!isdigit(*ptr))

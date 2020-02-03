@@ -33,8 +33,10 @@ struct List *ReadRecentList(void)
 
     din=OpenRecent();
     if (din == -1)
+    {
+      settype(TransferMode);
       return filelist;
-
+    }
     if (MainPrefs.mp_HideADTPattern) {
 	Pattern=malloc(strlen(MainPrefs.mp_HideADTPattern)*2+2);
 	if (Pattern) 
@@ -83,6 +85,7 @@ struct List *ReadRecentList(void)
 	timeout_disconnect();
 	if (Pattern)
 	  free(Pattern);
+    settype(TransferMode);
 	return NULL;
     }
     if (lastscanned!=MainPrefs.mp_LastAminetDate) {
@@ -119,6 +122,7 @@ struct List *ReadRecentList(void)
 	if (node)
 	  AddTail(filelist, node);
     }
+    settype(TransferMode);
     return filelist;
 }
 

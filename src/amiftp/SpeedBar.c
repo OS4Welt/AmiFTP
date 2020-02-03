@@ -236,7 +236,9 @@ int HandleSpeedBar(int button)
 	break;
 	case SB_SHOW:
         if (FileList && connected)
-      		View_clicked(FALSE);
+        {
+      		View_clicked(CurrentState.ADTMode);
+        }
     break;
     case SB_SETTINGS:
         OpenPrefsWindow();
@@ -250,44 +252,66 @@ void UpdateSpeedBar(int state)
 {
     extern int prev_state;
 
-    if (prev_state!=MB_DISCONNECTED && state==MB_DISCONNECTED) {
-	    struct Node *node;
-	    node=GetHead(&SpeedBarList);
-        int i =0;
-	    for (; node; node=GetSucc(node), i++) {
-        if (i==SB_CONNECT)
-        { 
-            SetSpeedButtonNodeAttrs(node, SBNA_Image, speedImages[SB_CONNECT], SBNA_Text, text[SB_CONNECT], TAG_DONE);
-            SetGadgetAttrs((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL,
-			 SPEEDBAR_OnButton, i,
-			 TAG_DONE);
-            }
-		else if(i<SB_SETTINGS)
-        {
-            SetSpeedButtonNodeAttrs(node, SBNA_Disabled, TRUE, TAG_DONE);
-            }
-	    }
-	if (MainWindow)
-	  RefreshGList((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL, 1);
+    if (state == prev_state)
+      return;
+    int i = 0;
+    int iDisconnected =-1;
+    struct Node *node = NULL;
+    switch(state)
+    {
+        case MB_DISCONNECTED:
+    	    
+    	    node=GetHead(&SpeedBarList);
+    	    for (i = 0; node; node=GetSucc(node), i++)
+            {
+                if (prev_state!=MB_DISCONNECTED)
+                {
+                    if (i==SB_CONNECT)
+                    { 
+                        SetSpeedButtonNodeAttrs(node, SBNA_Image, speedImages[SB_CONNECT], SBNA_Text, text[SB_CONNECT], TAG_DONE);
+                        SetGadgetAttrs((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL,
+            			 SPEEDBAR_OnButton, i,
+            			 TAG_DONE);
+                        }
+            		else if(i<SB_SETTINGS)
+                    {
+                        SetSpeedButtonNodeAttrs(node, SBNA_Disabled, TRUE, TAG_DONE);
+                    }
+                }
+    	    }
+		break;
+
+        case MB_NONESELECTED:
+        case MB_FILESELECTED:
+    	    node=GetHead(&SpeedBarList);
+    	    for (i = 0; node; node=GetSucc(node),i++)
+            {
+                if (prev_state==MB_DISCONNECTED)
+                {
+                    if (i==SB_CONNECT)
+                    {  
+                        SetSpeedButtonNodeAttrs(node, SBNA_Image, speedImages[SB_DISCONNECT], SBNA_Text, text[SB_DISCONNECT], TAG_DONE);
+                        SetGadgetAttrs((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL,
+            			 SPEEDBAR_OnButton, i,
+            			 TAG_DONE);
+                    }
+                    else if (CurrentState.ADTMode)
+                    {
+                    	if (i==SB_DOWNLOAD || i>=SB_SHOW)
+                        {
+                             SetSpeedButtonNodeAttrs(node, SBNA_Disabled, FALSE, TAG_DONE);
+                        }
+                    }
+                    else if(i<SB_SETTINGS)
+                    {
+                        SetSpeedButtonNodeAttrs(node, SBNA_Disabled, FALSE, TAG_DONE);
+                    }
+                }
+    	    }
+    	break;
+
     }
-    else if (prev_state==MB_DISCONNECTED && state!=MB_DISCONNECTED) {
-	    struct Node *node;
-	    node=GetHead(&SpeedBarList);
-        int i = 0;
-	    for (; node; node=GetSucc(node),i++) {
-        if (i==SB_CONNECT)
-        {  
-            SetSpeedButtonNodeAttrs(node, SBNA_Image, speedImages[SB_DISCONNECT], SBNA_Text, text[SB_DISCONNECT], TAG_DONE);
-            SetGadgetAttrs((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL,
-			 SPEEDBAR_OnButton, i,
-			 TAG_DONE);
-            }
-        else if(i<SB_SETTINGS)
-        {
-            SetSpeedButtonNodeAttrs(node, SBNA_Disabled, FALSE, TAG_DONE);
-            }
-	    }
-	if (MainWindow)
-	  RefreshGList((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL, 1);
-    }
+
+    if (MainWindow)
+	 		 RefreshGList((struct Gadget*)MG_List[MG_SpeedBar], MainWindow, NULL, 1);
 }

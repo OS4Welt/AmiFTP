@@ -147,25 +147,6 @@ ULONG HandleMainPrefsIDCMP(void)
 
 
 	      }
-          /*
-	      case MPG_FilelistFontB:
-		if (SelectFont(&listfont[0], &listsize)) {
-		    sprintf(listfontname, "%s/%d", listfont, listsize);
-		    SetGadgetAttrs((struct Gadget*)MPG_List[MPG_FilelistFont], MainPrefsWindow, NULL,
-				   GA_Text, listfontname,
-				   TAG_DONE);
-		    RefreshGList((struct Gadget*)MPG_List[MPG_FilelistFont], MainPrefsWindow, NULL,1);
-		}
-		break;
-	      case MPG_InterfaceFontB:
-		if (SelectFont(&intfont[0], &intsize)) {
-		    sprintf(intfontname, "%s/%d", intfont, intsize);
-		    SetGadgetAttrs((struct Gadget*)MPG_List[MPG_InterfaceFont], MainPrefsWindow, NULL,
-				   GA_Text, intfontname,
-				   TAG_DONE);
-		    RefreshGList((struct Gadget*)MPG_List[MPG_InterfaceFont], MainPrefsWindow, NULL,1);
-		}
-break;  */
 
 
         case MPG_FilelistGetFontB:
@@ -240,15 +221,13 @@ break;  */
 		{
 		    ULONG attr;
 		    int i;
-            /* goos todo disable font gadgets
-		    GetAttr(GA_Selected, MPG_List[MPG_DefaultFonts], &attr);
-		    for (i=MPG_InterfaceFont; i<MPG_InterfaceFont+4; i++) {
-			SetGadgetAttrs((struct Gadget*)MPG_List[i], MainPrefsWindow, NULL,
-				       GA_Disabled, attr?TRUE:FALSE,
-				       TAG_DONE);
-			RefreshGList((struct Gadget*)MPG_List[i], MainPrefsWindow, NULL, 1);
+            GetAttr(GA_Selected, MPG_List[MPG_DefaultFonts], &attr);
+            SetAttrs(MPG_List[MPG_InterfaceGetFontB], GA_Disabled, attr?TRUE:FALSE, TAG_DONE);
+            SetAttrs(MPG_List[MPG_FilelistGetFontB]
+            , GA_Disabled, attr?TRUE:FALSE, TAG_DONE);
 
-		    }*/
+            RefreshGList((struct Gadget*)MPG_List[MPG_InterfaceGetFontB], MainPrefsWindow, NULL, 1);
+            RefreshGList((struct Gadget*)MPG_List[MPG_FilelistGetFontB], MainPrefsWindow, NULL, 1);
 		}
 		break;
 	      case MPG_OK: {
@@ -329,10 +308,13 @@ struct Window *OpenMainPrefsWindow(void)
       memset(buf6, 0, sizeof(buf6));
 
     if (MainPrefs.mp_PubScreen)
+    {
       strcpy(pubscreen, MainPrefs.mp_PubScreen);
-    else 
+    }
+    else
+    {
       memset(pubscreen, 0, sizeof(pubscreen));
-
+    }
     MainPrefsLayout=LayoutObject,
                      GA_DrawInfo, DrawInfo,
                      GA_TextAttr, AmiFTPAttrF,
@@ -516,27 +498,9 @@ struct Window *OpenMainPrefsWindow(void)
                        GA_TextAttr, AmiFTPAttrF,
                        GETFONT_TitleText,"Select font...",
                        GETFONT_TextAttr, &interfaceFontTextAttrs,
+                       GA_Disabled, MainPrefs.mp_UseDefaultFonts?TRUE:FALSE,
                        End,
-                        /*
-                     StartHGroup, Spacing(FALSE),
-                     StartMember, MPG_List[MPG_InterfaceFont]=ButtonObject,
-                       GA_ID, MPG_InterfaceFont,
-                       GA_RelVerify, TRUE,
-                       GA_ReadOnly, TRUE,
-                       GA_Disabled, MainPrefs.mp_UseDefaultFonts?TRUE:FALSE,
-                       GA_Text, intfontname,
-                       BUTTON_Justification, BCJ_LEFT,
-                       ButtonEnd,
-
-                     StartMember, MPG_List[MPG_InterfaceFontB]=ButtonObject,
-                       GA_ID, MPG_InterfaceFontB,
-                       GA_RelVerify, TRUE,
-                       GA_Disabled, MainPrefs.mp_UseDefaultFonts?TRUE:FALSE,
-                       BUTTON_AutoButton, BAG_POPFONT,
-                       ButtonEnd,
-                       CHILD_WeightedWidth, 0,
-                       CHILD_WeightedHeight, 0,
-                     EndGroup, CHILD_WeightedHeight, 0,   */
+       
                      Label(GetAmiFTPString(MPW_InterfaceFont)),
 
                      StartMember, MPG_List[MPG_FilelistGetFontB] = GetFontObject,
@@ -545,27 +509,8 @@ struct Window *OpenMainPrefsWindow(void)
                        GA_TextAttr, AmiFTPAttrF,
                        GETFONT_TitleText,"Select font...",
                        GETFONT_TextAttr, &fileListFontTextAttrs,
+                       GA_Disabled, MainPrefs.mp_UseDefaultFonts?TRUE:FALSE,
                        End,
-                     /*
-                     StartHGroup, Spacing(FALSE),
-                     StartMember, MPG_List[MPG_FilelistFont]=ButtonObject,
-                       GA_ID, MPG_FilelistFont,
-                       GA_RelVerify, TRUE,
-                       GA_ReadOnly, TRUE,
-                       GA_Disabled, MainPrefs.mp_UseDefaultFonts?TRUE:FALSE,
-                       GA_Text, listfontname,
-                       BUTTON_Justification, BCJ_LEFT,
-                       ButtonEnd,
-
-                     StartMember, MPG_List[MPG_FilelistFontB]=ButtonObject,
-                       GA_ID, MPG_FilelistFontB,
-                       GA_RelVerify, TRUE,
-                       GA_Disabled, MainPrefs.mp_UseDefaultFonts?TRUE:FALSE,
-                       BUTTON_AutoButton, BAG_POPFONT,
-                       ButtonEnd,
-                       CHILD_WeightedWidth, 0,
-                       CHILD_WeightedHeight, 0,
-                     EndGroup, CHILD_WeightedHeight, 0,   */
                      Label(GetAmiFTPString(MPW_FilelistFont)),
 
                                                      /*

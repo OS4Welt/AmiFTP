@@ -4,6 +4,7 @@
 
 #include "AmiFTP.h"
 #include "gui.h"
+#include <locale.h>
 
 #define ISDIR(x) (x)&0x4000
 
@@ -75,7 +76,37 @@ struct dirlist *new_direntry(char *remoteName, char *name,char *date,char *owner
 //    tmp->file = S_ISREG(mode);
     tmp->size = size;
 
-    tmp->stringSize = ASPrintf("%lld",size);
+    STRPTR tmpString = (STRPTR) ASPrintf("%lld",size);
+    int c = strlen(tmpString);
+    
+	if (c>seperatorSize)
+    {
+        int i = 0;
+    	int sepCounter=seperatorSize;
+
+        c = (c-1)/seperatorSize + c;
+        tmp->stringSize = (STRPTR) AllocVecTags(c*sizeof(char)+1, AVT_ClearWithValue, 0, TAG_DONE);
+        c--;
+        
+        for (i = strlen(tmpString)-1; i >= 0; i-- )
+        {
+        	sepCounter--;
+            tmp->stringSize[c--] = tmpString[i];
+            if (sepCounter==0 && c>0)
+            {
+                tmp->stringSize[c--] = decimalSeperator;
+                sepCounter=seperatorSize;
+            }
+        }
+        if (c!=-1) printf("do c: %i strlen: %i\n", c, strlen(tmpString));
+        FreeVec(tmpString);
+    }
+    else
+    {
+        tmp->stringSize = tmpString;
+    }
+    
+    //
     /*
     if (size >= 1000000000000)
     {
