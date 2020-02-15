@@ -37,3 +37,7 @@ Transferwindow in aminet mode fixed
 Localized thousands separator in listview added
 Fixed prefs window (font selection and public screen string)
 Default prefsfile location is now PROGDIR:
+#
+#fmenzel 15.02.2020
+password string gadget now uses the standard reaction password hook
+and maximal string size set to 99 chars

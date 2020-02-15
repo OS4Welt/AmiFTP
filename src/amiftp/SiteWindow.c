@@ -40,11 +40,12 @@ static STRPTR lsnames[]=
 };
 
 struct List *objlist;
-struct Hook EditHook;
+//struct Hook EditHook;
 
+#if 0
 char RealString[100];
 char Original[100];
-
+#endif
 struct SiteNode *Curr_sn;
 
 /* SiteList window */
@@ -69,7 +70,7 @@ int RemoveClicked(void);
 int NewClicked(void);
 
 static ULONG lsecs,lmics;
-
+#if 0
 ULONG 
 PasswordHook(struct Hook *Hook, struct SGWork *Work, ULONG *Msg)
 {
@@ -186,6 +187,7 @@ PasswordHook(struct Hook *Hook, struct SGWork *Work, ULONG *Msg)
     else
       return(FALSE);*/
 }
+#endif
 
 static char buf1[100],buf2[100],buf3[100],buf4[100],buf5[100],buf6[100];
 
@@ -306,16 +308,11 @@ struct Window *OpenEditSiteWindow(struct SiteNode *sn)
       strcpy(buf5, sn->sn_LoginName);
     else
       buf5[0]=0;
-    memset(Original, 0, sizeof(Original));
-    memset(RealString, 0, sizeof(RealString));
     if (sn->sn_Password) {
-	memset(Original, '·', strlen(sn->sn_Password));
-	strcpy(buf6, Original);
-	strcpy(Original, sn->sn_Password);
-	strcpy(RealString, sn->sn_Password);
+		memset(buf6, 0, sizeof(buf6));
+		strncpy(buf6, sn->sn_Password, sizeof(buf6));
     }
-    memset(&EditHook, 0, sizeof(EditHook));
-    EditHook.h_Entry=(HOOKFUNC)PasswordHook;
+
 
     EditSiteLayout=LayoutObject,
                      GA_DrawInfo, DrawInfo,
@@ -420,8 +417,9 @@ struct Window *OpenEditSiteWindow(struct SiteNode *sn)
                          GA_Disabled, sn->sn_Anonymous,
                          GA_TabCycle, TRUE,
                          STRINGA_Buffer, buf6,
-                         STRINGA_MaxChars, 20,
-                         STRINGA_EditHook, (ULONG)&EditHook,
+                         STRINGA_MaxChars, 99,
+						 STRINGA_HookType, SHK_PASSWORD,
+                       //  STRINGA_EditHook, (ULONG)&EditHook,
                          StringEnd,
                          Label(GetAmiFTPString(SCW_Password)),
                        EndGroup, EndGroup,
@@ -591,9 +589,9 @@ void CloseEditSiteWindow(struct SiteNode *sn)
 		    free(sn->sn_Password);
 		    sn->sn_Password=NULL;
 		}
-		if (strlen(Original))
-		  sn->sn_Password=strdup(RealString);
-
+		if (strlen(buf6))
+			sn->sn_Password = strdup(buf6);
+		
 		GetAttr(GA_Selected, ESG_List[ESG_Anonymous], &attr);
 		sn->sn_Anonymous=attr;
 
