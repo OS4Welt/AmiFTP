@@ -44,3 +44,7 @@ and maximal string size set to 99 chars
 #
 #fmenzel 17.02.2020
 rewrite active FTP mode to passive mode
+more savety checks of NULL pointer
+The default config values have been changed so that the buttons are displayed by default 
+and wbrun is used instead of Multiview to display a file.
+zero byte files with a name length of 255 characters are no longer displayed in listbrowser
