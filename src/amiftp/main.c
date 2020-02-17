@@ -125,10 +125,13 @@ int main(int argc, char **argv)
 	ag.ag_NAG.nag_ClientPort = "AMIFTP_HELP";
 	ag.ag_NAG.nag_Context = context;
 
-	MainPrefs.mp_ViewCommand = strdup("MultiView %F");
+	MainPrefs.mp_ViewCommand = strdup("WBRUN %F");
 	MainPrefs.mp_CacheSize = 5;
 	MainPrefs.mp_BufferSize = 8192;
 	MainPrefs.mp_DeleteFiles = TRUE;
+	MainPrefs.mp_UseDefaultFonts = TRUE;
+	MainPrefs.mp_OpenOnDefaultScreen = TRUE;
+	MainPrefs.mp_ShowToolBar = TRUE;
 
 	if (!argc)
 	{
@@ -776,7 +779,7 @@ void PrintSiteList()
 void GetToolTypes(struct WBStartup *msg)
 {
 	char *key;
-
+	
 	if (msg->sm_NumArgs != 0)
 	{
 		BPTR olddir;

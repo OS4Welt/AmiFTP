@@ -393,6 +393,7 @@ void processFile(char *remotePath, char *localPath, char* fileName, int64 fileSi
     static char slocalPath[1024];
     static char sremotePath[1024];
 
+	
     sprintf(slocalPath, "%s%s", localPath, fileName);
     sprintf(sremotePath, "%s%s", remotePath, fileName);
   
@@ -421,7 +422,7 @@ void processFile(char *remotePath, char *localPath, char* fileName, int64 fileSi
 void processDirectory(char *localPath, char *remotePath)
 {
      APTR context = ObtainDirContextTags(EX_StringNameInput,(char*)localPath,
-                    EX_DataFields,(EXF_NAME|EXF_TYPE),TAG_END);
+                    EX_DataFields,(EXF_NAME|EXF_TYPE|EXF_SIZE),TAG_END);
 
         
         if (context)
@@ -491,7 +492,7 @@ void processDirectory(char *localPath, char *remotePath)
 }
 
 
-static struct Hook AppMessageHook;
+static struct Hook AppMessageHook; // dragndrop
 static ULONG  AppMessageHookFunc(struct Hook *hook,
 					       Object *WinObj,
 					       struct AppMessage *msg)

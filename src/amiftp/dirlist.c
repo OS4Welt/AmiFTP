@@ -138,6 +138,8 @@ BOOL add_direntry(struct List *filelist, char *name, char *date,
     struct dirlist *oldprev=NULL;
     ULONG flags;
 
+	if (size == 0 && strlen(name) == 255) return TRUE;
+
     if ((!MainPrefs.mp_Showdotfiles) && name[0]=='.')
       flags=LBFLG_CUSTOMPENS|LBFLG_HIDDEN;
     else

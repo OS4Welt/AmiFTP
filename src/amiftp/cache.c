@@ -48,11 +48,16 @@ void RemoveCacheEntry(char *dirname)
 
 void FreeCacheEntry(struct CacheNode *cnode)
 {
-    if (cnode) {
-	free(cnode->cn_Node.ln_Name);
-	free_dirlist(cnode->dirlist);
-	free(cnode->dirlist);
-	free(cnode);
+    if (cnode) 
+	{
+		if (cnode->cn_Node.ln_Name)
+			free(cnode->cn_Node.ln_Name);
+		if (cnode->dirlist)
+		{
+			free_dirlist(cnode->dirlist);
+			free(cnode->dirlist);
+		}
+		free(cnode);
     }
 }
 

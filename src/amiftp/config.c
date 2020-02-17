@@ -292,7 +292,7 @@ static struct Node *ReadSiteNode(UBYTE *buf)
 		int i;
 		for (i=0;i<strlen(sn->sn_Password);i++)
 		  sn->sn_Password[i]=sn->sn_Password[i]^MainPrefs.mp_Cookie;
-	    }
+	    } 
 	    return (struct Node *)sn;
 	}
 	FreeSiteNode(sn);
