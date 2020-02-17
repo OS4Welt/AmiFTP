@@ -41,3 +41,6 @@ Default prefsfile location is now PROGDIR:
 #fmenzel 15.02.2020
 password string gadget now uses the standard reaction password hook
 and maximal string size set to 99 chars
+#
+#fmenzel 17.02.2020
+rewrite active FTP mode to passive mode

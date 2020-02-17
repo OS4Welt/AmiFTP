@@ -62,7 +62,7 @@ int sgetc(const int sock)
     flgs = SIGBREAKF_CTRL_D;
 	
 //    Printf("sgetc: WaitSelect()\n");
-    tcp_waitselect(16, &rd, 0L, &ex, &t, (ULONG *)&flgs);
+     tcp_waitselect(16, &rd, 0L, &ex, &t, (ULONG *)&flgs);
 
     if (FD_ISSET(sock,&rd))
       {	

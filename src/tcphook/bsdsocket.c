@@ -60,7 +60,7 @@ LONG aos4_connect(LONG s, const struct mysockaddr_in *sin)
 {
     struct sockaddr_in hisctladdr;
 
-    bzero((char *)&hisctladdr,sizeof(hisctladdr));
+    memset((char *)&hisctladdr,0, sizeof(hisctladdr));
     hisctladdr.sin_family=sin->sin_family;
     hisctladdr.sin_addr.s_addr=sin->sin_addr.s_addr;
     hisctladdr.sin_port=sin->sin_port;

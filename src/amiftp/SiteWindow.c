@@ -308,8 +308,9 @@ struct Window *OpenEditSiteWindow(struct SiteNode *sn)
       strcpy(buf5, sn->sn_LoginName);
     else
       buf5[0]=0;
-    if (sn->sn_Password) {
-		memset(buf6, 0, sizeof(buf6));
+
+	memset(buf6, 0, sizeof(buf6));
+    if (sn->sn_Password) {		
 		strncpy(buf6, sn->sn_Password, sizeof(buf6));
     }
 

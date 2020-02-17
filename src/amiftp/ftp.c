@@ -43,10 +43,12 @@ unsigned char str_buf[2048];
 char *transfer_buf=0;
 int bufsize=0;
 
+struct mysockaddr_in hisctladdr;
+
 int ftp_hookup(char *host, short port)
 {
     register struct hostent *hp = 0;
-    struct mysockaddr_in hisctladdr;
+    
     int s, res, rval;
     LONG len;
     static char hostnamebuf[MAXHOSTNAMELEN + 1];
@@ -174,7 +176,6 @@ int ftp_hookup(char *host, short port)
     }
 
     cin = cout = s;
-
     if (getreply(0) > 2) {	/* read startup message from server */
 	close_files();
 	code = -1;
@@ -886,103 +887,39 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 int initconn(void)
 
 {
-    register char *p, *a;
-    int result, tmpno = 0;
-    LONG len;
-    int on = 1;
 
-  noport:
-    data_addr = myctladdr;
-    if (sendport)
-      data_addr.sin_port = 0;	/* let system pick one */
-    if (data != -1) {
-	tcp_closesocket(data);
-	data = -1;
-    }
+	int result = command("PASV");
 
-    data = tcp_socket(AF_INET, SOCK_STREAM, 0);
-    if (data < 0) {
-//	perror("AmiFTP: socket");
-	if (tmpno)
-	  sendport = 1;
-	return 1;
-    }
+	int a1, a2, a3, a4, p1, p2, dataPort;
 
-    if (!sendport) {
-	if (tcp_setsockopt(data, SOL_SOCKET, SO_REUSEADDR, (char *)&on,
-			   sizeof (on)) < 0) {
-	    //	  perror("AmiFTP: setsockopt (reuse address)");
-	    goto bad;
+	sscanf(response_line, "227 Entering Passive Mode (%d,%d,%d,%d,%d,%d)", &a1, &a2, &a3, &a4, &p1, &p2);
+	dataPort = (p1 * 256) + p2;
+
+	memset(&data_addr, 0, sizeof(data_addr));
+	data_addr.sin_port = htons(dataPort);
+	data_addr.sin_addr = hisctladdr.sin_addr;
+	data_addr.sin_family = AF_INET;
+	errno = 0;
+	data = tcp_socket(AF_INET, SOCK_STREAM, 0);
+
+	if (data < 0) {
+		perror("AmiFTP: socket");
+		return 1;
 	}
-    }
 
-    if (tcp_bind(data, (struct sockaddr *)&data_addr, sizeof (data_addr)) < 0) {
-//	perror("AmiFTP: bind");
-	goto bad;
-    }
-    len = sizeof (data_addr);
+	sendport = tcp_connect(data, &data_addr);
 
-    if (tcp_getsockname(data, (struct sockaddr *)&data_addr, &len) < 0) {
-//	perror("AmiFTP: getsockname");
-	goto bad;
-    }
-
-    if (tcp_listen(data, 1) < 0) {}
-//      perror("AmiFTP: listen");
-    if (sendport) {
-	a = (char *)&data_addr.sin_addr;
-	p = (char *)&data_addr.sin_port;
-#define	UC(b)	(((int)b)&0xff)
-	result = command("PORT %d,%d,%d,%d,%d,%d",
-			 UC(a[0]), UC(a[1]), UC(a[2]), UC(a[3]),
-			 UC(p[0]), UC(p[1]));
-	if (result == ERROR && sendport == -1) {
-	    sendport = 0;
-	    tmpno = 1;
-	    goto noport;
+	if (result != ERROR && sendport != -1) {
+		return 0;
 	}
-	return result != COMPLETE;
-    }
-    if (tmpno)
-      sendport = 1;
-    return 0;
-  bad:
+
     tcp_closesocket(data);
     data = -1;
-
-    if (tmpno)
-      sendport = 1;
     return 1;
 }
 
 int dataconn(void)
-
 {
-    struct sockaddr_in from;
-    int s;
-    LONG fromlen = sizeof (from);
-
-  restart:
-    s = tcp_accept(data, (struct sockaddr *) &from, &fromlen);
-
-    if (s < 0) {
-	if (errno == EINTR)
-	  goto restart;
-//	perror("AmiFTP: accept");
-	tcp_closesocket(data);
-	data = -1;
-	return -1;
-    }
-    tcp_closesocket(data);
-    data = s;
-    {
-	int on = 1;
-
-	if (tcp_setsockopt(data, SOL_SOCKET, SO_OOBINLINE, (char *)&on,
-			   sizeof (on)) < 0) {
-	    //	    perror("AmiFTP: setsockopt");
-	}
-    }
     return data;
 }
 
@@ -993,6 +930,7 @@ int getreply(const int expecteof)
     register int c, n;
     register int dig;
     register char *cp;
+
     int originalcode = 0, continuation = 0;
     int pflag = 0;
 
@@ -1001,9 +939,8 @@ int getreply(const int expecteof)
 	cp = response_line;
 	memset(response_line,0,sizeof(response_line)-1);
 	while ((c = sgetc(cin)) != '\n')
-	  //	    printf("%c",c);
-	//	    fflush(stdout);
 	  {
+
 	      if (c == IAC) {	/* handle telnet commands */
 		  switch (c = sgetc(cin))
 		      {

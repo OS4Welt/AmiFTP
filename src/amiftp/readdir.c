@@ -35,7 +35,6 @@ struct List *read_remote_dir()
 
     /* read the remote directory, adding files and directories to a list */
     /* send dir command */
-
     if (non_unix || temp_non_unix) {
 	din = open_remote_ls(1);
 	vms_expect_dir = 0;
@@ -54,7 +53,7 @@ struct List *read_remote_dir()
 	if (!strncmp(response_line, "226", 3) ||
 	    !strncmp(response_line, "250", 3)) {
 	    /* done */
-//	    printf(response_line);
+	    printf(response_line);
 	    break;
 	}
 	/* ignore blank lines */

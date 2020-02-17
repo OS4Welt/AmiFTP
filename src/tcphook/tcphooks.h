@@ -4,8 +4,8 @@
 #define TCPFIOASYNC 2
 
 struct mysockaddr_in {
-    u_char sin_family;
-    u_short sin_port;
+    short sin_family;
+    unsigned short sin_port;
     struct in_addr sin_addr;
     char sin_zero[8];
 };
