@@ -278,7 +278,7 @@ int ftp_login(char *user, char *pass, char *acct)
 	return 0;
     }
     if (n == CONTINUE) {
-	char passbuf[25];
+	char passbuf[100];
 	passbuf[0]=0;
 	code = 0;
 	if (pass == NULL && !SilentMode)

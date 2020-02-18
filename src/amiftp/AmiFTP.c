@@ -844,7 +844,7 @@ void ShowErrorReq(char *str, ...)
 char *GetPassword(char *user, char *passbuf)
 {
 	extern struct Window *ConnectWindow;	/* Fix this: Bug in reqtools */
-    int result = showStringRequester(ConnectWindow, TRUE, NULL, GetAmiFTPString(Str_PasswordRequest), NULL, passbuf, 24, GetAmiFTPString(Str_PasswordEntry), user);
+    int result = showStringRequester(ConnectWindow, TRUE, NULL, GetAmiFTPString(Str_PasswordRequest), NULL, passbuf, 99, GetAmiFTPString(Str_PasswordEntry), user);
     if (result)
 			return passbuf;
 	return NULL;
