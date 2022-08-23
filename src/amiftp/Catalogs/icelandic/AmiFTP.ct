@@ -1,5 +1,5 @@
-## version $VER: AmiFTP.catalog 2.3 (1.7.96)
-## language svenska
+## version $VER: AmiFTP.catalog 2.2 (18.6.96)
+## language íslenska
 ## codeset 0
 ; Catalog descriptor file for AmiFTP 
 ; Copyright (C) 1995 by Magnus Lilja, All Rights Reserved.
@@ -25,73 +25,73 @@
 ; SiteList window
 ;
 SLW_SiteListWindow
-Liste de sites AmiFTP
+AmiFTP svæðalisti
 ;AmiFTP Sitelist
 ;
 SLW_SiteList
-Sites FTP
+FTP Svæði
 ;FTP Sites
 ;
 SLW_Connect
-_Connexion
+_Tengjast
 ;_Connect
 ;
 SLW_New
-_Nouveau site
+_Nýtt
 ;_New site
 ;
 SLW_Edit
-_Editer
+Ritf_æra
 ;_Edit
 ;
 SLW_Remove
-_Retirer
+_Fjarlægja
 ;_Remove
 ;
 SLW_Cancel
-_Annuler
+_Hætta við
 ;C_ancel
 ;
 SLW_OK
-_OK
+Í _lagi
 ;_OK
 ;
 SLW_Up
-Monter
+Upp
 ;Up
 ;
 SLW_Down
-Descendre
+Niður
 ;Down
 ;
 SLW_Top
-Haut
+Toppur
 ;Top
 ;
 SLW_Bottom
-Bas
+Botn
 ;Bottom
 ;
 SLW_Newstring
-(Nouveau)
+(Nýtt)
 ;(New)
 ;
 SLW_Sort
-_Trier
+_Raða
 ;_Sort
 ;
 ; SiteConfiguration Window
 ;
 SCW_SiteConfigurationWindow
-AmiFTP - Configuration Site
+AmiFTP Svæðis Stillingar
 ;AmiFTP Site Configuration
 ;
 SCW_Name
-No_m
+Na_fn
 ;Na_me
 ;
 SCW_Site
-_Site
+_Svæði
 ;_Site
 ;
 SCW_Port
@@ -99,267 +99,269 @@ _Port
 ;_Port
 ;
 SCW_RemDir
-_Auto-CD répertoire
-;_Auto-cd to directory
+S_kipta sjálfvirk í skúffu
+;_Auto-cd to drawer
 ;
 SCW_LocDir
-Chemin _Téléchargement
+_Niðursendingar slóð
 ;_Download path
 ;
 SCW_Anonymous
-Login a_nonyme
+An_onymous login?
 ;Anonymous lo_gin
 ;
 SCW_LoginName
-Nom de _Login
+_Login nafn
 ;_Login name
 ;
 SCW_Password
-Mot de p_asse
+Leyni_orð
 ;Pass_word
 ;
 SCW_OK
-_OK
+_Í lagi
 ;_OK
 ;
 SCW_Cancel
-A_nnuler
+_Hætta við
 ;Ca_ncel
 ;
 SCW_OS
-S_ystème d'opération
+Stýri_kerfi
 ;Operating S_ystem
 ;
 SCW_Proxy
-Pro_xy
+Stað_gengill
 ;Pro_xy
 ;
 SCW_HotList
-_Hotlist
+_Vinsældarlisti
 ;_HotList
 ;
 ; Transfer window
 ;
 TW_WinTitle
-Fenêtre de transfert AmiFTP
-;AmiFTP Transfer window
+AmiFTP Færslu gluggi
+;AmiFTP - %ld file(s) left (%ld %s)
 ;
 TW_RemoteFile
-Ficher distant
+Fjarlæg skrá
 ;Remote file
 ;
 TW_LocalFile
-Fichier local
+Heima skrá
 ;Local file
 ;
 TW_Size
-Taille
+Stærð
 ;Size
 ;
 TW_Cps
-CPS
+SÁS
 ;CPS
 ;
 TW_DataTransferred
-Données transférées
+Fært magn
 ;Data transferred
 ;
 TW_Abort
-Annuler transfert
+Hætta við færslu
 ;Abort transfer
 ;
 TW_FileExists
-Le fichier '%s' existe déjà.\n\
-L'ancienne taille est : %ld octets (nouvelle %ld octets).\n\
+Skráin '%s' er þegar til.\n\
+Gömul stærð er: %ld bæti (ný %ld bæti).\n\
+
 ;File '%s' already exists.\nOld filesize is: %ld bytes (new %ld bytes).\n
 ;
 TW_Overwrite
-Réécrire
+Skrifa yfir
 ;Overwrite
 ;
 TW_Resume
-Reprendre transfert
+Halda áfram færslu
 ;Resume transfer
 ;
 TW_CancelTransfer
-Annuler transfert
+Hætta við færslu
 ;Cancel transfer
 ;
 TW_DownloadDir
-Vous allez télécharger un répertoire arborescent.\n\
-Etes-vous sûr de vouloir faire çà ?
+Þú ert um það bil að færa niður skúffu tré.\n\
+Ertu viss um að þú viljir gera þetta?
 ;You are about to download a directory tree.\nAre you sure you want to do this?
 ;
 TW_GetDir
-Télécharger|Passer cette entrée
+Já, færa það niður!|Sleppa þessari færslu
 ;Yes, download it!|Skip this entry
 ;
 ; Main preferences window
 ;
 MPW_WinTitle
-Préférences globales AmiFTP
+AmiFTP Almennar Stillingar
 ;AmiFTP Global Preferences
 ;
 MPW_Password
-Mote de passe _Anonyme
+_Anonymous lykilorð
 ;_Anonymous password
 ;
 MPW_ViewCommand
-Commande de _visualisation
+Skoða sk_ipun
 ;_View command
 ;
 MPW_ProxyHost
-_Hôte proxy
+Staðgengils h_ýsill
 ;Proxy _host
 ;
 MPW_ProxyPort
-Port proxy
+Staðgengils p_ort
 ;Proxy _port
 ;
 MPW_ProxyDefault
-Utiliser pro_xy par défaut
+Nota staðgengil sjálfgefið?
 ;Use pro_xy per default
 ;
 MPW_DefDownloadDir
-Répertoire de téléchargement
-;Default download directory
+Sjálfgefin færslu skúffa
+;Default local drawer
 ;
 MPW_IgnoreCase
-_Ignorer casse
+H_unsa há/lágstafi?
 ;_Ignore case
 ;
 ; Main window
 ;
 MW_SiteName
-_Site courant
-;Current _site:
+Núverandi _svæði:
+;_Site
 ;
 MW_DirName
-Réperto_ire
-;D_irectory
+S_kúffa
+;Drawer
 ;
 MW_DownloadDir
-Chemin t_éléchargement
-;D_ownload path
+Færslu skú_ffa
+;L_ocal drawer
 ;
 MW_Parent
-_Parent
+_Móðurskrá
 ;_Parent
 ;
 MW_Get
-_Obtenir
+_Ná í
 ;_Get
 ;
 MW_Put
-Me_ttre
+S_etja
 ;P_ut
 ;
 MW_View
-_Voir
+Sko_ða
 ;_View
 ;
 MW_Connect
-_Connexion à...
+_Tengjast við...
 ;_Connect to...
 ;
 MW_Disconnect
-_Déconnexion
+_Aftengjast
 ;_Disconnect
 ;
 MW_DeleteRequest
-Etes-vous sûr de vouloir effacer ces fichiers ?
+Ertu viss um að þú\n\
+viljir eyða þessum skrám?
 ;Are you sure you want to\ndelete these files?
 ;
 MW_DeleteCancel
-Effacer|Annuler
+Eyða|Hætta við
 ;Delete|Cancel
 ;
 MW_Reload
-_Recharger
+_Hlaða aftur
 ;_Reload
 ;
 ; Connect window
 ;
 CW_WinTitle
-Fenêtre de connexion AmiFTP
+AmiFTP Tengingar gluggi
 ;AmiFTP Connect window
 ;
 CW_Abort
-Avorter
+Hætta við
 ;Abort
 ;
 CW_Site
-Site:
+Svæði:
 ;Site:
 ;
 CW_Status
-Status :
+Staða:
 ;Status:
 ;
 CW_Connecting
-Connexion...
+Tengist...
 ;Connecting...
 ;
 CW_ReadingDir
-Lecture répertoire...
-;Reading directory...
+Les skúffu...
+;Reading drawer...
 ;
 CW_SendingLogin
-Envoi login...
+Sendi login...
 ;Sending login...
 ;
 CW_SendingPassword
-Envoi mot de passe...
+Sendi lykilorð...
 ;Sending password...
 ;
 CW_ChangingDirectory
-Changement de répertoire...
-;Changing directory...
+Breyti um skúffu...
+;Changing drawer...
 ;
 ; Main menus
 ;
 MENU_Project
-Projet
+Verkefni
 ;Project
 ;
 MENU_AddToSiteList
-Ajouter à la liste des sites
+Bæta núverandi við svæðalista
 ;Add current to sitelist
 ;
 MENU_Reconnect
-Reconnexion
+Endurtengjast
 ;Reconnect
 ;
 MENU_Iconify
-Icônifier
+I\000Skjátáknfæra
 ;I\000Iconify
 ;
 MENU_About
-A propos
+?\000Um...
 ;?\000About...
 ;
 MENU_Quit
-Quitter
+Q\000Hætta
 ;Q\000Quit
 ;
 MENU_Files
-Fichiers
+Skrár
 ;Files
 ;
 MENU_TagAll
-Sélectionner
+A\000Merkja allar
 ;A\000Tag all
 ;
 MENU_UntagAll
-Désélectionner
+U\000Afmerkja allar
 ;U\000Untag all
 ;
 MENU_TransferMode
-Mode de transfert
+Færslumáti
 ;Transfer mode
 ;
 MENU_Binary
-Binaire
+Vélamál
 ;Binary
 ;
 MENU_ASCII
@@ -367,188 +369,191 @@ ASCII
 ;ASCII
 ;
 MENU_ClearCache
-Effacer répértoire-cache
+Hreinsa skúffu-skyndiminni
 ;Clear dir-cache
 ;
 MENU_Delete
-Effacer
+D\000Eyða
 ;D\000Delete
 ;
 MENU_Move
-Move
+M\000Færa
 ;M\000Move
 ;
 MENU_Sort
-Trier
+Raða
 ;Sort
 ;
 MENU_SortbyName
-par nom
+eftir nafni
 ;by name
 ;
 MENU_SortbyDate
-par date
+eftir dagsetningu
 ;by date
 ;
 MENU_Settings
-Réglages
+Stillingar
 ;Settings
 ;
 MENU_Global
-Globaux
+1\000Almennar...
 ;1\000Global...
 ;
 MENU_Hostlist
-Sites
+2\000Svæðislisti...
 ;2\000Sitelist...
 ;
 MENU_LogWindow
-Fenêtre log
+Skráningar gluggi?
 ;Log window
 ;
 MENU_ToggleDotFiles
-Montrer fichiers '.'
+Sýna punkt-skrár?
 ;Show dot-files
 ;
 MENU_LoadSettings
-Chargement des réglages...
+Hlaða inn stillingum...
 ;Load settings...
 ;
 MENU_SaveSettings
-Sauver les réglages
+Vista stillingar
 ;Save settings
 ;
 MENU_SaveSettingsAs
-Sauver les réglages en...
+Vista stillingar sem...
 ;Save settings as...
 ;
 MENU_HotList
-Hotlist
+Vinsældalisti
 ;Hotlist
 ;
 ; Other strings
 ;
 Str_ErrorReadingDir
-Erreur en lecture du répertoire\n
-;Error reading dir\n
+Villa við að lesa skúffu\n\
+
+;Error reading drawer!\n
 ;
 Str_CannotDLDirs
-Impossible de télécharger des répertoires entiers !\n
+Get ekki fært niður heilar skúfur!\n\
+
 ;Cannot download entire directories!\n
 ;
 Str_SelectDLPath
-Choisissez un chemin de téléchargement
+Veldu niðurfærslu slóð
 ;Select download path
 ;
 Str_SelectULFiles
-Choisissez le(s) fichier(s) à charger
+Veldu skrá(r) til að senda upp
 ;Select file(s) to upload
 ;
 Str_CDFailedTimedout
-Echec du CD distant :\n\
-Connexion achevée
+Fjarlægt CD brást:\n\
+Tengingin slitnaði
 ;Remote CD failed:\nConnection timed out
 ;
 Str_CDFailed
-Echec du CD distant .
+Fjarlægt CD brást.
 ;Remote CD failed.
 ;
 Str_AmiFTPError
-Erreur AmiFTP
+AmiFTP villa
 ;AmiFTP error
 ;
 Str_OK
-OK
+Í lagi
 ;OK
 ;
 Str_CANCEL
-Annuler
+Hætta við
 ;Cancel
 ;
 Str_PasswordRequest
-Requête de mot de passe AmiFTP
+AmiFTP lykilorðs beiðni
 ;AmiFTP Password request
 ;
 Str_PasswordEntry
-Entrez le mot de passe pour l'utilisateur :\n\
+Skráðu inn lykilorð fyrir notanda:\n\
 %s
 ;Enter password for user:\n%s
 ;
 Str_ServiceNotAvail
-Service non disponible.
+Þjónusta ekki til staðar.
 ;Service not available.
 ;
 Str_ConnectFailed
-La connexion a échoué.
+Tengsl brugðust.
 ;Connect failed.
 ;
 Str_ConnectLoginFailed
-La connexion a échoué, login inconnu.
+Tengsl brugðust,login óþekkt.
 ;Connect failed, login unknown.
 ;
 Str_Putfailed
-Le placement de %s a echoué.
+Sending á %s brást
 ;Put of %s failed
 ;
 Str_RemoteWriteFailed
-L'écriture a échoué (système de fichiers distant complet ?).
+Skrif brugðust (fjarlægt skrárkerfi fullt?).
 ;Write failed (remote file system full?).
 ;
 Str_GetFailed
-L'obtention de %s a échouée.
+Sókn %s brást
 ;Get %s failed.
 ;
 Str_LocalfileError
-Erreur d'ouverture de %s.
+Villa við að opna %s.
 ;Error opening %s.
 ;
 Str_LocalWriteFailed
-L'écriture a échoué : %s
+Skrif brugðust: %s
 ;Write failed: %s
 ;
 Str_NoSuchDir
-%s: fichier ou répertoire non trouvé.
+%s: Engin skrá eða skúffa með því heiti.
 ;%s: No such file or directory.
 ;
 Str_DisconnectedTimeout
-Déconnecté (temps écoulé).
+Aftengdist (tími búinn).
 ;Disconnected (timeout).
 ;
 Str_Outofmem
-A cours de mémoire
+Ónægt innra minni
 ;Out of memory
 ;
 Str_SelectSettingsFile
-Choisissez un fichier de réglages...
+Veldu stillinga skrá...
 ;Select settings file...
 ;
 Str_NoRestart
-La commande de reprise a échoué.
+Halda áfram skipunin brást.
 ;Resume command failed.
 ;
 Str_ConnectionTimedOut
-Le temps de connexion est écoulé.
+Aftenging vegna þess að tími rann út
 ;Connection timed out
 ;
 Str_AmiFTPRequest
-Requête AmiFTP
+AmiFTP Beiðni
 ;AmiFTP Request
 ;
 Str_AboutAmiFTP
-A propos d'AmiFTP...
+Um AmiFTP...
 ;About AmiFTP...
 ;
 Str_UnknownHost
-Hôte inconnu
+Óþekkt svæði
 ;Unknown host
 ;
 Str_ErrorBuildingDirList
-Erreur de construction de liste de fichiers.
+Villa kom upp við að byggja upp skráarlista.
 ;Error building filelist.
 ;
 Str_Translator
-Traduit par Didier GIRON\n\
-(girondid@club-internet.fr)\n
+Íslensk þýðing eftir\n\
+Sigurbjörn B. Lárusson\n\
+
 ;
 ; This string will show up in the about window telling the user who made 
 ; the translation. I suggest the string should look like this:
@@ -556,27 +561,27 @@ Traduit par Didier GIRON\n\
 ; too). Ofcourse the above string should be in the same language as
 ; the rest of the translation.
 SLW_NewGroup
-Nouveau _groupe
+Nýr _hópur
 ;New _group
 ;
 SLW_AddBar
-Ajouter une barre
+Skilrúm
 ;Add bar
 ;
 MENU_ToggleADTFiles
-Montrer RECENT en entier
+Sýna alla RECENT?
 ;Show entire RECENT
 ;
 MENU_ResetADT
-Réinitialiser la date ADT
+Endurstilla Aminet-dagsetningu
 ;Reset Aminet-date
 ;
 MW_ViewReadme
-Voir readme
+Skoða Readme
 ;View readme
 ;
 MPW_General
-Général
+Almennt
 ;General
 ;
 MPW_ADT
@@ -584,64 +589,156 @@ Aminet
 ;Aminet
 ;
 MPW_Proxy
-Proxy
+Staðgengill
 ;Proxy
 ;
 MPW_BufferSize
-Taille du tampon
+Færsluminnis stærð
 ;Buffer size
 ;
 MPW_DirCacheSize
-Taille du répertoire-cache
+Skúffu biðminnis stærð
 ;Directory cache size
 ;
 MPW_DeleteViewed
-Effacer fichiers vus
+Eyða skoðunum skrám?
 ;Delete viewed files
 ;
 MPW_Beep
-Bip après transfert
+Gefa tónmerki eftir færslu?
 ;Beep after transfer
 ;
 MPW_HideDirectories
-Cacher répertoires
-;Hide directories
+Fela skúffur
+;Hide drawers
 ;
 MPW_PreservePath
-Préserver chemin
+Halda skrárslóð?
 ;Preserve filepath
 ;
 MPW_ShowMOTD
-Montrer fichiers MOTD
+Sýna MOTD-skrá?
 ;Show MOTD-file
 ;
 MPW_GetReadme
-Télécharger readme
+Ná í readme?
 ;Download readme
 ;
 SCW_AminetMode
-Mode Aminet
+Aminet-hamur?
 ;Aminet-mode
 ;
 MPW_OK
-_OK
+_Í lagi
 ;_OK
 ;
 MPW_Cancel
-_Annuler
+_Hætta við
 ;C_ancel
 ;
 TW_TimeLeft
-Temps restant
+Tími eftir
 ;Time left
 ;
 Str_NoNewAminetFiles
-Pas de nouveau fichier depuis la dernière visite d'Aminet
+Engar nýjar skrár síðan í síðustu aminet heimsókn.
 ;No new files since last Aminet visit
 ;
 Str_WindowTitle
-AmiFTP - %ld fichiers sélectionnés (%ld %s) %ld %s libres sur le disque
+AmiFTP - %ld skrár valdar (%ld %s) %ld %s laus á disk
 ;AmiFTP - %ld files selected (%ld %s) %ld %s free on disk
 ; This might look a bit strange, but when the fields are filled the
 ; string looks like:
 ; AmiFTP - 10 files selected (4 MB) 15 MB free on disk
+MENU_Connect
+T\000Tengjast...
+;C\000Connect...
+;
+MENU_Disconnect
+Aftengjast
+;Disconnect
+;
+MENU_Get
+N\000Ná í
+;G\000Get
+;
+MENU_Put
+P\000Setja
+;U\000Put
+;
+MENU_View
+S\000Skoða
+;V\000View
+;
+MENU_PatternSelect
+Velja eftir mynstri
+;Select by pattern...
+;
+MPW_Display
+Birting
+;Display
+;
+Str_PatternRequest
+AmiFTP beiðni
+;AmiFTP request
+;
+Str_SelectPattern
+Skráðu inn AmigaDOS mynstur:
+;Enter AmigaDOS pattern:
+;
+MENU_Parent
+M\000Móðurskrá
+;P\000Parent
+;
+MPW_PublicScreen
+Public skjár
+;Public screen
+;
+MPW_SystemFonts
+Nota kerfisletur
+;Use system fonts
+;
+MPW_InterfaceFont
+Viðmóts letur
+;Interface font
+;
+MPW_FilelistFont
+Skráarlista letur
+;Filelist font
+;
+MPW_ShowButtons
+Sýna takka
+;Show buttons
+;
+MPW_ShowToolbar
+Birta tólastiku
+;Show toolbar
+;
+MENU_ViewReadme
+Sýna readme
+;View readme
+;
+MPW_DefaultScreen
+Open on default public screen
+;Open on default public screen
+;
+TW_OverwriteAll
+Overwrite all
+;Overwrite all
+;
+MENU_CreateDir
+Create directory
+;Create directory
+;
+Str_RemoteDir
+Enter name of directory
+;Enter name of directory
+;
+MENU_RawCommand
+Send FTP command
+;Send FTP command
+;
+MENU_Rename
+Rename
+;Rename
+;
