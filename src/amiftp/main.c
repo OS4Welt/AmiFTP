@@ -454,14 +454,14 @@ void MyOpenLibs()
 		exit(10);
 	}
 
-	if (OpenDevice("timer.device", UNIT_VBLANK, TimeRequest, 0))
+	if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest*)TimeRequest, 0))
 	{
 		PrintError("Couldn't open timer.device");
 		CleanUp();
 		exit(10);
 	}
 
-	TimerBase = &TimeRequest->Request.io_Device->dd_Library;
+	TimerBase = TimeRequest->Request.io_Device;
 
 	ITimer = (struct TimerIFace *) GetInterface((struct Library *) TimerBase, (CONST_STRPTR) "main", 1, NULL);
 
@@ -508,7 +508,7 @@ void CleanUp()
 	if (TimeRequest)
 	{
 		if (TimeRequest->Request.io_Device)
-			CloseDevice(TimeRequest);
+			CloseDevice((struct IORequest*)TimeRequest);
 
         FreeSysObject(ASOT_IOREQUEST, TimeRequest);
 		TimeRequest = NULL;

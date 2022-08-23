@@ -63,7 +63,7 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 		RefreshGList((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL, 1);
 	    if (head=sn->sn_ADT?ReadRecentList():read_remote_dir()) {
 		if (MainWindow)
-		  SetGadgetAttrs(MG_List[MG_ListView], MainWindow, NULL,
+		  SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 				 LISTBROWSER_Labels, ~0, TAG_DONE);
 		else
 		  SetAttrs(MG_List[MG_ListView], LISTBROWSER_Labels, ~0, TAG_DONE);
@@ -74,14 +74,14 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 		AddCacheEntry(head, CurrentState.CurrentRemoteDir);
 		FileList=head;
 		if (MainWindow)
-		  if (SetGadgetAttrs(MG_List[MG_ListView], MainWindow, NULL,
+		  if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 				     LISTBROWSER_Labels, FileList,
 				     LISTBROWSER_AutoFit, TRUE,
 				     LISTBROWSER_ColumnInfo, &columninfo,
 				     LISTBROWSER_MakeVisible, 0,
 				     LISTBROWSER_Selected, -1,
 				     TAG_DONE))
-		    RefreshGList(MG_List[MG_ListView], MainWindow, NULL, 1);
+		    RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
 		else
 		  SetAttrs(MG_List[MG_ListView],
 			   LISTBROWSER_Labels, FileList,

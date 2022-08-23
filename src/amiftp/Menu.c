@@ -268,7 +268,7 @@ int BuildMenu(void)
 	}
     }
 
-    if (NewMenu = (struct NewMenu *)AllocVec((Count + SiteCount) * sizeof(struct NewMenu),MEMF_ANY|MEMF_CLEAR)) {
+    if (NewMenu = (struct NewMenu *)AllocVecTags((Count + SiteCount) * sizeof(struct NewMenu), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE )) {
 	extern BPTR LogWindow;
 	mainmenus[MNU_BinaryTransferMode].nm_Flags=
 	  CHECKIT|(TransferMode==BINARY?CHECKED:0);
@@ -680,24 +680,25 @@ static int menu_AddToSitelist(struct MenuItem *menuitem)
     if (CurrentState.CurrentSite[0]==0)
       return 1;
 
-    sn=AllocMem(sizeof(struct SiteNode), MEMF_CLEAR);
+    
+    sn=(struct SiteNode*) AllocVecTags(sizeof(struct SiteNode), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
     if (sn) {
 	sn->sn_Node.ln_Name=strdup(CurrentState.CurrentSite);
 	if (!sn->sn_Node.ln_Name) {
-	    FreeMem(sn,sizeof(struct SiteNode));
+	    FreeVec(sn);
 	    return 1;
 	}
 	sn->sn_SiteAddress=strdup(CurrentState.CurrentSite);
 	if (!sn->sn_Node.ln_Name) {
 	    free(sn->sn_Node.ln_Name);
-	    FreeMem(sn, sizeof(struct SiteNode));
+	    FreeVec(sn);
 	    return 1;
 	}
 	sn->sn_RemoteDir=strdup(CurrentState.CurrentRemoteDir);
 	if (!sn->sn_RemoteDir) {
 	    free(sn->sn_Node.ln_Name);
 	    free(sn->sn_SiteAddress);
-	    FreeMem(sn, sizeof(struct SiteNode));
+	    FreeVec(sn);
 	    return 1;
 	}
 	sn->sn_Port=21;

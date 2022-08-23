@@ -293,7 +293,7 @@ extern struct RDArgs *argsptr;
 extern struct CurrentState CurrentState;
 extern struct MainPrefs MainPrefs;
 extern struct List SiteList;
-extern struct   sockaddr_in data_addr;
+extern struct   mysockaddr_in data_addr;
 extern struct sockaddr_in myctladdr;
 extern int      connected;
 extern int      timedout;

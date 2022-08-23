@@ -75,7 +75,7 @@ static void rexx_View(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 	    node->ln_Name=(void *)&file;
 	    AddTail(&filelist, node);
 	    if (DownloadFile(&filelist,"T:",args->ascii?ASCII:BINARY,0)==TRANS_OK) {
-		strmfp(loc_name, "T:", FilePart(file.name), 200);
+		strmfp(loc_name, "T:", (STRPTR) FilePart(file.name), 200);
 		ViewFile(loc_name);
 		ac->ac_RC=RC_OK;
 	    }
@@ -555,7 +555,7 @@ static void rexx_GetAttr(struct ARexxCmd *ac,  struct RexxMsg *rexxmsg)
     long err=0;
 
     strupr(args->stem);
-    err|=SetStemVar(rexxmsg, Version, "%s.VERSION", args->stem);
+    err|=SetStemVar(rexxmsg, (STRPTR) Version, "%s.VERSION", args->stem);
     err|=SetStemVar(rexxmsg, MainPrefs.mp_PubScreen, "%s.SCREEN", args->stem);
     err|=SetStemVar(rexxmsg, CurrentState.CurrentSite, "%s.HOST", args->stem);
     sprintf(buff, "%ld", CurrentState.Port);

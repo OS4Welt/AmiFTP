@@ -822,7 +822,8 @@ ULONG HandleSiteListIDCMP(void)
 		    struct Node *lb,*lbn;
 		    ULONG i;
 
-		    sn=AllocMem(sizeof (struct SiteNode), MEMF_CLEAR);
+            
+		    sn=(struct SiteNode *)AllocVecTags(sizeof (struct SiteNode), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
 		    sn->sn_BarLabel=1;
 		    sn->sn_HotList=1;
 		    sn->sn_MenuType=SLN_REGULAR;
@@ -1074,7 +1075,8 @@ int NewGroup(void)
 {
     struct SiteNode *sn;
 
-    sn=AllocMem(sizeof(struct SiteNode), MEMF_CLEAR);
+    
+    sn=(struct SiteNode *)AllocVecTags(sizeof (struct SiteNode), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
     if (sn) {
 	struct Node *lb,*lbn;
 	ULONG i;
@@ -1105,7 +1107,7 @@ int NewGroup(void)
 	    UpdateSLGGadgets(TRUE, sn->sn_MenuType);
 	    RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
 	}
-	else FreeMem(sn, sizeof(struct SiteNode));
+	else FreeVec(sn);
     }
     return 1;
 }
@@ -1571,7 +1573,7 @@ int NewClicked(void)
 
     //geta4();
     
-    sn=AllocMem(sizeof(struct SiteNode), MEMF_CLEAR);
+    sn=(struct SiteNode *)AllocVecTags(sizeof (struct SiteNode), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
     if (sn) {
 	sn->sn_Node.ln_Name=strdup(GetAmiFTPString(SLW_Newstring));
 	sn->sn_Port=21;
@@ -1603,7 +1605,7 @@ int NewClicked(void)
 	    UpdateSLGGadgets(TRUE, sn->sn_MenuType);
 	    RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
 	}
-	else  FreeMem(sn, sizeof(struct SiteNode));
+	else FreeVec(sn);
     }
     return 1;
 }

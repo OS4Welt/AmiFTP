@@ -5,7 +5,7 @@
 #include "AmiFTP.h"
 #include "gui.h"
 
-struct sockaddr_in data_addr;
+struct mysockaddr_in data_addr;
 struct sockaddr_in myctladdr;
 int      data;
 int      verbose;

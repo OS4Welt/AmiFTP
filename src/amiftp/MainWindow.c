@@ -511,7 +511,7 @@ static ULONG  AppMessageHookFunc(struct Hook *hook,
 
     while (node=RemHead(&DropUploadList)) {
 	free(node->ln_Name);
-	FreeMem(node, sizeof(struct Node));
+	FreeVec(node);
     }
 
     

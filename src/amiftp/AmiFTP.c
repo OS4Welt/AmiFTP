@@ -837,7 +837,7 @@ void ShowErrorReq(char *str, ...)
 	if (SilentMode)
 		return;
 	va_start(ap, str);
-    showRequester(MainWindow, REQIMAGE_ERROR, GetAmiFTPString(Str_AmiFTPError), GetAmiFTPString(Str_OK), str);
+    showRequester(MainWindow, (STRPTR)REQIMAGE_ERROR, GetAmiFTPString(Str_AmiFTPError), GetAmiFTPString(Str_OK), str);
 	va_end(ap);
 }
 

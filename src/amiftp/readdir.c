@@ -160,7 +160,7 @@ int	parse_line_ls(struct List *filelist, char *line)
 		type = S_IFDIR;
 
 	if (add_direntry(filelist, name, "unknown", "unknown", "unknown", type,
-		(int64)-1, SortMode, remote_sort_direction) == NULL) {
+		(int64)-1, SortMode, remote_sort_direction) == FALSE) {
 		ShowErrorReq(GetAmiFTPString(Str_ErrorBuildingDirList));
 		return 1;
 	}
@@ -361,7 +361,7 @@ int	parse_line_pattern(struct List *filelist, char *pattern,
 	}
 
 	if (add_direntry(filelist, name, date, owner, group, mode, size,
-		SortMode, remote_sort_direction) == NULL) {
+		SortMode, remote_sort_direction) == FALSE) {
 		ShowErrorReq(GetAmiFTPString(Str_ErrorBuildingDirList));
 		return 1;
 	}
@@ -581,7 +581,7 @@ int	parse_line_vms(struct List *filelist, char *line, int *temp_non_unix)
       if (isupper(*tmp))
 	*tmp = tolower(*tmp);
     if (add_direntry(filelist, name, date, owner, group, mode, size,
-		    SortMode, remote_sort_direction) == NULL) {
+		    SortMode, remote_sort_direction) == FALSE) {
 	ShowErrorReq(GetAmiFTPString(Str_ErrorBuildingDirList));
 	return (1);
     }
@@ -748,7 +748,7 @@ int	parse_line_dos(struct List *filelist, char *line, int *temp_non_unix)
 			*tmp = tolower(*tmp);
 
 	if (add_direntry(filelist, name, date, "unknown", "unknown", mode, size,
-		SortMode, remote_sort_direction) == NULL) {
+		SortMode, remote_sort_direction) == FALSE) {
 		ShowErrorReq(GetAmiFTPString(Str_ErrorBuildingDirList));
 		return (1);
 	}

@@ -258,7 +258,8 @@ static struct Node *ReadSiteNode(UBYTE *buf)
 {
     struct SiteNode *sn;
 
-    if (sn=AllocMem(sizeof(struct SiteNode),MEMF_PUBLIC|MEMF_CLEAR)) {
+   
+    if (sn=AllocVecTags(sizeof(struct SiteNode), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE)) {
 	struct SitePrefsObject *spo=(struct SitePrefsObject *) buf;
 	ULONG sbits=spo->spo_StringBits;
 	UBYTE *ptr=(UBYTE *)&spo[1];
@@ -369,7 +370,7 @@ void FreeSiteNode(struct SiteNode *sn)
     if (sn->sn_LoginName)
       free(sn->sn_LoginName);
 
-    FreeMem(sn,sizeof(struct SiteNode));
+    FreeVec(sn);
 }
 
 void FreeSiteList(struct List *list)
