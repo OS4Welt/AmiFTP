@@ -51,3 +51,7 @@ zero byte files with a name length of 255 characters are no longer displayed in 
 #
 #fmenzel 18.02.2020
 maxchars increased to 99 for password requesters
+#
+#fmenzel 23.08.2022 bumbrev 1.952
+Code cleanup - because of "lauto" some libraries don't need to be opened.
+Replacement of deprecated functions and type conversion warnings
