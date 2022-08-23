@@ -399,176 +399,11 @@ int main(int argc, char **argv)
 	CleanUp();
 }
 
-
-struct IntuitionIFace *IIntuition = NULL;
-struct UtilityIFace *IUtility = NULL;
-struct GraphicsIFace *IGraphics = NULL;
-struct DiskfontIFace *IDiskfont = NULL;
-struct AslIFace *IAsl = NULL;
-struct IFFParseIFace *IIFFParse = NULL;
-struct IconIFace *IIcon = NULL;
-struct RexxSysIFace *IRexxSys = NULL;
-struct WorkbenchIFace *IWorkbench = NULL;
-struct LocaleIFace *ILocale = NULL;
-struct AmigaGuideIFace *IAmigaGuide = NULL;
-struct TimerIFace *ITimer = NULL;
-
-
-
 void MyOpenLibs()
 {
 	char *lib;
 
-	lib = "intuition.library";
-	IntuitionBase = OpenLibrary(lib, 36);
-	if (IntuitionBase)
-		IIntuition = (struct IntuitionIFace *) GetInterfaceTags(IntuitionBase, "main", 1, TAG_END);
-
-	if (!IntuitionBase || !IIntuition)
-	{
-
-		if (IntuitionBase)
-			CloseLibrary(IntuitionBase);
-
-		PrintError(ErrorOpenLib, 36, lib);
-		CleanUp();
-		exit(10);
-	}
-
-	LocaleBase = OpenLibrary("locale.library", 38L);
-
-	if (LocaleBase)
-		ILocale = (struct LocaleIFace *) GetInterfaceTags(LocaleBase, "main", 1, TAG_END);
-
-	if (!LocaleBase || !ILocale)
-	{
-
-		if (LocaleBase)
-			CloseLibrary(LocaleBase);
-
-		PrintError(ErrorOpenLib, 38, lib);
-		CleanUp();
-		exit(10);
-	}
-
-	lib = "graphics.library";
-	GfxBase = OpenLibrary(lib, 36);
-
-	if (GfxBase)
-		IGraphics = (struct GraphicsIFace *) GetInterfaceTags(GfxBase, "main", 1, TAG_END);
-
-	if (!GfxBase || !IGraphics)
-	{
-
-		if (GfxBase)
-			CloseLibrary(GfxBase);
-		PrintError(ErrorOpenLib, 36, lib);
-		CleanUp();
-		exit(10);
-	}
-
-	lib = "utility.library";
-	UtilityBase = OpenLibrary(lib, 36);
-
-	if (UtilityBase)
-		IUtility = (struct UtilityIFace *) GetInterfaceTags(UtilityBase, "main", 1, TAG_END);
-
-	if (!UtilityBase || !IUtility)
-	{
-
-		if (UtilityBase)
-			CloseLibrary(UtilityBase);
-
-		PrintError(ErrorOpenLib, 36, lib);
-		CleanUp();
-		exit(10);
-	}
-
-	lib = "diskfont.library";
-	DiskfontBase = OpenLibrary(lib, 36);
-
-	if (DiskfontBase)
-		IDiskfont = (struct DiskfontIFace *) GetInterfaceTags(DiskfontBase, "main", 1, TAG_END);
-
-	if (!DiskfontBase || !IDiskfont)
-	{
-		if (DiskfontBase)
-			CloseLibrary(DiskfontBase);
-		PrintError(ErrorOpenLib, 36, lib);
-		CleanUp();
-		exit(10);
-	}
-
-	lib = "icon.library";
-	IconBase = OpenLibrary(lib, 36);
-
-	if (IconBase)
-		IIcon = (struct IconIFace *) GetInterfaceTags(IconBase, "main", 1, TAG_END);
-
-	if (!IconBase || !IIcon)
-	{
-		if (IconBase)
-			CloseLibrary(IconBase);
-
-		PrintError(ErrorOpenLib, 36, lib);
-		CleanUp();
-		exit(10);
-	}
-	lib = "workbench.library";
-	WorkbenchBase = OpenLibrary(lib, 36);
-	if (WorkbenchBase)
-		IWorkbench = (struct WorkbenchIFace *) GetInterfaceTags(WorkbenchBase, "main", 1, TAG_END);
-
-	if (!WorkbenchBase || !IWorkbench)
-	{
-		if (WorkbenchBase)
-			CloseLibrary(WorkbenchBase);
-		PrintError(ErrorOpenLib, 36, lib);
-		CleanUp();
-		exit(10);
-	}
-
-	/*
-	   lib="reqtools.library";
-	   ReqToolsBase=(struct ReqToolsBase *)OpenLibrary(lib, 38);
-	   if (!ReqToolsBase) {
-	   PrintError(ErrorOpenLib, 38, lib);
-	   CleanUp();
-	   exit(10);
-	   }
-	 */
-
-	lib = "asl.library";
-	AslBase = OpenLibrary(lib, 36);
-
-	if (AslBase)
-		IAsl = (struct AslIFace *) GetInterfaceTags(AslBase, "main", 1, TAG_END);
-
-	if (!AslBase || !IAsl)
-	{
-		if (AslBase)
-			CloseLibrary(AslBase);
-		PrintError(ErrorOpenLib, 36, lib);
-		CleanUp();
-		exit(10);
-	}
-
-	lib = "iffparse.library";
-	IFFParseBase = OpenLibrary(lib, 36);
-	if (IFFParseBase)
-		IIFFParse = (struct IFFParseIFace *) GetInterfaceTags(IFFParseBase, "main", 1, TAG_END);
-
-	if (!IFFParseBase || !IIFFParse)
-	{
-		if (IFFParseBase)
-			CloseLibrary(IFFParseBase);
-		PrintError(ErrorOpenLib, 36, lib);
-		CleanUp();
-		exit(10);
-	}
-
-
-	lib = "rexxsyslib.library";
+    lib = "rexxsyslib.library";
 	RexxSysBase = OpenLibrary(lib, 0L);
 	if (RexxSysBase)
 		IRexxSys = (struct RexxSysIFace *) GetInterfaceTags(RexxSysBase, "main", 1, TAG_END);
@@ -595,7 +430,7 @@ void MyOpenLibs()
 		exit(10);
 	}
 
-	AppPort = (struct MsgPort *) CreateMsgPort();
+	AppPort = (struct MsgPort *) AllocSysObjectTags(ASOT_PORT, TAG_DONE);
 	if (!AppPort)
 	{
 		PrintError(ErrorNoPort);
@@ -603,14 +438,16 @@ void MyOpenLibs()
 		exit(10);
 	}
 
-	TimerPort = (struct MsgPort *) CreateMsgPort();
+	TimerPort = (struct MsgPort *) AllocSysObjectTags(ASOT_PORT, TAG_DONE);
 	if (!TimerPort)
 	{
 		PrintError(ErrorNoPort);
 		CleanUp();
 		exit(10);
 	}
-	if (!(TimeRequest = (struct TimeRequest *) CreateIORequest(TimerPort, sizeof(struct TimeRequest))))
+
+	if (!(TimeRequest = (struct TimeRequest *) AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_Size, sizeof(struct TimeRequest),
+																	  ASOIOR_ReplyPort, TimerPort, TAG_END)))
 	{
 		PrintError("Couldn't allocate timerreq");
 		CleanUp();
@@ -637,6 +474,7 @@ void MyOpenLibs()
         	seperatorSize = *currentLocale->loc_Grouping;
         CloseLocale(currentLocale);
     }
+  
 	OpenAmiFTPCatalog(NULL, NULL);
 
 	SetupLocaleStrings();
@@ -660,7 +498,6 @@ void CleanUp()
 
 #undef FREE
 
-
 	if (ITimer)
 	{
 		DropInterface((struct Interface *) ITimer);
@@ -673,12 +510,12 @@ void CleanUp()
 		if (TimeRequest->Request.io_Device)
 			CloseDevice(TimeRequest);
 
-		DeleteIORequest(TimeRequest);
+        FreeSysObject(ASOT_IOREQUEST, TimeRequest);
 		TimeRequest = NULL;
 	}
 	if (TimerPort)
 	{
-		DeleteMsgPort(TimerPort);
+        FreeSysObject(ASOT_PORT, TimerPort);
 		TimerPort = NULL;
 	}
 
@@ -687,23 +524,18 @@ void CleanUp()
 		if (ag.ag_AmigaGuide)
 			CloseAmigaGuide(ag.ag_AmigaGuide);
 		CloseLibrary(AmigaGuideBase);
-	}
+	} 
 
 	CloseAmiFTPCatalog();
-
-
-	if (ILocale)
-		DropInterface((struct Interface *) ILocale);
-
-	if (LocaleBase)
-		CloseLibrary(LocaleBase);
 
 	if (ARexx_Object)
 		DisposeObject(ARexx_Object);
 
 	if (AppPort)
-		DeleteMsgPort(AppPort);
-
+    {
+        FreeSysObject(ASOT_PORT, AppPort);
+		AppPort = NULL;
+    }
 
 	if (IRexxSys)
 		DropInterface((struct Interface *) IRexxSys);
@@ -713,48 +545,7 @@ void CleanUp()
 	if (argsptr)
 	{
 		FreeArgs(argsptr);
-	}
-
-	if (IWorkbench)
-		DropInterface((struct Interface *) IWorkbench);
-
-	if (WorkbenchBase)
-		CloseLibrary((struct Library *) WorkbenchBase);
-
-	if (IIntuition)
-		DropInterface((struct Interface *) IIntuition);
-	if (IntuitionBase)
-		CloseLibrary((struct Library *) IntuitionBase);
-
-	if (IGraphics)
-		DropInterface((struct Interface *) IGraphics);
-	if (GfxBase)
-		CloseLibrary((struct Library *) GfxBase);
-
-	if (IUtility)
-		DropInterface((struct Interface *) IUtility);
-	if (UtilityBase)
-		CloseLibrary((struct Library *) UtilityBase);
-
-	if (IDiskfont)
-		DropInterface((struct Interface *) IDiskfont);
-	if (DiskfontBase)
-		CloseLibrary((struct Library *) DiskfontBase);
-
-	if (IAsl)
-		DropInterface((struct Interface *) IAsl);
-	if (AslBase)
-		CloseLibrary((struct Library *) AslBase);
-
-	if (IIFFParse)
-		DropInterface((struct Interface *) IIFFParse);
-	if (IFFParseBase)
-		CloseLibrary((struct Library *) IFFParseBase);
-
-	if (IIcon)
-		DropInterface((struct Interface *) IIcon);
-	if (IconBase)
-		CloseLibrary((struct Library *) IconBase);
+	}  
 }
 
 void PrintSiteList()
