@@ -71,7 +71,8 @@ struct MainPrefsObject {
     int   mpo_GetReadme:1;
     int   mpo_SortMode:4;
     int   mpo_ShowLog:1;
-    int   mpo_ShowToolBar:1;
+    //int   mpo_ShowToolBar:1;
+    WORD   mpo_ShowToolBar;
     int   mpo_UseCustomFonts:1;
     int   mpo_OpenOnNamedScreen:1;
     int   mpo_unused:19;
@@ -430,9 +431,11 @@ static void ReadMainPrefs(UBYTE *buf)
 	MainPrefs.mp_GetReadme=mpo->mpo_GetReadme;
 	MainPrefs.mp_SortMode=SortMode=mpo->mpo_SortMode;
 	MainPrefs.mp_Log=!mpo->mpo_ShowLog;
-	MainPrefs.mp_ShowToolBar=!mpo->mpo_ShowToolBar;
+	//MainPrefs.mp_ShowToolBar=!mpo->mpo_ShowToolBar;
+	MainPrefs.mp_ShowToolBar=mpo->mpo_ShowToolBar;
 	MainPrefs.mp_UseDefaultFonts=!mpo->mpo_UseCustomFonts;
 	MainPrefs.mp_OpenOnDefaultScreen=!mpo->mpo_OpenOnNamedScreen;
+//printf("_ShowToolBar = 0x%08x (load)\n",mpo->mpo_ShowToolBar);
 
 	if (MainPrefs.mp_CacheSize==0)
 	  MainPrefs.mp_CacheSize=5;
@@ -501,11 +504,12 @@ static BOOL WriteMainPrefs(struct IFFHandle *iff, UBYTE *buf, struct MainPrefs *
     mpo->mpo_GetReadme=MainPrefs.mp_GetReadme;
     mpo->mpo_SortMode=MainPrefs.mp_SortMode;
     mpo->mpo_ShowLog=!MainPrefs.mp_Log;
-    mpo->mpo_ShowToolBar=!MainPrefs.mp_ShowToolBar;
+    //mpo->mpo_ShowToolBar=!MainPrefs.mp_ShowToolBar;
+    mpo->mpo_ShowToolBar=MainPrefs.mp_ShowToolBar;
     mpo->mpo_UseCustomFonts=!MainPrefs.mp_UseDefaultFonts;
 
     mpo->mpo_OpenOnNamedScreen=!MainPrefs.mp_OpenOnDefaultScreen;
-
+//printf("_ShowToolBar = 0x%08x (save) 0x%08x\n",mpo->mpo_ShowToolBar,MainPrefs.mp_ShowToolBar);
     sbits=ptr-buf;
 
     if (PushChunk(iff,0,ID_FWPR,sbits)) 

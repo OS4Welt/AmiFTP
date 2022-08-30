@@ -248,9 +248,7 @@ ULONG HandleMainPrefsIDCMP(void)
 
 struct Window *OpenMainPrefsWindow(void)
 {
-    struct LayoutLimits limits;
-    
-
+    //struct LayoutLimits limits;
 
     if (!MainPrefs.mp_FontName) {
 	strcpy(intfont, AmiFTPAttrF->ta_Name);
@@ -315,6 +313,14 @@ struct Window *OpenMainPrefsWindow(void)
     {
       memset(pubscreen, 0, sizeof(pubscreen));
     }
+
+STRPTR toolbar_array[] = {NULL,NULL,NULL,NULL, NULL};//{"No","Images & Text","only Text","only Images", NULL};
+//printf("MainPrefs.mp_ShowToolBar = 0x%08x\n",MainPrefs.mp_ShowToolBar);
+toolbar_array[0] = (STRPTR)GetAmiFTPString(MPW_ShowToolbar_NO);
+toolbar_array[1] = (STRPTR)GetAmiFTPString(MPW_ShowToolbar_BOTH);
+toolbar_array[2] = (STRPTR)GetAmiFTPString(MPW_ShowToolbar_TEXT);
+toolbar_array[3] = (STRPTR)GetAmiFTPString(MPW_ShowToolbar_IMAGES);
+
     MainPrefsLayout=LayoutObject,
                      GA_DrawInfo, DrawInfo,
                      GA_TextAttr, AmiFTPAttrF,
@@ -463,6 +469,7 @@ struct Window *OpenMainPrefsWindow(void)
                    PAGE_Add, VGroupObject, TAligned, /* Start of page 3 display */
                      GA_TextAttr, AmiFTPAttrF,
                      StartVGroup, TAligned, 
+LAYOUT_HorizAlignment, LALIGN_RIGHT,
 
                      StartMember, MPG_List[MPG_DefaultScreen]=CheckBoxObject,
                        GA_ID, MPG_DefaultScreen,
@@ -500,7 +507,7 @@ struct Window *OpenMainPrefsWindow(void)
                        GETFONT_TextAttr, &interfaceFontTextAttrs,
                        GA_Disabled, MainPrefs.mp_UseDefaultFonts?TRUE:FALSE,
                        End,
-       
+
                      Label(GetAmiFTPString(MPW_InterfaceFont)),
 
                      StartMember, MPG_List[MPG_FilelistGetFontB] = GetFontObject,
@@ -523,13 +530,19 @@ struct Window *OpenMainPrefsWindow(void)
                        CheckBoxEnd,
                        CHILD_WeightMinimum, TRUE,  */
 
-                     StartMember, MPG_List[MPG_ToolBar]=CheckBoxObject,
+                     StartMember, MPG_List[MPG_ToolBar]=ChooserObject,
+                     //StartMember, MPG_List[MPG_ToolBar]=CheckBoxObject,
                        GA_ID, MPG_ToolBar,
                        GA_RelVerify, TRUE,
-                       GA_Selected, MainPrefs.mp_ShowToolBar,
-                       GA_Text, GetAmiFTPString(MPW_ShowToolbar),
-                       CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
+                       CHOOSER_LabelArray, &toolbar_array,
+                       CHOOSER_Selected, MainPrefs.mp_ShowToolBar,
+                       //GA_Selected, MainPrefs.mp_ShowToolBar,
+                       //GA_Text, GetAmiFTPString(MPW_ShowToolbar),
+                       //CHECKBOX_TextPlace, PLACETEXT_LEFT,
+                       //CheckBoxEnd,
+                       ChooserEnd,
+                       Label(GetAmiFTPString(MPW_ShowToolbar)),
+                       CHILD_WeightedWidth, 0,
                        CHILD_WeightMinimum, TRUE,
                    EndGroup, CHILD_WeightedHeight, 0,
                    LayoutEnd, /* End of page 3 */
@@ -627,22 +640,25 @@ struct Window *OpenMainPrefsWindow(void)
 
     SetAttrs(MPG_List[MPG_Page], PAGE_Current, LastPage, TAG_DONE);
 
-    LayoutLimits((struct Gadget *)MainPrefsLayout, &limits, PropFont, Screen);
-    limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
-    limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
+    //LayoutLimits((struct Gadget *)MainPrefsLayout, &limits, PropFont, Screen);
+    //limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
+    //limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
 
     MainPrefsWin_Object = WindowObject,
-                          WA_Title, GetAmiFTPString(MPW_WinTitle),
-                          WA_PubScreen, Screen,
-                          WA_DepthGadget, TRUE,
-                          WA_DragBar, TRUE,
-                          WA_CloseGadget, TRUE,
-                          WA_Activate, TRUE,
+                          WA_Title,        GetAmiFTPString(MPW_WinTitle),
+                          WA_PubScreen,    Screen,
+                          WA_DepthGadget,  TRUE,
+                          WA_DragBar,      TRUE,
+                          WA_CloseGadget,  TRUE,
+                          WA_Activate,     TRUE,
                           WA_SmartRefresh, TRUE,
-                          WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
-                          WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
+                          //WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
+                          //WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
                           WA_IDCMP, IDCMP_RAWKEY,
-                          WINDOW_ParentGroup, MainPrefsLayout,
+                          WINDOW_Position,  WPOS_CENTERWINDOW,
+                          WINDOW_RefWindow, MainWindow,
+                          //WINDOW_ParentGroup, MainPrefsLayout,
+                          WINDOW_Layout, MainPrefsLayout,
                           WINDOW_InterpretUserData, WGUD_FUNC,
                         EndWindow;
 
@@ -851,7 +867,9 @@ void UpdateConfig(void)
     }
     */
 
-    GetAttr(GA_Selected, MPG_List[MPG_ToolBar], &attr);
+    //GetAttr(GA_Selected, MPG_List[MPG_ToolBar], &attr);
+    GetAttr(CHOOSER_Selected, MPG_List[MPG_ToolBar], &attr);
+//printf("MainPrefs.mp_ShowToolBar = 0x%08x (update)\n",attr);
     if (attr!=MainPrefs.mp_ShowToolBar) {
 	MainPrefs.mp_ShowToolBar=attr;
 	ConfigChanged=TRUE;

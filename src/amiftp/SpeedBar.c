@@ -112,9 +112,9 @@ void InitSpeedBarList(void)
 
     speedImages[SB_MKDIR]= (struct Image *)NewObject(NULL, "bitmap.image",
 		   BITMAP_Screen, Screen,
-		   BITMAP_SourceFile,  "TBImages:folder",
-		   BITMAP_SelectSourceFile, "TBImages:folder_s",
-		   BITMAP_DisabledSourceFile, "TBImages:folder_g",
+		   BITMAP_SourceFile,  "TBImages:newdrawer",
+		   BITMAP_SelectSourceFile, "TBImages:newdrawer_s",
+		   BITMAP_DisabledSourceFile, "TBImages:newdrawer_g",
 		   BITMAP_Masking, TRUE,
 		   BITMAP_Transparent, TRUE,
 		   IA_Height, 32,
@@ -157,9 +157,9 @@ void InitSpeedBarList(void)
 
     speedImages[SB_SETTINGS]= (struct Image *)NewObject(NULL, "bitmap.image",
 		   BITMAP_Screen, Screen,
-		   BITMAP_SourceFile,  "TBImages:settings",
-		   BITMAP_SelectSourceFile, "TBImages:settings_s",
-		   BITMAP_DisabledSourceFile, "TBImages:settings_g",
+		   BITMAP_SourceFile,  "TBImages:prefs",
+		   BITMAP_SelectSourceFile, "TBImages:prefs_s",
+		   BITMAP_DisabledSourceFile, "TBImages:prefs_g",
 		   BITMAP_Masking, TRUE,
 		   BITMAP_Transparent, TRUE,
 		   IA_Height, 32,
@@ -260,7 +260,7 @@ void UpdateSpeedBar(int state)
     switch(state)
     {
         case MB_DISCONNECTED:
-    	    
+
     	    node=GetHead(&SpeedBarList);
     	    for (i = 0; node; node=GetSucc(node), i++)
             {
