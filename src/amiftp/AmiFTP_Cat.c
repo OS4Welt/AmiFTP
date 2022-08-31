@@ -1,8 +1,11 @@
+
 /****************************************************************
-   This file was created automatically by `FlexCat 1.5'
+
+   This file was created automatically by `FlexCat 2.18'
    from "AmiFTP.cd".
 
    Do NOT edit by hand!
+
 ****************************************************************/
 
 #if defined(__SASC)  ||  defined(_DCC)
@@ -10,8 +13,8 @@
 #elif defined(__GNUC__)
 #ifdef __amigaos4__
 #include <proto/locale.h>
-extern struct Library          *LocaleBase;
-extern struct LocaleIFace		*ILocale;
+extern struct Library      *LocaleBase;
+extern struct LocaleIFace  *ILocale;
 #else
 #include <inline/locale.h>
 #endif
@@ -203,6 +206,10 @@ const struct FC_Type _MENU_CreateDir = { 168, "Create directory" };
 const struct FC_Type _Str_RemoteDir = { 169, "Enter name of directory" };
 const struct FC_Type _MENU_RawCommand = { 170, "Send FTP command" };
 const struct FC_Type _MENU_Rename = { 171, "Rename" };
+const struct FC_Type _MPW_ShowToolbar_NO = { 172, "No" };
+const struct FC_Type _MPW_ShowToolbar_BOTH = { 173, "Images & Text" };
+const struct FC_Type _MPW_ShowToolbar_TEXT = { 174, "only Text" };
+const struct FC_Type _MPW_ShowToolbar_IMAGES = { 175, "only Images" };
 
 
 static struct Catalog *AmiFTP_Catalog = NULL;
@@ -213,7 +220,7 @@ void OpenAmiFTPCatalog(struct Locale *loc, STRPTR language)
   extern void CloseAmiFTPCatalog(void);
 
   CloseAmiFTPCatalog(); /* Not needed if the programmer pairs OpenAmiFTPCatalog
-		       and CloseAmiFTPCatalog right, but does no harm.  */
+                       and CloseAmiFTPCatalog right, but does no harm. */
 
   if (LocaleBase != NULL  &&  AmiFTP_Catalog == NULL)
   { if (language == NULL)
@@ -224,10 +231,10 @@ void OpenAmiFTPCatalog(struct Locale *loc, STRPTR language)
       tagarg = (LONG) language;
     }
     AmiFTP_Catalog = OpenCatalog(loc, (STRPTR) "AmiFTP.catalog",
-				OC_BuiltInLanguage, AmiFTP_BuiltInLanguage,
-				tag, tagarg,
-				OC_Version, AmiFTP_Version,
-				TAG_DONE);
+                                OC_BuiltInLanguage, AmiFTP_BuiltInLanguage,
+                                tag, tagarg,
+                                OC_Version, AmiFTP_Version,
+                                TAG_DONE);
   }
 }
 
@@ -246,5 +253,5 @@ STRPTR GetAmiFTPString(APTR fcstr)
   defaultstr = ((struct FC_Type *) fcstr)->Str;
 
   return(AmiFTP_Catalog ? (STRPTR)GetCatalogStr(AmiFTP_Catalog, strnum, defaultstr) :
-		      defaultstr);
+                      defaultstr);
 }

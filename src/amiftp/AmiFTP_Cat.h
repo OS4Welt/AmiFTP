@@ -367,5 +367,14 @@ extern const APTR _MENU_RawCommand;
 #define MENU_RawCommand ((APTR) &_MENU_RawCommand)
 extern const APTR _MENU_Rename;
 #define MENU_Rename ((APTR) &_MENU_Rename)
+extern const APTR _MPW_ShowToolbar_NO;
+#define MPW_ShowToolbar_NO ((APTR) &_MPW_ShowToolbar_NO)
+extern const APTR _MPW_ShowToolbar_BOTH;
+#define MPW_ShowToolbar_BOTH ((APTR) &_MPW_ShowToolbar_BOTH)
+extern const APTR _MPW_ShowToolbar_TEXT;
+#define MPW_ShowToolbar_TEXT ((APTR) &_MPW_ShowToolbar_TEXT)
+extern const APTR _MPW_ShowToolbar_IMAGES;
+#define MPW_ShowToolbar_IMAGES ((APTR) &_MPW_ShowToolbar_IMAGES)
+
 
 #endif /*   !AmiFTP_CAT_H  */

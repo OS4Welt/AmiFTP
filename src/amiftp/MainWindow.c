@@ -608,6 +608,17 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 	LBFont=PropFont;
     }
 
+
+//struct TextAttr *SBFontF;
+struct TextFont *SBFont = NULL;
+//memcpy(&SBFontF, AmiFTPAttrF, sizeof(struct TextAttr));
+AmiFTPAttrF->ta_YSize -= 2;
+//printf("'%s' %d\n",SBFontF->ta_Name,SBFontF->ta_YSize);
+SBFont = OpenDiskFont(AmiFTPAttrF);
+//printf("'%s' %ld\n",SBFont->tf_Message.mn_Node.ln_Name,SBFont->tf_YSize);
+AmiFTPAttrF->ta_YSize += 2;
+
+
     InitRastPort(&rastport);
     SetFont(&rastport, PropFont);
     ARPort=&rastport;
@@ -661,14 +672,16 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
                        EndGroup, CHILD_WeightedHeight, 0,
                                         */
 
-
+/*
                        StartMember, MG_List[MG_SpeedBar]=SpeedBarObject,
                            GA_ID, MG_SpeedBar,
                            GA_RelVerify, TRUE,
                            SPEEDBAR_EvenSize, TRUE,
                            SPEEDBAR_Buttons, &SpeedBarList,
                            SPEEDBAR_BevelStyle, BVS_NONE,
+SPEEDBAR_ButtonType, SBTYPE_IMAGE,//SBTYPE_TEXT//SBTYPE_IMAGE//SBTYPE_BOTH
                        SpeedBarEnd,
+*/
 
                        StartMember,g1=LayoutObject,LAYOUT_Orientation,LAYOUT_ORIENT_VERT,
                          StartMember, MG_List[MG_SiteName]=StringObject,
@@ -700,6 +713,18 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
                          ChooserEnd,
                          CHILD_WeightedWidth, 0,
                        EndGroup, CHILD_WeightedHeight, 0,
+
+
+                       StartMember, MG_List[MG_SpeedBar]=SpeedBarObject,
+                           GA_ID, MG_SpeedBar,
+                           GA_RelVerify, TRUE,
+                           SPEEDBAR_EvenSize, TRUE,
+                           SPEEDBAR_Buttons, &SpeedBarList,
+                           SPEEDBAR_BevelStyle, BVS_NONE,
+SPEEDBAR_ButtonType, MainPrefs.mp_ShowToolBar? MainPrefs.mp_ShowToolBar-1 : TAG_IGNORE,
+SPEEDBAR_Font, SBFont,
+                       SpeedBarEnd,
+
 
 	               StartVGroup, LAYOUT_BackFill, LAYERS_BACKFILL, StartMember,
                         MG_List[MG_ListView]=ListBrowserObject,
@@ -851,6 +876,7 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
 		 TAG_DONE);
 	FreeSpeedBarList();
     }
+    else { SetAttrs(MG_List[MG_SpeedBar], SPEEDBAR_ButtonType,MainPrefs.mp_ShowToolBar-1, TAG_DONE); }
 
     BOOL firstStart = CurrentState.Width==0&&MainPrefs.mp_Width==0&&CurrentState.Height==0&&MainPrefs.mp_Height==0;
 
@@ -862,31 +888,32 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
         }
 
     MainWin_Object = WindowObject,
-                       WA_Title, wintitle,
+                       WA_Title,       wintitle,
                        WA_ScreenTitle, wintitle,
-                       WA_PubScreen, Screen,
-                       WA_SizeGadget, TRUE,
+                       WA_PubScreen,   Screen,
+                       WA_SizeGadget,  TRUE,
                        WA_SizeBBottom, TRUE,
-                       firstStart?TAG_IGNORE:WA_Top, CurrentState.TopEdge?CurrentState.TopEdge:MainPrefs.mp_TopEdge-Screen->ViewPort.DyOffset,
-                       firstStart?TAG_IGNORE:WA_Left, CurrentState.LeftEdge?CurrentState.LeftEdge:MainPrefs.mp_LeftEdge-Screen->ViewPort.DxOffset,
-                       firstStart?WINDOW_Position:TAG_IGNORE,WPOS_CENTERSCREEN,
+                       firstStart? TAG_IGNORE:WA_Top, CurrentState.TopEdge? CurrentState.TopEdge:MainPrefs.mp_TopEdge-Screen->ViewPort.DyOffset,
+                       firstStart? TAG_IGNORE:WA_Left, CurrentState.LeftEdge? CurrentState.LeftEdge:MainPrefs.mp_LeftEdge-Screen->ViewPort.DxOffset,
+                       firstStart? WINDOW_Position:TAG_IGNORE, WPOS_CENTERSCREEN,
                        WA_InnerHeight, CurrentState.Height?CurrentState.Height:MainPrefs.mp_Height,
-                       WA_InnerWidth, CurrentState.Width?CurrentState.Width:MainPrefs.mp_Width,
-                       WA_DepthGadget, TRUE,
-                       WA_DragBar, TRUE,
-                       WA_CloseGadget, TRUE,
-                       WA_Activate, TRUE,
+                       WA_InnerWidth,  CurrentState.Width?CurrentState.Width:MainPrefs.mp_Width,
+                       WA_DepthGadget,  TRUE,
+                       WA_DragBar,      TRUE,
+                       WA_CloseGadget,  TRUE,
+                       WA_Activate,     TRUE,
                        WA_SmartRefresh, TRUE,
                        WA_MenuHelp, TRUE,
-                       WA_IDCMP, IDCMP_MENUHELP,
+                       WA_IDCMP,    IDCMP_MENUHELP,
                        WINDOW_IconifyGadget, TRUE,
-                       WINDOW_IconTitle, "AmiFTP",
-                       WINDOW_Icon, GetDiskObject("PROGDIR:AMIFTP"),
-                       WINDOW_AppPort, AppPort,
-                       WINDOW_AppWindow, TRUE,
-                       WINDOW_AppMsgHook, &AppMessageHook,
-                       WINDOW_ParentGroup, MainWindowLayout,
-                       WINDOW_IDCMPHook, &MainIDCMPHook,
+                       WINDOW_IconTitle,     "AmiFTP",
+                       WINDOW_Icon,          GetDiskObject("PROGDIR:AMIFTP"),
+                       WINDOW_AppPort,       AppPort,
+                       WINDOW_AppWindow,     TRUE,
+                       WINDOW_AppMsgHook,    &AppMessageHook,
+                       //WINDOW_ParentGroup, MainWindowLayout,
+                       WINDOW_Layout, MainWindowLayout,
+                       WINDOW_IDCMPHook,     &MainIDCMPHook,
                        WINDOW_IDCMPHookBits, IDCMP_RAWKEY,
                      EndWindow;
 
@@ -946,6 +973,9 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
     MainWindowLayout=NULL;
     CloseFont(ScreenFont);
     ScreenFont=NULL;
+
+if(SBFont) CloseFont(SBFont);
+
     if (ListViewFont)
       CloseFont(ListViewFont);
     if (AmiFTPFont)
@@ -1108,7 +1138,7 @@ void UpdateMainButtons(const int state)
       default:
 	break;
     }
-        
+
     if (MainPrefs.mp_ShowToolBar)
       UpdateSpeedBar(state);
 

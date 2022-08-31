@@ -559,3 +559,16 @@ Send FTP command
 MENU_Rename (//)
 Rename
 ;
+;(2022.08.30)
+MPW_ShowToolbar_NO (//)
+No
+;
+MPW_ShowToolbar_BOTH (//)
+Images & Text
+;
+MPW_ShowToolbar_TEXT (//)
+only Text
+;
+MPW_ShowToolbar_IMAGES (//)
+only Images
+;
