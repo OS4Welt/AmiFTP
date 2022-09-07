@@ -375,6 +375,20 @@ extern const APTR _MPW_ShowToolbar_TEXT;
 #define MPW_ShowToolbar_TEXT ((APTR) &_MPW_ShowToolbar_TEXT)
 extern const APTR _MPW_ShowToolbar_IMAGES;
 #define MPW_ShowToolbar_IMAGES ((APTR) &_MPW_ShowToolbar_IMAGES)
+//extern const APTR _MPW_SelectFont;
+//#define MPW_SelectFont ((APTR) &_MPW_SelectFont)
+extern const APTR _MPW_ShowLogWindow;
+#define MPW_ShowLogWindow ((APTR) &_MPW_ShowLogWindow)
+extern const APTR _MW_CreateDir;
+#define MW_CreateDir ((APTR) &_MW_CreateDir)
+extern const APTR _MW_Delete;
+#define MW_Delete ((APTR) &_MW_Delete)
+extern const APTR _MW_Rename;
+#define MW_Rename ((APTR) &_MW_Rename)
+extern const APTR _MW_Settings;
+#define MW_Settings ((APTR) &_MW_Settings)
+extern const APTR _Str_WindowTitleMB;
+#define Str_WindowTitleMB ((APTR) &_Str_WindowTitleMB)
 
 
 #endif /*   !AmiFTP_CAT_H  */

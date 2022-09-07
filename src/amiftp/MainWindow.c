@@ -4,6 +4,7 @@
 
 #include "AmiFTP.h"
 #include "gui.h"
+#include "AmiFTP_rev.h"
 
 struct Window *MainWindow;
 struct Screen *Screen;
@@ -21,7 +22,6 @@ struct TextFont *LBFont;
 
 static ULONG lsel=-1;
 static Object *pagelayout;
-extern struct Menu *menu;
 extern struct List clist;
 
 int prev_state=-1;
@@ -29,11 +29,23 @@ int prev_state=-1;
 Object *MainWin_Object;
 Object *MainWindowLayout;
 
+#ifdef MENUCLASS
+extern Object *menustripobj, *hotlistmenu;
+extern int32 mimgsize;
+extern int HandleMenus(int32 mitem);
+void SetupLocaleStrings(){}; // used by "old" menu in main.c
+#else
+extern struct Menu *menu;
+#endif
+
+//Class *BitMapClass;
+
 Object *MG_List[NumGadgets_main];
 extern struct MsgPort *AppPort; /* Move to .h */
 
 static UBYTE sitenamebuffer[100], remotedirbuffer[100], localdirbuffer[100];
-struct ColumnInfo columninfo[]={
+struct ColumnInfo *columninfo;
+/*struct ColumnInfo columninfo[]={
     {0, NULL, 0},
     {0, NULL, 0},
     {0, NULL, 0},
@@ -41,7 +53,7 @@ struct ColumnInfo columninfo[]={
     {0, NULL, 0},
     {0, NULL, 0},
     {-1, (STRPTR)~0, -1}
-};
+};*/
 
 struct ColumnInfo dummycolumninfo[]={
     {0, NULL, 0},
@@ -102,7 +114,7 @@ ULONG HandleMainWindowIDCMP(const BOOL AllowIconify)
 			      if (action&LBRE_DOUBLECLICK && lsel==code) {
 				  struct dirlist *curr=(void *)node->ln_Name;
 				  struct List *head;
-				  
+
 				  LockWindow(MainWin_Object);
 				  if (curr->mode&0x4000) {
 				      if (!change_remote_dir(curr->name, 0)) {
@@ -225,7 +237,6 @@ break;
 	      case MG_DLString:
 		DLPathString_clicked();
 	break;
-        
 
 	      case MG_Connect:
 		Connect_clicked();
@@ -252,8 +263,17 @@ break;
 	    }
 	    break;
 	  case WMHI_MENUPICK: {
-	
-          USHORT menunum=result&WMHI_MENUMASK;
+//DebugPrintF("WMHI_MENUPICK 0x%08lx\n",code);
+#ifdef MENUCLASS
+	uint32 item = NO_MENU_ID;
+	while( (item=IDoMethod(menustripobj, MM_NEXTSELECT, 0, item)) != NO_MENU_ID ) {
+//DebugPrintF("\t0x%08lx\n",item);
+		int ret = HandleMenus(item);
+		if(ret == 17) break;
+		else if(ret == 0) done = TRUE;
+	}
+#else
+	      USHORT menunum=result&WMHI_MENUMASK;
 	      struct CallBackHook *cbh;
 	      struct Window *win = MainWindow;
 	      while (MainWindow==win && menunum!=MENUNULL) {
@@ -268,7 +288,7 @@ break;
 			    done = TRUE;
 		      }
 		  }
-		  else {	/* Hotlist item selected */
+		  else {	// Hotlist item se1lected
 		      int hnum=(int)cbh,i;
 		      struct SiteNode *ptr=NULL;
 		      struct Node *lbn;
@@ -293,9 +313,10 @@ break;
 		  }
 		  menunum=menuitem->NextSelect;
 	      }
+#endif
 	      break;
 	  }
-	  case WMHI_MENUHELP: {
+	  /*case WMHI_MENUHELP: {
 	      struct CallBackHook *cbh;
 	      struct MenuItem *menuitem=ItemAddress(menu,result&WMHI_MENUMASK);
 
@@ -308,7 +329,7 @@ break;
 			SendAGMessage(AG_MENUHOTLIST);
 		  }
 	      }
-	  }
+	  }*/
 	    break;
 	  case WMHI_ICONIFY:
 	    if (AllowIconify)
@@ -327,13 +348,11 @@ break;
 	
 
     if (MenuNeedsUpdate) {
-	    UpdateMenus();
-	    MenuNeedsUpdate=FALSE;
-	}
+    UpdateMenus();
+    MenuNeedsUpdate=FALSE;
+}
 
     }
-
-    
 
     if (Upload) {
 	struct Node *node;
@@ -347,7 +366,6 @@ break;
 
     return done;
 }
-
 
 struct List dummy_list;
 static struct Hook MainIDCMPHook;
@@ -393,14 +411,12 @@ void processFile(char *remotePath, char *localPath, char* fileName, int64 fileSi
     static char slocalPath[1024];
     static char sremotePath[1024];
 
-	
     sprintf(slocalPath, "%s%s", localPath, fileName);
     sprintf(sremotePath, "%s%s", remotePath, fileName);
-  
+
     if (entry=new_direntry(sremotePath, slocalPath, NULL, NULL, NULL,
            S_IFREG, fileSize))
     {
-
         if (node=AllocListBrowserNode(1,
 					  LBNA_UserData, entry,
 					  LBNA_Column, 0,
@@ -416,7 +432,7 @@ void processFile(char *remotePath, char *localPath, char* fileName, int64 fileSi
       		free_direntry(entry);
 
 	}
-                               
+
 }
 
 void processDirectory(char *localPath, char *remotePath)
@@ -424,15 +440,12 @@ void processDirectory(char *localPath, char *remotePath)
      APTR context = ObtainDirContextTags(EX_StringNameInput,(char*)localPath,
                     EX_DataFields,(EXF_NAME|EXF_TYPE|EXF_SIZE),TAG_END);
 
-        
         if (context)
     	{
         	struct ExamineData *dat;
 
 			while ((dat = ExamineDir(context)))
         	{
-
-
                 if( EXD_IS_FILE(dat) )
                 {
                     char *currentRemotePath = calloc(strlen(remotePath)+2,1);
@@ -514,16 +527,13 @@ static ULONG  AppMessageHookFunc(struct Hook *hook,
 	FreeVec(node);
     }
 
-    
     for (i=0; i<msg->am_NumArgs; i++) {
-    
+
     if (msg->am_ArgList[i].wa_Lock && msg->am_ArgList[i].wa_Name) {
 	    char path[1024];
 
 	    NameFromLock(msg->am_ArgList[i].wa_Lock, path, 1024);
 	    AddPart(path, msg->am_ArgList[i].wa_Name, 1024);
-        
-
 
         struct ExamineData *data = ExamineObjectTags(EX_StringNameInput, path, TAG_END);
         if (data)
@@ -542,7 +552,7 @@ static ULONG  AppMessageHookFunc(struct Hook *hook,
         }    
     }
     }
-    
+
     return 0;
 }
 
@@ -609,14 +619,22 @@ struct Window *OpenFTPWindow(const BOOL StartIconified)
     }
 
 
-//struct TextAttr *SBFontF;
+struct TextAttr SBFontF;
 struct TextFont *SBFont = NULL;
-//memcpy(&SBFontF, AmiFTPAttrF, sizeof(struct TextAttr));
-AmiFTPAttrF->ta_YSize -= 2;
-//printf("'%s' %d\n",SBFontF->ta_Name,SBFontF->ta_YSize);
-SBFont = OpenDiskFont(AmiFTPAttrF);
+memcpy(&SBFontF, AmiFTPAttrF, sizeof(SBFontF));
+SBFontF.ta_YSize -= 2;
+//printf("'%s' %d\n",SBFontF.ta_Name,SBFontF.ta_YSize);
+SBFont = OpenDiskFont(&SBFontF);
 //printf("'%s' %ld\n",SBFont->tf_Message.mn_Node.ln_Name,SBFont->tf_YSize);
-AmiFTPAttrF->ta_YSize += 2;
+
+columninfo = AllocLBColumnInfo(6,
+	LBCIA_Column,0, //LBCIA_Title,NULL,
+	LBCIA_Column,1, //LBCIA_Title,NULL,
+	LBCIA_Column,2, //LBCIA_Title,NULL,
+	LBCIA_Column,3, //LBCIA_Title,NULL,
+	LBCIA_Column,4, //LBCIA_Title,NULL,
+	LBCIA_Column,5, //LBCIA_Title,NULL,
+TAG_DONE);
 
 
     InitRastPort(&rastport);
@@ -638,7 +656,7 @@ AmiFTPAttrF->ta_YSize += 2;
 	               LAYOUT_SpaceOuter, TRUE,
 	               LAYOUT_HorizAlignment, LALIGN_RIGHT,
 	               LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
-                   
+
                    /*
 	               StartMember,g1=LayoutObject,LAYOUT_Orientation,LAYOUT_ORIENT_VERT,
                          StartMember, MG_List[MG_SiteName]=StringObject,
@@ -730,29 +748,26 @@ SPEEDBAR_Font, SBFont,
                         MG_List[MG_ListView]=ListBrowserObject,
 						GA_ID, MG_ListView,
 						GA_RelVerify, TRUE,
-                        GA_TextAttr, ListViewAttrF,
+           GA_TextAttr, ListViewAttrF,
 						LISTBROWSER_Labels, (ULONG)FileList?FileList:&dummy_list,
 						LISTBROWSER_MultiSelect, TRUE,
 						LISTBROWSER_ShowSelected, TRUE,
-						LISTBROWSER_ColumnInfo, (ULONG)(FileList?columninfo:dummycolumninfo),
-						LISTBROWSER_Separators, FALSE,
-						LISTBROWSER_AutoFit, TRUE,
-						LISTBROWSER_HorizontalProp, TRUE,
+						LISTBROWSER_ColumnInfo, (ULONG)(FileList? columninfo:dummycolumninfo),
+						//LISTBROWSER_Separators, FALSE,
+						//LISTBROWSER_AutoFit, TRUE,
+						LISTBROWSER_Striping, TRUE,
+						//LISTBROWSER_HorizontalProp, TRUE,
 						ListBrowserEnd,
                        CHILD_MinHeight, LBFont->tf_YSize*6,
                        EndGroup, 
 
 	               LAYOUT_AddChild, g3=VLayoutObject, EvenSized,
-
-
-
   	                 StartHGroup, //StartHGroup, Spacing(FALSE),
-
                        StartMember, MG_List[MG_DLGetFile] = GetFileObject,
                        GA_ID, MG_DLGetFile,
+                       GA_RelVerify, TRUE,
                        GETFILE_DrawersOnly, TRUE,
                        GETFILE_TitleText, GetAmiFTPString(Str_SelectDLPath),
-                       GA_RelVerify, TRUE,
                        GETFILE_Drawer, CurrentState.CurrentDLDir,
                        GETFILE_ReadOnly, TRUE,
 	                     //GA_ID, MG_DLString,
@@ -885,10 +900,21 @@ SPEEDBAR_Font, SBFont,
         MainPrefs.mp_Width = 800;
         MainPrefs.mp_Height = 600;
 
-        }
+    }
+#ifdef MENUCLASS
+	//Get MenuImageSize envvar
+	char buffer[16];
+	if(GetVar("MenuImageSize",buffer,sizeof(buffer),GVF_GLOBAL_ONLY) != -1)
+	{
+		//mimgsize = atol(buffer);
+		StrToLong(buffer, &mimgsize);
+	}
 
+	menustripobj = BuildMenuClass(Screen);
+
+#endif
     MainWin_Object = WindowObject,
-                       WA_Title,       wintitle,
+                       WA_Title,       "AmiFTP",//wintitle,
                        WA_ScreenTitle, wintitle,
                        WA_PubScreen,   Screen,
                        WA_SizeGadget,  TRUE,
@@ -905,6 +931,9 @@ SPEEDBAR_Font, SBFont,
                        WA_SmartRefresh, TRUE,
                        WA_MenuHelp, TRUE,
                        WA_IDCMP,    IDCMP_MENUHELP,
+#ifdef MENUCLASS
+	WA_MenuStrip, menustripobj,
+#endif
                        WINDOW_IconifyGadget, TRUE,
                        WINDOW_IconTitle,     "AmiFTP",
                        WINDOW_Icon,          GetDiskObject("PROGDIR:AMIFTP"),
@@ -924,6 +953,7 @@ SPEEDBAR_Font, SBFont,
     }
 
     UpdateMenus();
+//updateMenuHotlist();
 
     {
 	int state=prev_state==-1?MB_DISCONNECTED:prev_state;
@@ -974,7 +1004,8 @@ SPEEDBAR_Font, SBFont,
     CloseFont(ScreenFont);
     ScreenFont=NULL;
 
-if(SBFont) CloseFont(SBFont);
+FreeLBColumnInfo(columninfo);
+if(SBFont) { CloseFont(SBFont); SBFont=NULL; }
 
     if (ListViewFont)
       CloseFont(ListViewFont);
@@ -1061,10 +1092,10 @@ void UpdateMainButtons(const int state)
 	if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 			   LISTBROWSER_Labels, &dummy_list,
 			   LISTBROWSER_ColumnInfo, &dummycolumninfo,
-			   LISTBROWSER_AutoFit, TRUE,
+			   //LISTBROWSER_AutoFit, TRUE,
 			   TAG_DONE) && MainWindow)
 	  RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
-   
+
 	lsel=-1;
 	break;
       case MB_NONESELECTED:
@@ -1154,8 +1185,9 @@ void AttachToolList(const BOOL NoneSelected)
     if (MainWindow) {
 	if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 			   LISTBROWSER_Labels, FileList,
-			   LISTBROWSER_ColumnInfo, &columninfo,
-			   NoneSelected?LISTBROWSER_AutoFit:TAG_IGNORE, TRUE,
+			   //LISTBROWSER_ColumnInfo, &columninfo,
+			   LISTBROWSER_ColumnInfo, columninfo,
+			   //NoneSelected?LISTBROWSER_AutoFit:TAG_IGNORE, TRUE,
 			   NoneSelected?LISTBROWSER_Selected:TAG_IGNORE, -1,
 			   NoneSelected?LISTBROWSER_MakeVisible:TAG_IGNORE, 0,
 			   TAG_DONE))
@@ -1164,8 +1196,9 @@ void AttachToolList(const BOOL NoneSelected)
     else
       SetAttrs((struct Gadget*)MG_List[MG_ListView],
 	       LISTBROWSER_Labels, FileList,
-	       LISTBROWSER_ColumnInfo, &columninfo,
-	       NoneSelected?LISTBROWSER_AutoFit:TAG_IGNORE, TRUE,
+	       //LISTBROWSER_ColumnInfo, &columninfo,
+			   LISTBROWSER_ColumnInfo, columninfo,
+	       //NoneSelected?LISTBROWSER_AutoFit:TAG_IGNORE, TRUE,
 	       NoneSelected?LISTBROWSER_Selected:TAG_IGNORE, -1,
 	       NoneSelected?LISTBROWSER_MakeVisible:TAG_IGNORE, 0,
 	       TAG_DONE);
@@ -1177,7 +1210,7 @@ void DetachToolList(void)
     if (MainWindow)
       if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 			 LISTBROWSER_Labels, ~0,
-			 LISTBROWSER_AutoFit, TRUE,
+			 //LISTBROWSER_AutoFit, TRUE,
 			 TAG_DONE))
 	RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
     else
@@ -1223,8 +1256,10 @@ void UpdateSiteName(const char *site)
 
 void LockWindow(Object *window_object)
 {
+#ifndef MENUCLASS
     if (window_object==MainWin_Object)
       ClearMenuStrip(MainWindow);
+#endif
     SetAttrs(window_object,
 	     WA_BusyPointer, TRUE,
 	     TAG_DONE);
@@ -1236,6 +1271,7 @@ void UnlockWindow(Object *window_object)
 	     WA_BusyPointer, FALSE,
 	     TAG_DONE);
 
+#ifndef MENUCLASS
     if (window_object==MainWin_Object) {
 	struct Menu *mmenu=menu->NextMenu; /* The files menu */
 	struct MenuItem *menuitem;
@@ -1244,7 +1280,7 @@ void UnlockWindow(Object *window_object)
 	menuitem=mmenu->FirstItem;
 	menuitem=mmenu->FirstItem;
 	menuitem=mmenu->FirstItem;
-	
+
 	menuitem->Flags|=TransferMode==BINARY?CHECKED:0;
 	menuitem=menuitem->NextItem;
 	menuitem->Flags|=TransferMode==ASCII?CHECKED:0;
@@ -1275,6 +1311,7 @@ void UnlockWindow(Object *window_object)
 		   WINDOW_MenuStrip, menu,
 		   TAG_DONE);
     }
+#endif
 
     return;
 }
@@ -1297,8 +1334,8 @@ void ChangeAmiFTPMode(void)
 
 void UpdateWindowTitle()
 {
-    static char title[100];
-    int numselfiles=0, numselbytes=0;
+    static char title[100] = VERS " ("DATE") ©2022 Frank Menzel <goos.entwickler-x.de>";
+    int numselfiles=0, numselbytes=0, round=0;
     char *bytes="kB";
     int freebytes=0;
     int64 freebytes64=0;
@@ -1318,8 +1355,6 @@ void UpdateWindowTitle()
 	}
 	i++;
 	pathname[i]='\0';
-
-    
 
 	//if (!getdfs(pathname, &info)) {
       if (GetDiskInfoTags(GDI_StringNameInput,pathname,GDI_InfoData, &info)) {
@@ -1353,17 +1388,28 @@ void UpdateWindowTitle()
 		numselbytes+=ptr->size==-1?0:ptr->size;
 	    }
 	}
+
 	if (numselbytes < 1000000) {
 	    numselbytes/=1024;
 	    bytes="kB";
-	}
-	else {
-	    numselbytes/=(1024*1024);
-	    bytes="MB";
-	}
-    }
+
     sprintf(title, GetAmiFTPString(Str_WindowTitle),
 	    numselfiles, numselbytes, bytes, freebytes, fbytes);
+	}
+	else {
+round = numselbytes;
+	    numselbytes/=(1024*1024);
+	    bytes="MB";
+round -= numselbytes*(1024*1024);
+round/=100000;         // not 100% accurate..
+if(round>9) round = 9; //..but does its job
+
+    sprintf(title, GetAmiFTPString(Str_WindowTitleMB),
+	    numselfiles, numselbytes,decimalSeperator,round, bytes, freebytes, fbytes);
+	}
+    }
+//    sprintf(title, GetAmiFTPString(Str_WindowTitle),
+//	    numselfiles, numselbytes,decimalSeperator,round, bytes, freebytes, fbytes);
     SetAttrs(MainWin_Object,
 	     WA_Title, title,
 	     TAG_DONE);
@@ -1385,17 +1431,16 @@ static Object *listimage;
 void CreateInfoList(struct List *list)
 {
     struct Node *node;
-    extern struct Image im;
+    //extern struct Image im;
     extern char *linfotext;
     int i;
-    char *infostrings[4]={NULL, "Copyright © 1995-1998 by Magnus Lilja","@2020 by Frank Menzel for Amiga OS4 community", "<www.OS4Welt.de>"};
+    char *infostrings[4]={NULL, "Copyright © 1995-1998 by Magnus Lilja","©2020 by Frank Menzel for Amiga OS4 community", "<www.OS4Welt.de>"};
 
     infostrings[0]=linfotext;
 
     NewList(list);
 
-
-    if (listimage=NewObject(NULL, "bitmap.image",
+    if (listimage=NewObject(BitMapClass, NULL, //"bitmap.image",
 					   BITMAP_SourceFile, "PROGDIR:images/AmiFTP.png",
 					   BITMAP_Screen, Screen,
 					   BITMAP_Precision, PRECISION_EXACT,
@@ -1408,7 +1453,7 @@ void CreateInfoList(struct List *list)
 				    LBNCA_Justification, LCJ_CENTRE,
 				    TAG_END))
 	AddTail(list, node);
-    
+
     for (i=0; i<4; i++)
       if (node=AllocListBrowserNode(1,
 				    LBNA_Flags, LBFLG_READONLY,

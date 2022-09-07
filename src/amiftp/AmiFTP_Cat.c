@@ -13,8 +13,8 @@
 #elif defined(__GNUC__)
 #ifdef __amigaos4__
 #include <proto/locale.h>
-extern struct Library      *LocaleBase;
-extern struct LocaleIFace  *ILocale;
+extern struct Library     *LocaleBase;
+extern struct LocaleIFace *ILocale;
 #else
 #include <inline/locale.h>
 #endif
@@ -92,7 +92,7 @@ const struct FC_Type _MW_Put = { 54, "P_ut" };
 const struct FC_Type _MW_View = { 55, "_View" };
 const struct FC_Type _MW_Connect = { 56, "_Connect to..." };
 const struct FC_Type _MW_Disconnect = { 57, "_Disconnect" };
-const struct FC_Type _MW_DeleteRequest = { 58, "Are you sure you want to\ndelete these files?" };
+const struct FC_Type _MW_DeleteRequest = { 58, "Are you sure you want to\ndelete selected file(s)?" };
 const struct FC_Type _MW_DeleteCancel = { 59, "Delete|Cancel" };
 const struct FC_Type _MW_Reload = { 60, "_Reload" };
 const struct FC_Type _CW_WinTitle = { 61, "AmiFTP Connect window" };
@@ -160,7 +160,7 @@ const struct FC_Type _Str_AmiFTPRequest = { 122, "AmiFTP Request" };
 const struct FC_Type _Str_AboutAmiFTP = { 123, "About AmiFTP..." };
 const struct FC_Type _Str_UnknownHost = { 124, "Unknown host" };
 const struct FC_Type _Str_ErrorBuildingDirList = { 125, "Error building filelist." };
-const struct FC_Type _Str_Translator = { 126, "" };
+const struct FC_Type _Str_Translator = { 126, "(using built-in strings)" };
 const struct FC_Type _SLW_NewGroup = { 127, "New _group" };
 const struct FC_Type _SLW_AddBar = { 128, "Add bar" };
 const struct FC_Type _MENU_ToggleADTFiles = { 129, "Show entire RECENT" };
@@ -210,6 +210,12 @@ const struct FC_Type _MPW_ShowToolbar_NO = { 172, "No" };
 const struct FC_Type _MPW_ShowToolbar_BOTH = { 173, "Images & Text" };
 const struct FC_Type _MPW_ShowToolbar_TEXT = { 174, "only Text" };
 const struct FC_Type _MPW_ShowToolbar_IMAGES = { 175, "only Images" };
+const struct FC_Type _MPW_ShowLogWindow = { 176, "Show log" };
+const struct FC_Type _MW_CreateDir = { 177, "Create Dir" };
+const struct FC_Type _MW_Delete = { 178, "Delete" };
+const struct FC_Type _MW_Rename = { 179, "Rename" };
+const struct FC_Type _MW_Settings = { 180, "Settings" };
+const struct FC_Type _Str_WindowTitleMB = { 181, "AmiFTP - %ld files selected (%ld%c%ld %s) %ld %s free on disk" };
 
 
 static struct Catalog *AmiFTP_Catalog = NULL;

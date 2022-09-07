@@ -9,6 +9,9 @@
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
+#ifdef MENUCLASS
+	#include <intuition/menuclass.h> // menuclass
+#endif
 #include <libraries/gadtools.h>
 #include <graphics/displayinfo.h>
 #include <graphics/gfxbase.h>
@@ -119,7 +122,8 @@ extern struct DrawInfo *DrawInfo;
 extern Object *MainWin_Object;
 extern Object *MG_List[];
 
-extern struct ColumnInfo columninfo[];
+//extern struct ColumnInfo columninfo[];
+extern struct ColumnInfo *columninfo;
 
 enum {
     MG_ListView=0,

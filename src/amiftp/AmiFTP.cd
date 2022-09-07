@@ -16,6 +16,7 @@
 ; shortcut should look like this:
 ; Q\000Quit
 ;
+; $VER: amiftp.cd 1.3 (2022.08.31)
 ;
 #language english
 ;
@@ -206,7 +207,8 @@ MW_Disconnect (/1/)
 _Disconnect
 ;
 MW_DeleteRequest (/1/)
-Are you sure you want to\ndelete these files?
+Are you sure you want to\ndelete selected file(s)?
+;Are you sure you want to\ndelete these files?
 ;
 MW_DeleteCancel (/1/)
 Delete|Cancel
@@ -416,7 +418,7 @@ Str_ErrorBuildingDirList (/1/)
 Error building filelist.
 ;
 Str_Translator (//)
-
+(using built-in strings)
 ; This string will show up in the about window telling the user who made 
 ; the translation. I suggest the string should look like this:
 ; 'English translation by\nMagnus Lilja\n' (and perhaps your emailaddress
@@ -489,7 +491,7 @@ Str_WindowTitle (//)
 AmiFTP - %ld files selected (%ld %s) %ld %s free on disk
 ; This might look a bit strange, but when the fields are filled the
 ; string looks like:
-; AmiFTP - 10 files selected (4 MB) 15 MB free on disk
+; AmiFTP - 10 files selected (412 kB) 15 MB free on disk
 MENU_Connect (//)
 C\000Connect...
 ;
@@ -572,3 +574,27 @@ only Text
 MPW_ShowToolbar_IMAGES (//)
 only Images
 ;
+;MPW_SelectFont (//)
+;Select font...
+;
+MPW_ShowLogWindow (//)
+Show log
+;
+;(2022.08.31)
+MW_CreateDir (//)
+Create Dir
+;
+MW_Delete (//)
+Delete
+;
+MW_Rename (//)
+Rename
+;
+MW_Settings (//)
+Settings
+;
+Str_WindowTitleMB (//)
+AmiFTP - %ld files selected (%ld%c%ld %s) %ld %s free on disk
+; This might look a bit strange, but when the fields are filled the
+; string looks like:
+; AmiFTP - 10 files selected (4.3 MB) 15 MB free on disk

@@ -229,7 +229,7 @@ struct CurrentState {
     char PropFontName[256];
     char FixedFontName[256];
     char LoginName[30];
-    char Password[30];
+    char Password[90];//30];
     char RexxPort[50];
     char LogFile[256];
     char Log;
@@ -293,7 +293,7 @@ extern struct RDArgs *argsptr;
 extern struct CurrentState CurrentState;
 extern struct MainPrefs MainPrefs;
 extern struct List SiteList;
-extern struct   mysockaddr_in data_addr;
+extern struct mysockaddr_in data_addr;
 extern struct sockaddr_in myctladdr;
 extern int      connected;
 extern int      timedout;
@@ -321,11 +321,11 @@ extern int      ftp_port;
 extern BOOL    DEBUG;
 extern BOOL    TCPStack;
 
-#define	MAXLINE 1024
+#define MAXLINE 1024
 #define UNIX_DIR_PATTERN "PERMS LINKS USER GROUP SIZE MONTH DAY TIME NAME"
 
-extern char	response_line[MAXLINE];
-extern char	scratch[1024 + 1024 + 10];
+extern char     response_line[MAXLINE];
+extern char     scratch[1024 + 1024 + 10];
 extern char    *header_name;
 extern char    *unix_dir_pattern;
 extern char    *other_dir_pattern;
@@ -337,30 +337,30 @@ extern struct TextFont *PropFont;
 extern struct TextFont *LBFont;
 
 extern struct Library    *IntuitionBase;
-extern struct Library          *UtilityBase;
-extern struct Library          *GfxBase;
-extern struct Library          *DiskfontBase;
-extern struct Library          *AslBase;
-extern struct Library          *IFFParseBase;
-extern struct Library         *IconBase;
-extern struct Library          *RexxSysBase;
+extern struct Library    *UtilityBase;
+extern struct Library    *GfxBase;
+extern struct Library    *DiskfontBase;
+extern struct Library    *AslBase;
+extern struct Library    *IFFParseBase;
+extern struct Library    *IconBase;
+extern struct Library    *RexxSysBase;
 extern struct Library    *WorkbenchBase;
-extern struct Library          *LocaleBase;
-extern struct Library          *AmigaGuideBase;
-extern struct Device           *TimerBase;
+extern struct Library    *LocaleBase;
+extern struct Library    *AmigaGuideBase;
+extern struct Device     *TimerBase;
 
-extern struct IntuitionIFace	*IIntuition;
-extern struct UtilityIFace		*IUtility;
-extern struct GraphicsIFace		*IGraphics;
-extern struct DiskfontIFace		*IDiskfont;
-extern struct AslIFace			*IAsl;
-extern struct IFFParseIFace		*IIFFParse;
-extern struct IconIFace			*IIcon;
-extern struct RexxSysIFace		*IRexxSys;
-extern struct WorkbenchIFace  	*IWorkbench;
-extern struct LocaleIFace		*ILocale;
-extern struct AmigaGuideIFace	*IAmigaGuide;
-extern struct TimerIFace		*ITimer;
+extern struct IntuitionIFace  *IIntuition;
+extern struct UtilityIFace    *IUtility;
+extern struct GraphicsIFace   *IGraphics;
+extern struct DiskfontIFace   *IDiskfont;
+extern struct AslIFace        *IAsl;
+extern struct IFFParseIFace   *IIFFParse;
+extern struct IconIFace       *IIcon;
+extern struct RexxSysIFace    *IRexxSys;
+extern struct WorkbenchIFace  *IWorkbench;
+extern struct LocaleIFace     *ILocale;
+extern struct AmigaGuideIFace *IAmigaGuide;
+extern struct TimerIFace      *ITimer;
 
 
 extern struct MsgPort *RexxPort;
@@ -375,17 +375,15 @@ extern struct Window *MainWindow;
 extern BOOL MenuNeedsUpdate;
 extern int TransferMode;
 
-/* sprintf.c */
 
+/* sprintf.c */
 void Sprintf(char *, const char *, ...);
 
 /* main.c */
-
 void MyOpenLibs(void);
 void CleanUp(void);
 
 /* misc.c */
-
 extern BPTR LogWindow;
 void OpenLogWindow(void);
 void CloseLogWindow(void);
@@ -403,7 +401,6 @@ void FixSiteList(void);
 //int DLPath(Object *winobject, char *initialpath, char *newpath);
 
 /* ftp.c */
-
 int ftp_hookup(char *host,short port);
 int ftp_login(char *user,char *pass, char *acct);
 int command(char *fmt,...);
@@ -423,29 +420,22 @@ int recvrequest(char *cmd,char *local,char *remote,char *lmode,ULONG restartpoin
 int sendrequest(char *cmd, char *local, char *remote);
 
 /* dofuncs.c */
-
 int doconnect(struct SiteNode *sn);
 int openhost(char *ftphost,char *login,char *password,char *account,short port,int useproxy);
 
 /* change_dir.c */
-
 int change_remote_dir(char *s,int force);
 int checkdir(char *dirname);
 int up_one_level(void);
 int delete_remote(char *name, const char *delcmd);
 
 /* readdir.c */
-
 struct List *read_remote_dir(void);
 
 /* dirlist.c */
-struct dirlist *new_direntry(char *localName, char *name, char *date, char *owner,
-			     char *group, mode_t mode, int64 size);
-BOOL add_direntry(struct List *filelist, char *name, char *date,
-		  char *owner, char *group, mode_t mode, int64 size, int sort_mode,
-		  int sort_direction);
-void add_direntry_struct(struct List *filelist,
-			 struct dirlist *dlist, int sort_mode, int sort_direction);
+struct dirlist *new_direntry(char *localName, char *name, char *date, char *owner, char *group, mode_t mode, int64 size);
+BOOL add_direntry(struct List *filelist, char *name, char *date, char *owner, char *group, mode_t mode, int64 size, int sort_mode, int sort_direction);
+void add_direntry_struct(struct List *filelist, struct dirlist *dlist, int sort_mode, int sort_direction);
 void free_dirlist(struct List *filelist);
 void free_direntry(struct dirlist *tmp);
 struct dirlist *sortupbyname(struct List *filelist, char *name,int dir);
@@ -454,8 +444,7 @@ struct dirlist *sortupbysize(struct List *filelist, int64 size);
 struct dirlist *sortdownbyname(struct List *filelist, char *name, int dir);
 struct dirlist *sortdownbydate(struct List *filelist, char *date);
 struct dirlist *sortdownbysize(struct List *filelist, int64 size);
-struct List *sort_filelist(struct List *old_filelist,int sort_mode,
-			   int sort_direction);
+struct List *sort_filelist(struct List *old_filelist, int sort_mode, int sort_direction);
 void hour_time(char *date, struct tm *tm);
 void year_time(char *date, struct tm *tm);
 long datetotime(char *date);
@@ -468,7 +457,6 @@ void FreeSiteNode(struct SiteNode *sn);
 void FreeSiteList(struct List *list);
 
 /* ftpwin.c */
-
 void ftpWindow(void);
 char *GetPassword(char *user,char *passbuf);
 int Parent_clicked(void);
@@ -513,15 +501,12 @@ void UnlockWindow(Object *win);
 void UpdateWindowTitle(void);
 
 /* connect_gui.c */
-
 int ConnectSite(struct SiteNode *sn, const BOOL noscan);
 void PrintConnectStatus(char *text);
 ULONG HandleConnectIDCMP(void);
 
 /* dl_gui.c */
-
-int DownloadFile(struct List *flist, const char *name, const int binary,
-		 const int move);
+int DownloadFile(struct List *flist, const char *name, const int binary, const int move);
 int UploadFile(struct List *transferlist, const char *remote, const int binary);
 void UpdateDLGads(const long bytes, const long restart, const time_t timee);
 BOOL CheckExists(char *lfile,int size, ULONG *restartpoint);
@@ -531,12 +516,10 @@ ULONG HandleTransferIDCMP(void);
 void SetTransferSize(const long size);
 
 /* pref_gui.c */
-
 int OpenPrefsWindow(void);
 ULONG HandleMainPrefsIDCMP(void);
 
 /* site_gui.c */
-
 struct SiteNode *OpenSiteListWindow(const BOOL Connect);
 ULONG HandleEditSiteIDCMP(void);
 ULONG HandleSiteListIDCMP(void);
@@ -545,7 +528,6 @@ ULONG HandleSiteListIDCMP(void);
 int HandleRexxMsg(void);
 
 /* cache.c */
-
 void InitCache(void);
 void ClearCache(BOOL all);
 void RemoveCacheEntry(char *dirname);
@@ -554,26 +536,26 @@ void AddCacheEntry(struct List *dirlist, char *name);
 struct List *LookupCache(char *name);
 
 /* locale.c */
-
 void SetupLocaleStrings(void);
 
 /* AGuide.c */
-
 int HandleAmigaGuide(void);
 int SendAGMessage(LONG ContextNumber);
 
 /* ADT.c */
-
 struct List *ReadRecentList(void);
 struct List *sort_ADT(struct List *list, int type);
 
 /* Menu.c */
-
 int BuildMenu(void);
 void UpdateMenus(void);
+#ifdef MENUCLASS
+Object *BuildMenuClass(struct Screen *);
+//void initMenuHotlist(void);
+void updateMenuHotlist(void);
+#endif
 
 /* SpeedBar.c */
-
 void InitSpeedBarList(void);
 void FreeSpeedBarList(void);
 int HandleSpeedBar(int button);
