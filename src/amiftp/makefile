@@ -19,7 +19,7 @@ MENUCLASS = -DMENUCLASS # "make MENUCLASS=" to disable
 
 EXE    = AmiFTP
 OBJDIR = o/
-CFLAGS = -Werror=implicit-function-declaration -D__USE_INLINE__ -gstabs+ -D__AMIGADATE__=\"$(AMIGADATE)\" $(MENUCLASS) -D__amigaos4__
+CFLAGS = -Werror=implicit-function-declaration -D__USE_INLINE__ -gstabs+ -D__AMIGADATE__=\"$(AMIGADATE)\" $(MENUCLASS)
 LFLAGS = -lauto
 CC = ppc-amigaos-gcc
 STRIP = ppc-amigaos-strip
