@@ -16,11 +16,12 @@
 ; shortcut should look like this:
 ; Q\000Quit
 ;
-; $VER: amiftp.cd 1.3 (2022.08.31)
+; $VER: amiftp.cd 1.3 (2022.10.19)
 ;
 #language english
 ;
 #version 2
+;
 ;
 ; SiteList window
 ;
@@ -31,10 +32,10 @@ SLW_SiteList (/1/)
 FTP Sites
 ;
 SLW_Connect (/1/)
-_Connect
+Co_nnect
 ;
 SLW_New (/1/)
-_New site
+New _site
 ;
 SLW_Edit (/1/)
 _Edit
@@ -43,8 +44,9 @@ SLW_Remove (/1/)
 _Remove
 ;
 SLW_Cancel (/1/)
-C_ancel
+_Cancel
 ;
+;UNUSED (2022.10.22)
 SLW_OK (/1/)
 _OK
 ;
@@ -66,13 +68,14 @@ SLW_Newstring (/1/)
 SLW_Sort (/1/)
 _Sort
 ;
+;
 ; SiteConfiguration Window
 ;
 SCW_SiteConfigurationWindow (/1/)
 AmiFTP Site Configuration
 ;
 SCW_Name (/1/)
-Na_me
+_Name
 ;
 SCW_Site (/1/)
 _Site
@@ -81,7 +84,8 @@ SCW_Port (/1/)
 _Port
 ;
 SCW_RemDir (/1/)
-_Auto-cd to drawer
+Remote dr_awer
+;_Auto-cd to drawer
 ;
 SCW_LocDir (/1/)
 _Download path
@@ -99,7 +103,7 @@ SCW_OK (/1/)
 _OK
 ;
 SCW_Cancel (/1/)
-Ca_ncel
+_Cancel
 ;
 SCW_OS (/1/)
 Operating S_ystem
@@ -110,31 +114,33 @@ Pro_xy
 SCW_HotList (/1/)
 _HotList
 ;
+;
 ; Transfer window
 ;
 TW_WinTitle (/1/)
-AmiFTP - %ld file(s) left (%ld %s)
+AmiFTP - %ld item(s) left (%ld %s)
 ;
 TW_RemoteFile (/1/)
-Remote file
+Remote:
 ;
 TW_LocalFile (/1/)
-Local file
+Local:
 ;
 TW_Size (/1/)
-Size
+Size:
 ;
 TW_Cps (/1/)
-CPS
+CPS:
 ;
 TW_DataTransferred (/1/)
-Data transferred
+Transferred:
+;Data transferred
 ;
 TW_Abort (/1/)
 Abort transfer
 ;
 TW_FileExists (/1/)
-File '%s' already exists.\nOld filesize is: %ld bytes (new %ld bytes).\n
+\033c'%s' already exists!\n\n\033bOLD:\033n%ld bytes   \033bNEW:\033n%ld bytes\n
 ;
 TW_Overwrite (/1/)
 Overwrite
@@ -146,10 +152,11 @@ TW_CancelTransfer (/1/)
 Cancel transfer
 ;
 TW_DownloadDir (/1/)
-You are about to download a directory tree.\nAre you sure you want to do this?
+\033cYou are about to download a directory tree.\nAre you sure you want to do this?
 ;
 TW_GetDir (/1/)
 Yes, download it!|Skip this entry
+;
 ;
 ; Main preferences window
 ;
@@ -172,10 +179,11 @@ MPW_ProxyDefault (/1/)
 Use pro_xy per default
 ;
 MPW_DefDownloadDir (/1/)
-Default local drawer
+_Default local drawer
 ;
 MPW_IgnoreCase (/1/)
 _Ignore case
+;
 ;
 ; Main window
 ;
@@ -201,13 +209,13 @@ MW_View (/1/)
 _View
 ;
 MW_Connect (/1/)
-_Connect to...
+Co_nnect to...
 ;
 MW_Disconnect (/1/)
-_Disconnect
+Disco_nnect
 ;
 MW_DeleteRequest (/1/)
-Are you sure you want to\ndelete selected file(s)?
+\033cAre you sure you want to\ndelete selected items?
 ;Are you sure you want to\ndelete these files?
 ;
 MW_DeleteCancel (/1/)
@@ -215,6 +223,7 @@ Delete|Cancel
 ;
 MW_Reload (/1/)
 _Reload
+;
 ;
 ; Connect window
 ;
@@ -245,6 +254,7 @@ Sending password...
 CW_ChangingDirectory (/1/)
 Changing drawer...
 ;
+;
 ; Main menus
 ;
 MENU_Project (/2/)
@@ -272,7 +282,7 @@ MENU_TagAll (/2/)
 A\000Tag all
 ;
 MENU_UntagAll (/2/)
-U\000Untag all
+Z\000Untag all
 ;
 MENU_TransferMode (/2/)
 Transfer mode
@@ -296,10 +306,10 @@ MENU_Sort (/2/)
 Sort
 ;
 MENU_SortbyName (/2/)
-by name
+by Name
 ;
 MENU_SortbyDate (/2/)
-by date
+by Date
 ;
 MENU_Settings (/2/)
 Settings
@@ -328,6 +338,7 @@ Save settings as...
 MENU_HotList (/2/)
 Hotlist
 ;
+;
 ; Other strings
 ;
 Str_ErrorReadingDir (/1/)
@@ -343,7 +354,7 @@ Str_SelectULFiles (/1/)
 Select file(s) to upload
 ;
 Str_CDFailedTimedout (/1/)
-Remote CD failed:\nConnection timed out
+\033cRemote CD failed:\nConnection timed out
 ;
 Str_CDFailed (/1/)
 Remote CD failed.
@@ -361,7 +372,7 @@ Str_PasswordRequest (/1/)
 AmiFTP Password request
 ;
 Str_PasswordEntry (/1/)
-Enter password for user:\n%s
+\033cEnter password for user\n'%s':
 ;
 Str_ServiceNotAvail (/1/)
 Service not available.
@@ -379,10 +390,10 @@ Str_RemoteWriteFailed (/1/)
 Write failed (remote file system full?).
 ;
 Str_GetFailed (/1/)
-Get %s failed.
+Get '%s' failed.
 ;
 Str_LocalfileError (/1/)
-Error opening %s.
+Error opening '%s'.
 ;
 Str_LocalWriteFailed (/1/)
 Write failed: %s
@@ -397,7 +408,7 @@ Str_Outofmem (/1/)
 Out of memory
 ;
 Str_SelectSettingsFile (/1/)
-Select settings file...
+Select settings file
 ;
 Str_NoRestart (/1/)
 Resume command failed.
@@ -409,7 +420,7 @@ Str_AmiFTPRequest (/1/)
 AmiFTP Request
 ;
 Str_AboutAmiFTP (/1/)
-About AmiFTP...
+About AmiFTP
 ;
 Str_UnknownHost (/1/)
 Unknown host
@@ -436,6 +447,7 @@ Show entire RECENT
 MENU_ResetADT (//)
 Reset Aminet-date
 ;
+;UNUSED (2022.10.22)
 MW_ViewReadme (//)
 View readme
 ;
@@ -449,51 +461,52 @@ MPW_Proxy (//)
 Proxy
 ;
 MPW_BufferSize (//)
-Buffer size
+_Buffer size
 ;
 MPW_DirCacheSize (//)
-Directory cache size
+Directory cac_he size
 ;
 MPW_DeleteViewed (//)
-Delete viewed files
+Delete vie_wed files
 ;
+;UNUSED (2022.10.22)
 MPW_Beep (//)
-Beep after transfer
+Beep a_fter transfer
 ;
 MPW_HideDirectories (//)
-Hide drawers
+_Hide drawers
 ;
 MPW_PreservePath (//)
-Preserve filepath
+_Preserve filepath
 ;
 MPW_ShowMOTD (//)
-Show MOTD-file
+Show _MOTD-file
 ;
 MPW_GetReadme (//)
-Download readme
+Do_wnload readme
 ;
 SCW_AminetMode (//)
-Aminet-mode
+A_minet-mode
 ;
 MPW_OK (//)
 _OK
 ;
 MPW_Cancel (//)
-C_ancel
+_Cancel
 ;
 TW_TimeLeft (//)
-Time left
+Time left:
 ;
 Str_NoNewAminetFiles (//)
 No new files since last Aminet visit
 ;
 Str_WindowTitle (//)
-AmiFTP - %ld files selected (%ld %s) %ld %s free on disk
+AmiFTP - %ld items selected (%ld %s) %ld %s free on disk
 ; This might look a bit strange, but when the fields are filled the
 ; string looks like:
 ; AmiFTP - 10 files selected (412 kB) 15 MB free on disk
 MENU_Connect (//)
-C\000Connect...
+N\000Connect...
 ;
 MENU_Disconnect (//)
 Disconnect
@@ -523,43 +536,44 @@ MENU_Parent (//)
 P\000Parent
 ;
 MPW_PublicScreen (//)
-Public screen
+_Public screen
 ;
 MPW_SystemFonts (//)
-Use system fonts
+Use s_ystem fonts
 ;
 MPW_InterfaceFont (//)
-Interface font
+_Interface font
 ;
 MPW_FilelistFont (//)
-Filelist font
+_Filelist font
 ;
+;UNUSED (2022.10.22)
 MPW_ShowButtons (//)
 Show buttons
 ;
 MPW_ShowToolbar (//)
-Show toolbar
+Show _toolbar
 ;
 MENU_ViewReadme (//)
 View readme
 ;
 MPW_DefaultScreen (//)
-Open on default public screen
+Open on _default public screen
 ;
 TW_OverwriteAll (//)
 Overwrite all
 ;
 MENU_CreateDir (//)
-Create directory
+Create directory...
 ;
 Str_RemoteDir (//)
-Enter name of directory
+Enter name of directory:
 ;
 MENU_RawCommand (//)
-Send FTP command
+Send FTP command...
 ;
 MENU_Rename (//)
-Rename
+Rename...
 ;
 ;(2022.08.30)
 MPW_ShowToolbar_NO (//)
@@ -575,10 +589,10 @@ MPW_ShowToolbar_IMAGES (//)
 only Images
 ;
 ;MPW_SelectFont (//)
-;Select font...
+;Select font
 ;
 MPW_ShowLogWindow (//)
-Show log
+Sho_w log
 ;
 ;(2022.08.31)
 MW_CreateDir (//)
@@ -594,7 +608,61 @@ MW_Settings (//)
 Settings
 ;
 Str_WindowTitleMB (//)
-AmiFTP - %ld files selected (%ld%c%ld %s) %ld %s free on disk
+AmiFTP - %ld items selected (%ld%c%ld %s) %ld %s free on disk
 ; This might look a bit strange, but when the fields are filled the
 ; string looks like:
 ; AmiFTP - 10 files selected (4.3 MB) 15 MB free on disk
+;
+;(2022.09.08)
+Str_AboutInfotext (//200)
+Copyright ©1995-1998 Magnus Lilja. All rights reserved.\n\
+©2020 by Frank Menzel <goos@entwickler-x.de>\n\
+\n\
+AmigaOS4 port by Frank Menzel\n\
+an OS4Welt project <www.os4welt.de>\n\
+\n\
+ARexx-port:
+;
+Str_RenameFile (//)
+Rename '%s' as:
+;\033cOld name '%s'.\nEnter new name:
+;
+Str_RenameError (//)
+Couldn't rename item!
+;
+Str_OkCancel (//)
+OK|Cancel
+;
+Str_MakeDirError (//)
+Couldn't create directory!
+;
+Str_RawFTPCommand (//)
+Enter FTP-Command:
+;
+Str_RawFTPError (//)
+Command returned an error!
+;
+MPW_AfterTransf (//)
+A_fter transfer
+;
+MPW_AfterTransf_Beep (//)
+Beep
+;
+MPW_AfterTransf_Notify (//)
+Notification
+;
+MPW_AfterTransf_Both (//)
+Beep & Notify
+;
+MPW_AfterTransf_DoNothing (//)
+Do nothing
+;
+Str_Notify_Description (//)
+AmiFTP, easy to use ftp-client with GUI
+;
+Str_Notify_DownloadFinished (//)
+Download finished!
+;
+Str_Notify_UploadFinished (//)
+Upload finished!
+;

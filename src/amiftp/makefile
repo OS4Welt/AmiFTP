@@ -13,43 +13,45 @@ else
 	RM = rm -f -r
 endif
 
-#DEBUG = -DDEBUG
-MENUCLASS = -DMENUCLASS # "make MENUCLASS=" to disable
+# "make DEBUG=" to disable
+DEBUG = -D_DEBUG_
+# "make MENUCLASS=" to disable
+MENUCLASS = -DMENUCLASS
 
 
 EXE    = AmiFTP
 OBJDIR = o/
-CFLAGS = -Werror=implicit-function-declaration -D__USE_INLINE__ -gstabs+ -D__AMIGADATE__=\"$(AMIGADATE)\" $(MENUCLASS)
+CFLAGS = -Wall -Werror=implicit-function-declaration -D__USE_INLINE__ -gstabs -D__AMIGADATE__=\"$(AMIGADATE)\" $(MENUCLASS) $(DEBUG)
 LFLAGS = -lauto
 CC = ppc-amigaos-gcc
 STRIP = ppc-amigaos-strip
-CATCOMP = APPDIR:FlexCat
+CATCOMP = FlexCat
 
 # target 'all' (default target)
 all : $(EXE)
 
-$(OBJDIR)ADT.o : ADT.c AmiFTP.h gui.h
+$(OBJDIR)ADT.o : ADT.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)ADT.o ADT.c
 
 $(OBJDIR)aguide.o : aguide.c AmiFTP.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)aguide.o aguide.c
 
-$(OBJDIR)AmiFTP.o : AmiFTP.c AmiFTP.h gui.h icons/AmiFTPbrsh.c
+$(OBJDIR)AmiFTP.o : AmiFTP.c AmiFTP.h gui.h icons/AmiFTPbrsh.c AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)AmiFTP.o AmiFTP.c
 
-$(OBJDIR)AmiFTP_Cat.o : AmiFTP_Cat.c
+$(OBJDIR)AmiFTP_Cat.o : AmiFTP_Cat.c AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)AmiFTP_Cat.o AmiFTP_Cat.c
 
 $(OBJDIR)cache.o : cache.c AmiFTP.h gui.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)cache.o cache.c
 
-$(OBJDIR)change_dir.o : change_dir.c AmiFTP.h
+$(OBJDIR)change_dir.o : change_dir.c AmiFTP.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)change_dir.o change_dir.c
 
 $(OBJDIR)config.o : config.c AmiFTP.h gui.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)config.o config.c
 
-$(OBJDIR)ConnectWindow.o : ConnectWindow.c AmiFTP.h gui.h
+$(OBJDIR)ConnectWindow.o : ConnectWindow.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)ConnectWindow.o ConnectWindow.c
 
 $(OBJDIR)data.o : data.c AmiFTP.h
@@ -61,40 +63,40 @@ $(OBJDIR)dirlist.o : dirlist.c AmiFTP.h gui.h
 $(OBJDIR)dofuncs.o : dofuncs.c AmiFTP.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)dofuncs.o dofuncs.c
 
-$(OBJDIR)ftp.o : ftp.c AmiFTP.h gui.h
+$(OBJDIR)ftp.o : ftp.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)ftp.o ftp.c
 
-$(OBJDIR)locale.o : locale.c AmiFTP.h
+$(OBJDIR)locale.o : locale.c AmiFTP.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)locale.o locale.c
 
 $(OBJDIR)main.o : main.c AmiFTP.h gui.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)main.o main.c
 
-$(OBJDIR)MainWindow.o : MainWindow.c AmiFTP.h gui.h
+$(OBJDIR)MainWindow.o : MainWindow.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)MainWindow.o MainWindow.c
 
-$(OBJDIR)Menu.o : Menu.c AmiFTP.h gui.h
+$(OBJDIR)Menu.o : Menu.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)Menu.o Menu.c
 
-$(OBJDIR)misc.o : misc.c AmiFTP.h gui.h
+$(OBJDIR)misc.o : misc.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)misc.o misc.c
 
-$(OBJDIR)PrefsWindow.o : PrefsWindow.c AmiFTP.h gui.h
+$(OBJDIR)PrefsWindow.o : PrefsWindow.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)PrefsWindow.o PrefsWindow.c
 
-$(OBJDIR)readdir.o : readdir.c
+$(OBJDIR)readdir.o : readdir.c AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)readdir.o readdir.c
 
 $(OBJDIR)rexx.o : rexx.c
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)rexx.o rexx.c
 
-$(OBJDIR)SiteWindow.o : SiteWindow.c
+$(OBJDIR)SiteWindow.o : SiteWindow.c AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)SiteWindow.o SiteWindow.c
 
-$(OBJDIR)SpeedBar.o : SpeedBar.c AmiFTP.h gui.h
+$(OBJDIR)SpeedBar.o : SpeedBar.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)SpeedBar.o SpeedBar.c
 
-$(OBJDIR)TransferWindow.o : TransferWindow.c
+$(OBJDIR)TransferWindow.o : TransferWindow.c AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)TransferWindow.o TransferWindow.c
 
 $(OBJDIR)bsdsocket.o : ../tcphook/bsdsocket.c
@@ -106,7 +108,7 @@ $(OBJDIR)tcp.o : ../tcphook/tcp.c
 $(OBJDIR)version.o : version.c
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)version.o version.c
 
-$(OBJDIR)MenuClass.o : MenuClass.c AmiFTP.h gui.h
+$(OBJDIR)MenuClass.o : MenuClass.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $@ MenuClass.c
 
 
@@ -125,9 +127,9 @@ else
 endif
 
 
-AmiFTP_Cat.c: AmiFTP.cd
-	$(CATCOMP) AmiFTP.cd AmiFTP_Cat.c=C_c_V21.sd
-#	$(CATCOMP) AmiFTP.cd AmiFTP_Cat.h=C_h.sd
+AmiFTP_Cat.h: AmiFTP.cd
+	-$(CATCOMP) AmiFTP.cd AmiFTP_Cat.c=C_c_amiftp.sd
+	-$(CATCOMP) AmiFTP.cd AmiFTP_Cat.h=C_h_amiftp.sd
 
 
 $(EXE) : $(OBJS)
