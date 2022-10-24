@@ -5,16 +5,19 @@
 #include "AmiFTP.h"
 #include "gui.h"
 
+
 extern struct TextAttr AmiFTPAttr, ListViewAttr;
 extern Object *ARexx_Object;
 
 BOOL InitRexx(void);
 void PrintSiteList(void);
 void GetToolTypes(struct WBStartup *msg);
-void SetupLocaleStrings(void);
+//void SetupLocaleStrings(void);
 void ConvertFontName(char *dest, int *size, char *source);
 
 extern struct Screen *myScn;
+
+ULONG appID; // notification/application_lib
 
 char decimalSeperator = '.';
 uint8 seperatorSize = 3;
@@ -84,7 +87,6 @@ struct as225passwd {
 };
 
 
-
 extern struct ListBrowserIFace *IListBrowser;
 extern struct LayoutIFace *ILayout;
 extern struct LabelIFace *ILabel;
@@ -100,6 +102,10 @@ extern struct FuelGaugeIFace *IFuelGauge;
 extern struct IntegerIFace *IInteger;
 extern struct GadToolsIFace *IGadTools;
 
+
+//extern struct ClassLibrary *TextEditorBase;
+
+
 BOOL UseAS225 = FALSE;
 static struct Process *ME;
 
@@ -107,8 +113,6 @@ int main(int argc, char **argv)
 {
 	struct servent *servent;
 	APTR oldwptr;
-
-
 
 	if (!IDOS || !IListBrowser || !ILayout || !ILabel || !IWindow || !IChooser || !IString || !IClickTab || !ICheckBox || !IBevel || !IARexx || !ISpeedBar
 		|| !IFuelGauge || !IInteger || !IGadTools)
@@ -120,18 +124,18 @@ int main(int argc, char **argv)
 	oldwptr = ME->pr_WindowPtr;
 
 	MyOpenLibs();
-	ag.ag_NAG.nag_BaseName = "AmiFTP";
-	ag.ag_NAG.nag_Name = "AmiFTP.guide";
+	ag.ag_NAG.nag_BaseName   = "AmiFTP";
+	ag.ag_NAG.nag_Name       = "AmiFTP.guide";
 	ag.ag_NAG.nag_ClientPort = "AMIFTP_HELP";
-	ag.ag_NAG.nag_Context = context;
+	ag.ag_NAG.nag_Context    = context;
 
-	MainPrefs.mp_ViewCommand = strdup("WBRUN %F");
-	MainPrefs.mp_CacheSize = 5;
-	MainPrefs.mp_BufferSize = 8192;
-	MainPrefs.mp_DeleteFiles = TRUE;
-	MainPrefs.mp_UseDefaultFonts = TRUE;
+	MainPrefs.mp_ViewCommand         = strdup("WBRUN %F");
+	MainPrefs.mp_CacheSize           = 5;
+	MainPrefs.mp_BufferSize          = 8192;
+	MainPrefs.mp_DeleteFiles         = TRUE;
+	MainPrefs.mp_UseDefaultFonts     = TRUE;
 	MainPrefs.mp_OpenOnDefaultScreen = TRUE;
-	MainPrefs.mp_ShowToolBar = TRUE;
+	MainPrefs.mp_ShowToolBar         = 1;//TRUE;
 
 	if (!argc)
 	{
@@ -174,6 +178,16 @@ int main(int argc, char **argv)
 	{
 		CleanUp();
 		exit(10);
+	}
+
+	if(IApplication) {
+		appID = RegisterApplication(CurrentState.RexxPort,//"AmiFTP",
+		                            REGAPP_UniqueApplication, FALSE,
+		                            REGAPP_URLIdentifier,     "os4welt",
+		                            REGAPP_FileName,          "PROGDIR:AmiFTP",
+		                            REGAPP_NoIcon,            TRUE,
+		                            REGAPP_Description,       GetAmiFTPString(Str_Notify_Description),
+		                           TAG_DONE);
 	}
 
 	/* This has to be here, can't put this in MyOpenLibs() */
@@ -232,12 +246,10 @@ int main(int argc, char **argv)
 	}
 
 	/* Make sure the lists are initialized */
-
 	NewList(&SiteList);
 	NewList(&TempList);
 
 	/* Copy the fontnames if the user specified any */
-
 	if (CurrentState.PropFontSize)
 	{
 		AmiFTPAttr.ta_Name = CurrentState.PropFontName;
@@ -401,10 +413,17 @@ int main(int argc, char **argv)
 
 void MyOpenLibs()
 {
-	char *lib;
+	//char *lib;
 
-    lib = "rexxsyslib.library";
-	RexxSysBase = OpenLibrary(lib, 0L);
+
+//TextEditorBase = OpenClass("gadgets/texteditor.gadget", 52, &TextEditorClass);
+	ApplicationLib = OpenLibrary("application.library", 52);
+	if(ApplicationLib)
+		IApplication = (struct ApplicationIFace *)GetInterface(ApplicationLib, "application", 2, NULL);
+
+
+	//lib = "rexxsyslib.library";
+	RexxSysBase = OpenLibrary("rexxsyslib.library", 0L);
 	if (RexxSysBase)
 		IRexxSys = (struct RexxSysIFace *) GetInterfaceTags(RexxSysBase, "main", 1, TAG_END);
 
@@ -412,7 +431,7 @@ void MyOpenLibs()
 	{
 		if (RexxSysBase)
 			CloseLibrary(RexxSysBase);
-		PrintError(ErrorOpenLib, 45, lib);
+		PrintError(ErrorOpenLib, 45, "rexxsyslib.library");//lib);
 		CleanUp();
 		exit(10);
 	}
@@ -425,7 +444,7 @@ void MyOpenLibs()
 	{
 		if (AmigaGuideBase)
 			CloseLibrary(AmigaGuideBase);
-		PrintError(ErrorOpenLib, 0, lib);
+		PrintError(ErrorOpenLib, 0, "amigaguide.library");//lib);
 		CleanUp();
 		exit(10);
 	}
@@ -447,7 +466,7 @@ void MyOpenLibs()
 	}
 
 	if (!(TimeRequest = (struct TimeRequest *) AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_Size, sizeof(struct TimeRequest),
-																	  ASOIOR_ReplyPort, TimerPort, TAG_END)))
+	                                            ASOIOR_ReplyPort, TimerPort, TAG_END)))
 	{
 		PrintError("Couldn't allocate timerreq");
 		CleanUp();
@@ -462,19 +481,18 @@ void MyOpenLibs()
 	}
 
 	TimerBase = TimeRequest->Request.io_Device;
-
 	ITimer = (struct TimerIFace *) GetInterface((struct Library *) TimerBase, (CONST_STRPTR) "main", 1, NULL);
 
-    struct Locale *currentLocale = OpenLocale(NULL);
-    if (currentLocale)
-    {
-        if (currentLocale->loc_GroupSeparator)
-        	decimalSeperator = currentLocale->loc_GroupSeparator[0];
-        if (currentLocale->loc_Grouping)
-        	seperatorSize = *currentLocale->loc_Grouping;
-        CloseLocale(currentLocale);
-    }
-  
+	struct Locale *currentLocale = OpenLocale(NULL);
+	if (currentLocale)
+	{
+		if (currentLocale->loc_GroupSeparator)
+			decimalSeperator = currentLocale->loc_GroupSeparator[0];
+		if (currentLocale->loc_Grouping)
+			seperatorSize = *currentLocale->loc_Grouping;
+		CloseLocale(currentLocale);
+	}
+
 	OpenAmiFTPCatalog(NULL, NULL);
 
 	SetupLocaleStrings();
@@ -495,14 +513,21 @@ void CleanUp()
 	FREE(MainPrefs.mp_FontName);
 	FREE(MainPrefs.mp_ListFontName);
 	FREE(MainPrefs.mp_PubScreen);
-
 #undef FREE
+
+//CloseClass(TextEditorBase);
+	if(IApplication)
+	{
+		UnregisterApplication(appID, TAG_DONE);
+		DropInterface( (struct Interface *)IApplication );
+		CloseLibrary(ApplicationLib);
+	}
+
 
 	if (ITimer)
 	{
 		DropInterface((struct Interface *) ITimer);
 		ITimer = NULL;
-
 	}
 
 	if (TimeRequest)
@@ -510,12 +535,12 @@ void CleanUp()
 		if (TimeRequest->Request.io_Device)
 			CloseDevice((struct IORequest*)TimeRequest);
 
-        FreeSysObject(ASOT_IOREQUEST, TimeRequest);
+		FreeSysObject(ASOT_IOREQUEST, TimeRequest);
 		TimeRequest = NULL;
 	}
 	if (TimerPort)
 	{
-        FreeSysObject(ASOT_PORT, TimerPort);
+		FreeSysObject(ASOT_PORT, TimerPort);
 		TimerPort = NULL;
 	}
 
@@ -524,7 +549,7 @@ void CleanUp()
 		if (ag.ag_AmigaGuide)
 			CloseAmigaGuide(ag.ag_AmigaGuide);
 		CloseLibrary(AmigaGuideBase);
-	} 
+	}
 
 	CloseAmiFTPCatalog();
 
@@ -532,10 +557,10 @@ void CleanUp()
 		DisposeObject(ARexx_Object);
 
 	if (AppPort)
-    {
-        FreeSysObject(ASOT_PORT, AppPort);
+	{
+		FreeSysObject(ASOT_PORT, AppPort);
 		AppPort = NULL;
-    }
+	}
 
 	if (IRexxSys)
 		DropInterface((struct Interface *) IRexxSys);
@@ -545,7 +570,7 @@ void CleanUp()
 	if (argsptr)
 	{
 		FreeArgs(argsptr);
-	}  
+	}
 }
 
 void PrintSiteList()
@@ -598,6 +623,7 @@ void GetToolTypes(struct WBStartup *msg)
 			{
 				UseAS225 = TRUE;
 			}
+
 			FreeDiskObject(infoobj);
 		}
 		SetCurrentDir(olddir);

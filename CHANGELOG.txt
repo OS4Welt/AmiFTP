@@ -55,6 +55,19 @@ maxchars increased to 99 for password requesters
 #fmenzel 23.08.2022 bumbrev 1.952
 Code cleanup - because of "lauto" some libraries don't need to be opened.
 Replacement of deprecated functions and type conversion warnings
-#
 #javierdlr 30.08.2022
 Speedbar can be changed to TEXT/IMAGES/BOTH
+#
+#javierdlr 18.09.2022
+"Cleaned" some of the GUI's ReAction code.
+Added missing speedbar buttons localized strings.
+Changed to use menuclass.
+Fixed disconnect button image when changing speedbar type (IMAGE|TEXT|BOTH).
+SelectFont() not needed (commented).
+Added 'UpdatedSpeedBar' to "fix" refresh speedbar when changing from prefs
+or from start (just "hide" it, not removed/freed).
+Localized rename requester.
+Fixed makefile to use "modified" FlexCat templates (C_c_amiftp.sd & C_h_amiftp.sd).
+Reworked some requesters and localization strings.
+UploadFile() was using fullpath+filename, thus creating (unwanted) dirs.
+Added notification support after upload/download.

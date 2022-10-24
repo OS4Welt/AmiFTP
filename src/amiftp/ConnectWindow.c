@@ -13,167 +13,178 @@ struct Window *OpenConnectWindow(void);
 void CloseConnectWindow(void);
 
 enum {
-    CG_Host=0, CG_Status, CG_Abort,
-    NumGadgets_CG};
+	CG_Host=0, CG_Status, CG_Abort,
+	NumGadgets_CG
+};
 
 Object *CG_List[NumGadgets_CG];
 
 int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 {
-    BOOL Continue=TRUE;
-    ULONG wmask,signal,mainwinsignal,done=FALSE;
-    struct List *head;
-    int retcode, result;
-    extern BOOL SilentMode;
-    extern ULONG MOTDDate;
+	BOOL Continue=TRUE;
+	ULONG wmask,signal,mainwinsignal,done=FALSE;
+	struct List *head;
+	int retcode, result;
+	extern BOOL SilentMode;
+	extern ULONG MOTDDate;
 
-    if (MainWindow)
-      if (!OpenConnectWindow())
-	return CONN_GUI;
+	if (MainWindow)
+		if (!OpenConnectWindow()) return CONN_GUI;
 
-    LockWindow(MainWin_Object);
-    if (ConnectWindow) {
-	if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
-			   GA_Text,GetAmiFTPString(CW_Connecting),
-			   TAG_END))
-	  RefreshGList((struct Gadget*)CG_List[CG_Status],ConnectWindow,NULL,1);
-	if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Host],ConnectWindow, NULL,
-			   GA_Text,sn->sn_Node.ln_Name?sn->sn_Node.ln_Name:sn->sn_SiteAddress,
-			   TAG_END))
-	  RefreshGList((struct Gadget*)CG_List[CG_Host],ConnectWindow,NULL,1);
-    }
+	LockWindow(MainWin_Object);
+	if (ConnectWindow) {
+		if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
+		                   GA_Text,GetAmiFTPString(CW_Connecting),
+		                  TAG_END))
+			RefreshGList((struct Gadget*)CG_List[CG_Status],ConnectWindow,NULL,1);
 
-    if ((result=doconnect(sn))==CONN_OK) {
-	strncpy(CurrentState.CurrentSite, sn->sn_SiteAddress, 50);
-	UpdateSiteName(CurrentState.CurrentSite);
-	remote_os_type=sn->sn_VMSDIR;
-
-	if (sn->sn_RemoteDir) {
-	    PrintConnectStatus(GetAmiFTPString(CW_ChangingDirectory));
-	    change_remote_dir(sn->sn_RemoteDir, 0);
+		if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Host],ConnectWindow, NULL,
+		                   GA_Text,sn->sn_Node.ln_Name?sn->sn_Node.ln_Name:sn->sn_SiteAddress,
+		                  TAG_END))
+			RefreshGList((struct Gadget*)CG_List[CG_Host],ConnectWindow,NULL,1);
 	}
 
-	ClearCache(TRUE);
-	InitCache();
-	if (!noscan) {
-	    if (ConnectWindow) 
-	      if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
-				 GA_Text, GetAmiFTPString(CW_ReadingDir),
-				 TAG_END))
-		RefreshGList((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL, 1);
-	    if (head=sn->sn_ADT?ReadRecentList():read_remote_dir()) {
-		if (MainWindow)
-		  SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
-				 LISTBROWSER_Labels, ~0, TAG_DONE);
-		else
-		  SetAttrs(MG_List[MG_ListView], LISTBROWSER_Labels, ~0, TAG_DONE);
-		if (CurrentState.ADTMode!=sn->sn_ADT) {
-		    CurrentState.ADTMode=sn->sn_ADT;
-		    ChangeAmiFTPMode();
+	if ((result=doconnect(sn))==CONN_OK) {
+		strncpy(CurrentState.CurrentSite, sn->sn_SiteAddress, 50);
+		UpdateSiteName(CurrentState.CurrentSite);
+		remote_os_type=sn->sn_VMSDIR;
+
+		if (sn->sn_RemoteDir) {
+			PrintConnectStatus(GetAmiFTPString(CW_ChangingDirectory));
+			change_remote_dir(sn->sn_RemoteDir, 0);
 		}
-		AddCacheEntry(head, CurrentState.CurrentRemoteDir);
-		FileList=head;
-		if (MainWindow)
-		  if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
-				     LISTBROWSER_Labels, FileList,
-				     LISTBROWSER_AutoFit, TRUE,
-				     LISTBROWSER_ColumnInfo, &columninfo,
-				     LISTBROWSER_MakeVisible, 0,
-				     LISTBROWSER_Selected, -1,
-				     TAG_DONE))
-		    RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
-		else
-		  SetAttrs(MG_List[MG_ListView],
-			   LISTBROWSER_Labels, FileList,
-			   LISTBROWSER_AutoFit, TRUE,
-			   LISTBROWSER_ColumnInfo, &columninfo,
-			   LISTBROWSER_MakeVisible, 0,
-			   LISTBROWSER_Selected, -1,
-			   TAG_DONE);
-		Continue=FALSE;
-	    }
-	    else Continue=TRUE;
-	}
-	else Continue=FALSE;
-	if (sn->sn_LocalDir)
-	  UpdateLocalDir(sn->sn_LocalDir);
-	else if (MainPrefs.mp_LocalDir)
-	  UpdateLocalDir(MainPrefs.mp_LocalDir);
-	UpdateMainButtons(MB_NONESELECTED);
-    }
 
-    if (result==CONN_ABORTED) {
-	CloseConnectWindow();
+		ClearCache(TRUE);
+		InitCache();
+		if (!noscan) {
+			if (ConnectWindow) 
+				if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
+				                   GA_Text, GetAmiFTPString(CW_ReadingDir),
+				                  TAG_END))
+					RefreshGList((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL, 1);
+
+				if (head=sn->sn_ADT?ReadRecentList():read_remote_dir()) {
+					if (MainWindow)
+						SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
+						               LISTBROWSER_Labels, ~0, TAG_DONE);
+					else
+						SetAttrs(MG_List[MG_ListView], LISTBROWSER_Labels, ~0, TAG_DONE);
+
+					if (CurrentState.ADTMode!=sn->sn_ADT) {
+						CurrentState.ADTMode=sn->sn_ADT;
+						ChangeAmiFTPMode();
+					}
+
+					AddCacheEntry(head, CurrentState.CurrentRemoteDir);
+					FileList=head;
+					if (MainWindow)
+						if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
+						                   LISTBROWSER_Labels, FileList,
+						                   //LISTBROWSER_AutoFit, TRUE,
+						                   //LISTBROWSER_ColumnInfo, &columninfo,
+						                   LISTBROWSER_ColumnInfo, columninfo,
+						                   LISTBROWSER_Striping, TRUE,
+						                   LISTBROWSER_MakeVisible, 0,
+						                   LISTBROWSER_Selected, -1,
+						                  TAG_DONE))
+							RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
+						else
+							SetAttrs(MG_List[MG_ListView],
+							         LISTBROWSER_Labels, FileList,
+							         //LISTBROWSER_AutoFit, TRUE,
+							         //LISTBROWSER_ColumnInfo, &columninfo,
+							         LISTBROWSER_ColumnInfo, columninfo,
+							         LISTBROWSER_Striping, TRUE,
+							         LISTBROWSER_MakeVisible, 0,
+							         LISTBROWSER_Selected, -1,
+							        TAG_DONE);
+
+					Continue=FALSE;
+				}
+				else Continue=TRUE;
+
+		}
+		else Continue=FALSE;
+
+		if (sn->sn_LocalDir) UpdateLocalDir(sn->sn_LocalDir);
+		else if (MainPrefs.mp_LocalDir) UpdateLocalDir(MainPrefs.mp_LocalDir);
+
+		UpdateMainButtons(MB_NONESELECTED);
+	}
+
+	if (result==CONN_ABORTED) {
+		CloseConnectWindow();
+		UnlockWindow(MainWin_Object);
+		return CONN_ERROR;
+	}
+
+	if (Continue) {
+		char *text=NULL;
+
+		if (timedout) text=GetAmiFTPString(Str_ConnectionTimedOut);
+
+		if (text && ConnectWindow)
+			if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
+			                   GA_Text, text, TAG_DONE))
+				RefreshGList((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL, 1);
+
+		retcode=CONN_ERROR;
+	}
+	else retcode=CONN_OK;
+
+	if (ConnectWindow) {
+		if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Abort], ConnectWindow, NULL,
+		                   GA_Disabled, TRUE, TAG_DONE))
+			RefreshGList((struct Gadget*)CG_List[CG_Abort], ConnectWindow, NULL, 1);
+
+		done=Continue?FALSE:TRUE;
+		GetAttr(WINDOW_SigMask, ConnectWin_Object, &signal);
+		GetAttr(WINDOW_SigMask, MainWin_Object, &mainwinsignal);
+
+		if (!SilentMode) {
+			while (!done) {
+				wmask=Wait(signal|mainwinsignal|AG_Signal);
+				if (wmask&AG_Signal)     HandleAmigaGuide();
+				if (wmask&signal)        done=HandleConnectIDCMP();
+				if (wmask&mainwinsignal) HandleMainWindowIDCMP(FALSE);
+			}
+		}
+		CloseConnectWindow();
+		UpdateMainButtons(connected?MB_NONESELECTED:MB_DISCONNECTED);
+	}
+
+	if (retcode==CONN_OK && CurrentState.ADTMode && MainPrefs.mp_ShowMOTD) {
+		if (MOTDDate>MainPrefs.mp_LastAMOTD) {
+			struct List flist;
+			struct Node *node;
+			struct dirlist file;
+
+			NewList(&flist);
+			memset(&file, 0, sizeof (file));
+			file.name="info/adt/aminet-motd";
+			file.size=0;
+			file.mode=S_IFREG;
+			if (node=AllocListBrowserNode(1,
+			                              LBNA_Selected, TRUE,
+			                              LBNA_Column, 0,
+			                               LBNCA_Text, file.name,
+			                             TAG_DONE)) {
+				node->ln_Name=(void *)&file;
+				AddTail(&flist, node);
+				if (DownloadFile(&flist, "T:", ASCII, 0)==TRANS_OK) {
+					ViewFile("T:aminet-motd");
+					MainPrefs.mp_LastAMOTD=MOTDDate;
+					ConfigChanged=TRUE;
+				}
+				Remove(node);
+				FreeListBrowserNode(node);
+			}
+		}
+	}
+
 	UnlockWindow(MainWin_Object);
-	return CONN_ERROR;
-    }
 
-    if (Continue) {
-	char *text=NULL;
-
-	if (timedout)
-	  text=GetAmiFTPString(Str_ConnectionTimedOut);
-	if (text && ConnectWindow)
-	  if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
-			     GA_Text, text,
-			     TAG_DONE))
-	    RefreshGList((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL, 1);
-	retcode=CONN_ERROR;
-    }
-    else retcode=CONN_OK;
-
-    if (ConnectWindow) {
-	if  (SetGadgetAttrs((struct Gadget*)CG_List[CG_Abort], ConnectWindow, NULL,
-			    GA_Disabled, TRUE,
-			    TAG_DONE))
-	  RefreshGList((struct Gadget*)CG_List[CG_Abort], ConnectWindow, NULL, 1);
-	done=Continue?FALSE:TRUE;
-	GetAttr(WINDOW_SigMask, ConnectWin_Object, &signal);
-	GetAttr(WINDOW_SigMask, MainWin_Object, &mainwinsignal);
-
-	if (!SilentMode) {
-	    while (!done) {
-		wmask=Wait(signal|mainwinsignal|AG_Signal);
-		if (wmask&AG_Signal)
-		  HandleAmigaGuide();
-		if (wmask&signal)
-		  done=HandleConnectIDCMP();
-		if (wmask&mainwinsignal)
-		  HandleMainWindowIDCMP(FALSE);
-	    }
-	}
-	CloseConnectWindow();
-	UpdateMainButtons(connected?MB_NONESELECTED:MB_DISCONNECTED);
-    }
-    if (retcode==CONN_OK && CurrentState.ADTMode && MainPrefs.mp_ShowMOTD) {
-	if (MOTDDate>MainPrefs.mp_LastAMOTD) {
-	    struct List flist;
-	    struct Node *node;
-	    struct dirlist file;
-
-	    NewList(&flist);
-	    memset(&file, 0, sizeof (file));
-	    file.name="info/adt/aminet-motd";
-	    file.size=0;
-	    file.mode=S_IFREG;
-	    if (node=AllocListBrowserNode(1,
-					  LBNA_Selected, TRUE,
-					  LBNA_Column, 0,
-					  LBNCA_Text, file.name,
-					  TAG_DONE)) {
-		node->ln_Name=(void *)&file;
-		AddTail(&flist, node);
-		if (DownloadFile(&flist, "T:", ASCII, 0)==TRANS_OK) {
-		    ViewFile("T:aminet-motd");
-		    MainPrefs.mp_LastAMOTD=MOTDDate;
-		    ConfigChanged=TRUE;
-		}
-		FreeListBrowserNode(node);
-	    }
-	}
-    }
-    UnlockWindow(MainWin_Object);
-    return retcode;
+	return retcode;
 }
 
 ULONG HandleConnectIDCMP()
@@ -200,7 +211,7 @@ ULONG HandleConnectIDCMP()
 
 struct Window *OpenConnectWindow()
 {
-    struct LayoutLimits limits;
+    //struct LayoutLimits limits;
 
     if (ConnectWindow)
       return ConnectWindow;
@@ -239,28 +250,30 @@ struct Window *OpenConnectWindow()
                        GA_Text, GetAmiFTPString(CW_Abort),
                        ButtonEnd,
                        CHILD_WeightedWidth, 0,
-                       CHILD_NominalSize, TRUE,
+                       //CHILD_NominalSize, TRUE,
                    LayoutEnd;
 
     if (!ConnectLayout)
       return NULL;
 
-    LayoutLimits((struct Gadget *)ConnectLayout, &limits, PropFont,Screen);
+    //LayoutLimits((struct Gadget *)ConnectLayout, &limits, PropFont,Screen);
+    //limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
+    //limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
 
-    limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
-    limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
-    
     ConnectWin_Object = WindowObject,
-                          WA_Title, GetAmiFTPString(CW_WinTitle),
-                          WA_PubScreen, Screen,
-                          WA_DepthGadget, TRUE,
-                          WA_DragBar, TRUE,
-                          WA_CloseGadget, TRUE,
-                          WA_Activate, TRUE,
+                          WA_Title,        GetAmiFTPString(CW_WinTitle),
+                          WA_PubScreen,    Screen,
+                          WA_DepthGadget,  TRUE,
+                          WA_DragBar,      TRUE,
+                          WA_CloseGadget,  TRUE,
+                          WA_Activate,     TRUE,
                           WA_SmartRefresh, TRUE,
-                          WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
-                          WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
-                          WINDOW_ParentGroup, ConnectLayout,
+                          //WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
+                          //WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
+                          WINDOW_Position,  WPOS_CENTERWINDOW,
+                          WINDOW_RefWindow, MainWindow,
+                          //WINDOW_ParentGroup, ConnectLayout,
+                          WINDOW_Layout, ConnectLayout,
                           WA_IDCMP, IDCMP_RAWKEY,
                         EndWindow;
 

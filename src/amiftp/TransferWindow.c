@@ -6,8 +6,6 @@
 #include "gui.h"
 
 BOOL AskGetDir(void);
-
-
 int GetDir(char *remote_parent, char *local_parent, char *name, char *localname, const int binary);
 void UpdateTransTitle(struct Node *node);
 
@@ -17,54 +15,57 @@ Object *TransferWin_Object;
 
 struct Window *OpenTransferWindow(void);
 void CloseTransferWindow(void);
+void showNotification(struct Screen *, int displaybeep, BOOL isDL);
+void displayNotification(struct Screen *, STRPTR txt);
 
 enum {
-    TG_RemoteFile=0, TG_LocalFile, TG_CPS, TG_ETA,
-    TG_Gauge, TG_Abort,
-    NumGadgets_TG};
+	TG_RemoteFile=0,
+	TG_LocalFile,
+	TG_CPS,
+	TG_ETA,
+	TG_Gauge,
+	TG_Abort,
+	NumGadgets_TG
+};
 
 Object *TG_List[NumGadgets_TG];
 ULONG fuelargs[]={0,0};
 static int OverwriteAll=0;
 
-int DownloadFile(struct List *flist, const char *localname, const int binary,
-		 const int move)
+int DownloadFile(struct List *flist, const char *localname, const int binary, const int move)
 {
     ULONG wait,signal,mainsignal,done=FALSE;
     int result=1;
     struct dirlist *curr;
     struct Node *node;
     char localfile[MAXPATHLEN+1];
-    BOOL aborted=FALSE;
+    //BOOL aborted=FALSE;
 
     settype(binary);
     fuelargs[0]=fuelargs[1]=0;
     OverwriteAll=0;
 
-
-    if (CurrentState.CurrentDLDir[0]==0) UpdateLocalDir("Ram:");
+    if (CurrentState.CurrentDLDir[0]==0) UpdateLocalDir("RAM:");
 
     if (MainWindow)
-      if (!OpenTransferWindow())
-	return TRANS_GUI;
+      if (!OpenTransferWindow()) return TRANS_GUI;
 
     int i = 0;
     for (node=GetHead(flist);node != NULL; node=GetSucc(node), i++) {
 	ULONG sel=0;
 	GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
 	if (sel) {
-        
 	    static char tmp[1024];
 	    curr=(void *)node->ln_Name;
-	    aborted=0;
+	    //aborted=0;
 	    UpdateTransTitle(node);
 	    switch(curr->mode & S_IFMT) {
 	      case S_IFDIR:
+//DebugPrintF("S_IFDIR '%s'\n",CurrentState.CurrentRemoteDir);
 		if (AskGetDir()) {
-		    if (result=GetDir(CurrentState.CurrentRemoteDir,
+		    if ( (result=GetDir(CurrentState.CurrentRemoteDir,
 					  CurrentState.CurrentDLDir,curr->name,
-					  curr->name, binary)) {
-                        
+					  curr->name, binary)) ) {
 			goto out;
 		    }
 		    if (result==TRSF_OK) {
@@ -81,7 +82,6 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 	      case S_IFREG:
 		memset(localfile,0,sizeof(localfile));
 		if (!localname) {
-           
 		    stcgfn(tmp,curr->name, 1024);
 		    strmfp(localfile,CurrentState.CurrentDLDir,tmp, MAXPATHLEN);
 		}
@@ -164,7 +164,8 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 			result=get_file(name, localfile, curr->size);
 			if (result==TRSF_BADFILE) {
 			    if (AskGetDir()) {
-				if (result==GetDir(CurrentState.CurrentRemoteDir,CurrentState.CurrentDLDir,name,name,binary)!=TRSF_OK) {
+				//if (result==GetDir(CurrentState.CurrentRemoteDir,CurrentState.CurrentDLDir,name,name,binary)!=TRSF_OK) {
+				if ( (result=GetDir(CurrentState.CurrentRemoteDir,CurrentState.CurrentDLDir,name,name,binary)!=TRSF_OK) ) {
 				    free(name);
 				    goto out;
 				}
@@ -207,8 +208,10 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
     UpdateWindowTitle();
   out:
     if (result==TRSF_OK || result==TRSF_ABORTED) {
-	if (result==TRSF_OK && MainPrefs.mp_DisplayBeep && TransferWindow) {
-	    DisplayBeep(Screen);
+	//if (result==TRSF_OK && MainPrefs.mp_DisplayBeep && TransferWindow) {
+	if (result==TRSF_OK && TransferWindow) {
+		showNotification(Screen, MainPrefs.mp_DisplayBeep, TRUE);
+		//DisplayBeep(Screen);
 	}
 	if (TransferWindow)
 	  CloseTransferWindow();
@@ -227,12 +230,9 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 	    while (!done) {
 		GetAttr(WINDOW_SigMask, MainWin_Object, &mainsignal);
 		wait=Wait(signal|AG_Signal|mainsignal);
-		if (wait & AG_Signal)
-		  HandleAmigaGuide();
-		if (wait & signal)
-		  done=HandleTransferIDCMP();
-		if (wait & mainsignal)
-		  HandleMainWindowIDCMP(FALSE);
+		if (wait & AG_Signal ) HandleAmigaGuide();
+		if (wait & signal    ) done=HandleTransferIDCMP();
+		if (wait & mainsignal) HandleMainWindowIDCMP(FALSE);
 	    }
 	}
 	
@@ -243,51 +243,48 @@ int DownloadFile(struct List *flist, const char *localname, const int binary,
 
 ULONG HandleTransferIDCMP(void)
 {
-    ULONG done=FALSE;
-    ULONG result;
-    uint16 code;
+	ULONG done=FALSE;
+	ULONG result;
+	uint16 code;
     //while((result=CA_HandleInput(TransferWin_Object,&code))!=WMHI_LASTMSG) {
-    while((result=IDoMethod(TransferWin_Object, WM_HANDLEINPUT, &code))!=WMHI_LASTMSG){
-
-    switch (result & WMHI_CLASSMASK) {
-	  case WMHI_CLOSEWINDOW:
-	    done=TRUE;
-	    break;
-	  case WMHI_GADGETUP:
-	    done=TRUE;
-	    break;
-	  case WMHI_ICONIFY:
-	    if (MainWindow) {
+	while((result=IDoMethod(TransferWin_Object, WM_HANDLEINPUT, &code))!=WMHI_LASTMSG) {
+		switch (result & WMHI_CLASSMASK) {
+			case WMHI_CLOSEWINDOW:
+//				done=TRUE;
+//			break;
+			case WMHI_GADGETUP:
+				done=TRUE;
+			break;
+			case WMHI_ICONIFY:
+				if (MainWindow) {
 		//if (CA_Iconify(MainWin_Object))
-        if (IDoMethod(MainWin_Object, WM_ICONIFY))
-		  MainWindow=NULL;
-	    }
-	    else {
-		MainWindow=(struct Window *)IDoMethod(MainWin_Object, WM_OPEN);//CA_OpenWindow(MainWin_Object);
-		MoveWindowInFrontOf(TransferWindow, MainWindow);
-	    }
-	    break;
-	  case WMHI_RAWKEY:
-	    if (code==95)
-	      SendAGMessage(AG_TRANSWIN);
-	    break;
+					if (IDoMethod(MainWin_Object, WM_ICONIFY)) MainWindow=NULL;
+				}
+				else {
+					MainWindow=(struct Window *)IDoMethod(MainWin_Object, WM_OPEN);//CA_OpenWindow(MainWin_Object);
+					MoveWindowInFrontOf(TransferWindow, MainWindow);
+				}
+			break;
+			case WMHI_RAWKEY:
+				if (code==95) SendAGMessage(AG_TRANSWIN);
+			break;
+		}
 	}
-    }
-    return done;
+
+	return done;
 }
 
 struct Window *OpenTransferWindow(void)
 {
-    Object *g1, *g2;
-    struct LayoutLimits limits;
-    extern struct RastPort *ARPort;
-    LONG len=TextLength(ARPort,"0",1);
-    fuelargs[0]=fuelargs[1]=0;//&fargs;
+	Object *g1, *g2;
+    //struct LayoutLimits limits;
+//    extern struct RastPort *ARPort;
+//    LONG len=TextLength(ARPort,"8",1); // max char width
+	fuelargs[0]=fuelargs[1]=0;//&fargs;
 
-    if (TransferWindow)
-      return TransferWindow;
+	if (TransferWindow) return TransferWindow;
 
-    TransferLayout=LayoutObject,
+	TransferLayout=LayoutObject,
 		GA_DrawInfo, DrawInfo,
 		GA_TextAttr, AmiFTPAttrF,
 		LAYOUT_DeferLayout, TRUE,
@@ -297,6 +294,7 @@ struct Window *OpenTransferWindow(void)
 
 		StartHGroup,
 			StartVGroup,
+
 				StartVGroup,
 					LAYOUT_BevelStyle, BVS_GROUP,
 					LAYOUT_SpaceOuter, TRUE,
@@ -310,7 +308,7 @@ struct Window *OpenTransferWindow(void)
 						GA_Text, " ",
 						BUTTON_Justification, BCJ_LEFT,
 					ButtonEnd,
-					CHILD_MinWidth, PropFont->tf_XSize*35,
+					//CHILD_MinWidth, PropFont->tf_XSize*35,
 					Label(GetAmiFTPString(TW_RemoteFile)),
 
 					StartMember, TG_List[TG_LocalFile]=ButtonObject,
@@ -321,7 +319,7 @@ struct Window *OpenTransferWindow(void)
 						GA_Text, " ",
 						BUTTON_Justification, BCJ_LEFT,
 					ButtonEnd,
-					CHILD_MinWidth, PropFont->tf_XSize*35,
+					//CHILD_MinWidth, PropFont->tf_XSize*35,
 					Label(GetAmiFTPString(TW_LocalFile)),
 				EndGroup,
 
@@ -330,15 +328,16 @@ struct Window *OpenTransferWindow(void)
 					LAYOUT_SpaceOuter, TRUE,
 
 					StartMember, g1=LayoutObject, LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ, EvenSized,
-
 					StartMember, TG_List[TG_ETA]=ButtonObject,
 						GA_ID, TG_ETA,
 						GA_RelVerify, TRUE,
 						GA_ReadOnly, TRUE,
 						GA_Text, "00:00:00",
 						BUTTON_Justification, BCJ_RIGHT,
+						//BUTTON_DomainString, "88:88:88",
 					ButtonEnd,
-					CHILD_MinWidth, len*9,
+					CHILD_WeightedWidth, 0,
+					//CHILD_MinWidth, len*9,
 					Label(GetAmiFTPString(TW_TimeLeft)),
 
 					StartMember, TG_List[TG_CPS]=ButtonObject,
@@ -347,10 +346,13 @@ struct Window *OpenTransferWindow(void)
 						GA_ReadOnly, TRUE,
 						GA_Text, " ",
 						BUTTON_Justification, BCJ_RIGHT,
+						BUTTON_DomainString, "8888888888",
 					ButtonEnd,
-					CHILD_MinWidth, len*10,
+					CHILD_WeightedWidth, 0,
+					//CHILD_MinWidth, len*10,
 					Label(GetAmiFTPString(TW_Cps)),
 				EndGroup,
+				//CHILD_WeightedWidth, 0,
 
 				StartMember, g2=LayoutObject, LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
 				StartMember, TG_List[TG_Gauge]=FuelGaugeObject,
@@ -360,16 +362,19 @@ struct Window *OpenTransferWindow(void)
 					FUELGAUGE_Min, 0,
 					FUELGAUGE_Max, 100,
 					FUELGAUGE_Level, 0,
-	           		FUELGAUGE_Ticks, 0,
+					FUELGAUGE_Ticks, 0,
 					GA_Text, "%ld/%ld",
 					FUELGAUGE_VarArgs, &fuelargs,
 				FuelGaugeEnd,
-                		 CHILD_MinHeight, len*3,
-	            CHILD_MinWidth, len*18,
+				//CHILD_MinHeight, len*3,
+				//CHILD_MinWidth, len*18,
 				CHILD_WeightedHeight, 0,
 				Label(GetAmiFTPString(TW_DataTransferred)),
-	            EndGroup,
+				EndGroup,
+
 			EndGroup,
+			CHILD_WeightedWidth, 0,
+
 			EndGroup,
 		EndGroup,
 
@@ -379,7 +384,8 @@ struct Window *OpenTransferWindow(void)
 			GA_Text, GetAmiFTPString(TW_Abort),
 		ButtonEnd,
 		CHILD_WeightedWidth, 0,
-		CHILD_NominalSize, TRUE,
+		//CHILD_NominalSize, TRUE,
+
 	LayoutEnd;
 
     if (!TransferLayout)
@@ -388,29 +394,32 @@ struct Window *OpenTransferWindow(void)
     SetAttrs(g1, LAYOUT_AlignLabels, g2, TAG_DONE);
     SetAttrs(g2, LAYOUT_AlignLabels, g1, TAG_DONE);
 
-    LayoutLimits((struct Gadget *)TransferLayout,&limits,PropFont,Screen);
-    limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
-    limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
+    //LayoutLimits((struct Gadget *)TransferLayout,&limits,PropFont,Screen);
+    //limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
+    //limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
 
     TransferWin_Object = WindowObject,
-                          WA_Title, GetAmiFTPString(TW_WinTitle),
-                          WA_PubScreen,Screen,
-                          WA_DepthGadget, TRUE,
-                          WA_DragBar, TRUE,
-                          WA_CloseGadget, TRUE,
-                          WA_Activate, TRUE,
+                          WA_Title,        GetAmiFTPString(TW_WinTitle),
+                          WA_PubScreen,    Screen,
+                          WA_DepthGadget,  TRUE,
+                          WA_DragBar,      TRUE,
+                          WA_CloseGadget,  TRUE,
+                          WA_Activate,     TRUE,
                           WA_SmartRefresh, TRUE,
-                          WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
-                          WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
-                          WINDOW_IconifyGadget,TRUE,
-                          WINDOW_ParentGroup, TransferLayout,
+                          //WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
+                          //WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
+                          WINDOW_IconifyGadget, TRUE,
+                          WINDOW_Position,  WPOS_CENTERWINDOW,
+                          WINDOW_RefWindow, MainWindow,
+                          //WINDOW_ParentGroup, TransferLayout,
+                          WINDOW_Layout, TransferLayout,
                           WA_IDCMP, IDCMP_RAWKEY,
                         EndWindow;
 
     if (!TransferWin_Object)
       return NULL;
 
-    if (TransferWindow=(struct Window *)IDoMethod(TransferWin_Object, WM_OPEN)){//CA_OpenWindow(TransferWin_Object)) {
+    if ( (TransferWindow=(struct Window *)IDoMethod(TransferWin_Object, WM_OPEN)) ) {//CA_OpenWindow(TransferWin_Object)) {
 	return TransferWindow;
     }
     DisposeObject(TransferLayout);
@@ -421,12 +430,12 @@ struct Window *OpenTransferWindow(void)
 
 void CloseTransferWindow(void)
 {
-    if (TransferWin_Object) {
-	DisposeObject(TransferWin_Object);
-	TransferWindow=NULL;
-	TransferWin_Object=NULL;
-	TransferLayout=NULL;
-    }
+	if (TransferWin_Object) {
+		DisposeObject(TransferWin_Object);
+		TransferWindow=NULL;
+		TransferWin_Object=NULL;
+		TransferLayout=NULL;
+	}
 }
 
 static long FileSize=0,last=0;
@@ -441,8 +450,7 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
     settype(binary);
 
     if (MainWindow)
-      if (!OpenTransferWindow())
-	return TRANS_GUI;
+      if (!OpenTransferWindow()) return TRANS_GUI;
 
     for (node=GetHead(transferlist);node!=NULL;node=GetSucc(node)) {
 	int size=0;
@@ -450,7 +458,7 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
 	//BPTR lock;
 	//struct FileInfoBlock __aligned fib;
 	struct dirlist *entry=(void *)node->ln_Name;
-	
+
 	UpdateTransTitle(node);
 	if (CurrentState.ADTMode) {
 	    rem=malloc(256);
@@ -481,50 +489,57 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
 	}
 
 	if (TransferWindow) {
-	    sprintf(buf,"%ld",size);
-	    SetGadgetAttrs((struct Gadget*)TG_List[TG_LocalFile], TransferWindow, NULL,
-			   GA_Text, entry->name,
-			   TAG_DONE);
-	    RefreshGList((struct Gadget*)TG_List[TG_LocalFile],TransferWindow,NULL,1);
-	    SetGadgetAttrs((struct Gadget*)TG_List[TG_RemoteFile], TransferWindow, NULL,
-			   GA_Text,remote?(char *)remote:(char *)FilePart(entry->name),
-			   TAG_DONE);
-	    RefreshGList((struct Gadget*)TG_List[TG_RemoteFile],TransferWindow,NULL,1);
-	    SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
-			   GA_Text,"0",
-			   TAG_DONE);
-	    RefreshGList((struct Gadget*)TG_List[TG_CPS],TransferWindow,NULL,1);
-	    RefreshGList((struct Gadget*)TG_List[TG_CPS],TransferWindow,NULL,1);
-	    fuelargs[0]=fuelargs[1]=0;
-	    SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge],TransferWindow,NULL,
-			       FUELGAUGE_Level,0,
-			       FUELGAUGE_VarArgs,&fuelargs,
-			       TAG_DONE);
+		sprintf(buf,"%d",size);
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_LocalFile], TransferWindow, NULL,
+		               GA_Text, entry->name,
+		              TAG_DONE);
 
-	    FileSize=size;
-	    last=0;
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_RemoteFile], TransferWindow, NULL,
+		               GA_Text,remote? (char *)remote : (char *)FilePart(entry->name),
+		              TAG_DONE);
+
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
+		               GA_Text,"0",
+		              TAG_DONE);
+
+		fuelargs[0]=fuelargs[1]=0;
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge],TransferWindow,NULL,
+		               FUELGAUGE_Level,0, FUELGAUGE_VarArgs,&fuelargs,
+		              TAG_DONE);
+
+		FileSize=size;
+		last=0;
 	}
+
+//DebugPrintF("remote? '%s' : '%s'\n",remote,entry->name);
+//DebugPrintF("entry->remoteName: '%s'\n",entry->remoteName);
+
     if (remote==NULL) // goos ?aminet mode?
     {
-    res=sendrequest("STOR",entry->name,entry->remoteName);
+//DebugPrintF("1)'%s'\n",(char *)FilePart(entry->remoteName));
+    res=sendrequest("STOR",entry->name,(char *)FilePart(entry->remoteName));
     }
-    else
-	res=sendrequest("STOR",entry->name,remote?(char *)remote:(char *)FilePart(entry->name));
+    else {
+//DebugPrintF("2)'%s'\n",(char *)FilePart(entry->name));
+	res=sendrequest("STOR",entry->name,remote? (char *)remote : (char *)FilePart(entry->name));
 	if (rem) {
 	    free(rem);
 	    rem=NULL;
 	}
+    }
 	if (res!=TRSF_OK)
 	  break;
     }
 
-    if (!TransferWin_Object)
-      return res;
+    if (!TransferWin_Object) return res;
+
     UpdateTransTitle(0);
 
     if (res==TRSF_ABORTED||res==TRSF_OK) {
-	if (res==TRSF_OK && MainPrefs.mp_DisplayBeep && TransferWindow) {
-	    DisplayBeep(Screen);
+//	if (res==TRSF_OK && MainPrefs.mp_DisplayBeep && TransferWindow) {
+	if (res==TRSF_OK && TransferWindow) {
+		showNotification(Screen, MainPrefs.mp_DisplayBeep, FALSE);
+		//DisplayBeep(Screen);
 	}
 	CloseTransferWindow();
 	return res;
@@ -541,13 +556,10 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
     if (!SilentMode) {
 	while (!done) {
 	    wait=Wait(signal|AG_Signal);
-	    
-	    if (wait&signal)
-	      done=HandleTransferIDCMP();
-	    if (wait & AG_Signal)
-	      HandleAmigaGuide();
-	    if (wait & mainsignal)
-	      HandleMainWindowIDCMP(FALSE);
+
+	    if (wait&signal      ) done=HandleTransferIDCMP();
+	    if (wait & AG_Signal ) HandleAmigaGuide();
+	    if (wait & mainsignal) HandleMainWindowIDCMP(FALSE);
 	}
     }
 
@@ -558,47 +570,45 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
 
 void UpdateDLGads(const long bytes, const long restart_point, const time_t timee)
 {
+	if (TransferWin_Object) {
+		static char buf1[20],buf2[20],buf3[20];
+		int hours=0,mins=0,secs=0, cps=0;
 
-    if (TransferWin_Object) {
-	static char buf1[20],buf2[20],buf3[20];
-	int hours=0,mins=0,secs=0, cps=0;
-	if (timee) {
-	    cps=(bytes-restart_point)/timee;
-	    if (FileSize && cps) {
-		secs=(FileSize-bytes)/cps;
-		hours=secs / 3600;
-		mins = (secs-hours*3600)/60;
-		secs=secs%60;
-	    }
-	}
+		if (timee) {
+			cps=(bytes-restart_point)/timee;
+			if (FileSize && cps) {
+				secs  = (FileSize-bytes)/cps;
+				hours = secs / 3600;
+				mins  = (secs-hours*3600)/60;
+				secs  = secs%60;
+			}
+		}
 
-	sprintf(buf1, "%ld", bytes);
-	sprintf(buf2, "%ld", cps);
-	sprintf(buf3, "%0.2d:%0.2d:%0.2d", hours, mins, secs);
-	if (SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
-			   GA_Text, buf2, TAG_DONE)){ 
-	    RefreshGList((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL, 1);
+		sprintf(buf1, "%ld", bytes);
+		sprintf(buf2, "%d", cps);
+		sprintf(buf3, "%02d:%02d:%02d", hours, mins, secs);
+		if (SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL, GA_Text,buf2, TAG_DONE)) {
+			RefreshGList((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL, 1);
+		}
+		if (SetGadgetAttrs((struct Gadget*)TG_List[TG_ETA], TransferWindow, NULL, GA_Text,buf3, TAG_DONE)) {
+			RefreshGList((struct Gadget*)TG_List[TG_ETA], TransferWindow, NULL, 1);
+		}
+
+		fuelargs[0]=bytes;//FileSize?(bytes*100)/FileSize:0;
+		fuelargs[1]=FileSize;
+		LONG percentage = 0;
+		if (FileSize>0) {
+			percentage = (LONG) ((double)bytes/(double)FileSize*100.0);
+		}
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
+		                FUELGAUGE_Level, percentage,//FileSize?(FileSize>10240?bytes/(FileSize/100):(bytes*100)/FileSize):0,
+		                FUELGAUGE_VarArgs, &fuelargs[0],
+		               TAG_DONE);
 	}
-	if (SetGadgetAttrs((struct Gadget*)TG_List[TG_ETA], TransferWindow, NULL,
-			   GA_Text, buf3, TAG_DONE)) {
-	    RefreshGList((struct Gadget*)TG_List[TG_ETA], TransferWindow, NULL, 1);
-	}
-	fuelargs[0]=bytes;//FileSize?(bytes*100)/FileSize:0;
-	fuelargs[1]=FileSize;
-    LONG percentage = 0;
-    if (FileSize>0)
-    {
-        percentage = (LONG) ((double)bytes/(double)FileSize*100.0);
-        }
-	SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
-		       FUELGAUGE_Level, percentage,//FileSize?(FileSize>10240?bytes/(FileSize/100):(bytes*100)/FileSize):0,
-		       FUELGAUGE_VarArgs, &fuelargs[0],
-		       TAG_DONE);
-    }
 }
 
 
-BOOL CheckExists(char *lfile,int size, ULONG *restartpoint)
+BOOL CheckExists(char *lfile, ULONG size, ULONG *restartpoint)
 {
     /*
     static ULONG tags[]={
@@ -609,19 +619,12 @@ BOOL CheckExists(char *lfile,int size, ULONG *restartpoint)
 	TAG_END
       };
       */
-   
-
-    
-
-    
-
 	/*
     BPTR lock;
     struct FileInfoBlock fib;
     */
-    int ret = 0;
-    char *Gadgetstring;
-
+	int ret = 0;
+	char *Gadgetstring;
     /*
     lock=Lock(lfile,ACCESS_READ);
     if (!lock)
@@ -629,159 +632,154 @@ BOOL CheckExists(char *lfile,int size, ULONG *restartpoint)
     Examine(lock,&fib);
     UnLock(lock);
     */
-    int64 fileSize = 0;
-    struct ExamineData *data = ExamineObjectTags(EX_StringNameInput, lfile, TAG_END);
-    if (data)
-    {
-        fileSize = data->FileSize;
-        FreeDosObject(DOS_EXAMINEDATA, data);
-    }
-    else return FALSE;
-
-    if (SilentMode || OverwriteAll) {
-	*restartpoint=0;
-	return FALSE;
-    }
-
-    
-    
-
+	int64 fileSize = 0;
+	struct ExamineData *data = ExamineObjectTags(EX_StringNameInput, lfile, TAG_END);
+	if (data) {
+		fileSize = data->FileSize;
+		FreeDosObject(DOS_EXAMINEDATA, data);
+	}
+	else return FALSE;
+//DebugPrintF("fileSize=%lld\n",fileSize);
+	if (SilentMode || OverwriteAll) {
+		*restartpoint=0;
+		return FALSE;
+	}
     /*
     tags[1]=(ULONG)GetAmiFTPString(Str_AmiFTPRequest);
     tags[3]=(ULONG)MainWindow;
     */
+	Gadgetstring=malloc(strlen(GetAmiFTPString(TW_OverwriteAll))+
+	                    strlen(GetAmiFTPString(TW_Overwrite))+
+	                    strlen(GetAmiFTPString(TW_Resume))+
+	                    strlen(GetAmiFTPString(TW_CancelTransfer))+6);
+	if (!Gadgetstring) {
+		return FALSE;
+	}
 
-    Gadgetstring=malloc(strlen(GetAmiFTPString(TW_OverwriteAll))+
-			strlen(GetAmiFTPString(TW_Overwrite))+
-			strlen(GetAmiFTPString(TW_Resume))+
-			strlen(GetAmiFTPString(TW_CancelTransfer))+6);
-    if (!Gadgetstring)
-    {
-      return FALSE;
-    }
-    if (fileSize>=size) {
-	sprintf(Gadgetstring,"%s|%s|%s", 
-		GetAmiFTPString(TW_Overwrite),
-		GetAmiFTPString(TW_OverwriteAll),
-		GetAmiFTPString(TW_CancelTransfer));
-
-
-
+	if (fileSize>=size) {
+		sprintf(Gadgetstring,"%s|%s|%s", 
+		                     GetAmiFTPString(TW_Overwrite),
+		                     GetAmiFTPString(TW_OverwriteAll),
+		                     GetAmiFTPString(TW_CancelTransfer));
         /*
 	ret=(BOOL)rtEZRequest(GetAmiFTPString(TW_FileExists), Gadgetstring, NULL,
 			      (struct TagItem *)tags, lfile, fib.fib_Size, size);
                   */
-             
-    ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), fileSize, size);
-	free(Gadgetstring);
-	*restartpoint=0;
-	if (ret==1)
-    {
-	  return FALSE;
+		ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), lfile, (ULONG)fileSize, size);
+		free(Gadgetstring);
+		*restartpoint=0;
+
+		if (ret==1) {
+			return FALSE;
+		}
+		if (ret==2) {
+			OverwriteAll = 1;
+			return FALSE;
+		}
 	}
-    if (ret==2) {
-	    OverwriteAll = 1;
-	    return FALSE;
-	}
-    }
-    else {    
-	sprintf(Gadgetstring,"%s|%s|%s|%s",
-		GetAmiFTPString(TW_Overwrite),
-		GetAmiFTPString(TW_OverwriteAll),
-		GetAmiFTPString(TW_Resume),
-		GetAmiFTPString(TW_CancelTransfer));
+	else {
+		sprintf(Gadgetstring,"%s|%s|%s|%s",
+		                     GetAmiFTPString(TW_Overwrite),
+		                     GetAmiFTPString(TW_OverwriteAll),
+		                     GetAmiFTPString(TW_Resume),
+		                     GetAmiFTPString(TW_CancelTransfer));
         /*
 	ret=(BOOL)rtEZRequest(GetAmiFTPString(TW_FileExists), Gadgetstring, NULL,
 			      (struct TagItem *)tags, lfile, fib.fib_Size, size);
                   */
-    ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), fileSize, size);
-	free(Gadgetstring);
-	if (ret==1)
-    {
-	  return FALSE;
-    }
-	if (ret==2) {
-	    OverwriteAll = 1;
-	    return FALSE;
+		ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), lfile, fileSize, size);
+		free(Gadgetstring);
+
+		if (ret==1) {
+			return FALSE;
+		}
+		if (ret==2) {
+			OverwriteAll = 1;
+			return FALSE;
+		}
+		if (ret==3) {
+			*restartpoint=fileSize;
+			return FALSE;
+		}
 	}
-	if (ret==3) {
-	    *restartpoint=fileSize;
-	    return FALSE;
-	}
-    }
-    return TRUE;
+
+	return TRUE;
 }
-static char tbufs[50];
 
+//static char tbufs[50];
 void SetTransferSize(const long size)
 {
-    sprintf(tbufs, "%ld", size);
-    FileSize=size;
-    fuelargs[0]=0;
-    fuelargs[1]=FileSize;
-    
-    if (TransferWindow) {
-	SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
-		       FUELGAUGE_VarArgs, &fuelargs,
-		       TAG_DONE);
-	RefreshGList((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL, 1);
-    }
+	//sprintf(tbufs, "%ld", size);
+	FileSize=size;
+	fuelargs[0]=0;
+	fuelargs[1]=FileSize;
+
+	if (TransferWindow) {
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
+		               FUELGAUGE_VarArgs, &fuelargs,
+		              TAG_DONE);
+		RefreshGList((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL, 1);
+	}
 }
 
-int get_file(char *name, char *localname, int size)
+int get_file(char *name, char *localname, ULONG size)
 {
-    int		rval;
-    ULONG restartpoint=0;
-    static char buf[50];
+	int rval;
+	ULONG restartpoint=0;
+	//static char buf[20];
 
-    if (TransferWindow) {
-	sprintf(buf,"%ld",size);
-	FileSize=size;
-	last=0;
-	if (SetGadgetAttrs((struct Gadget*)TG_List[TG_LocalFile], TransferWindow, NULL,
-			   GA_Underscore, '\n',
-			   GA_Text, localname,
-			   TAG_DONE))
-	  RefreshGList((struct Gadget*)TG_List[TG_LocalFile], TransferWindow, NULL, 1);
-	if (SetGadgetAttrs((struct Gadget*)TG_List[TG_RemoteFile], TransferWindow, NULL,
-			   GA_Text, name,
-			   TAG_DONE))
-	  RefreshGList((struct Gadget*)TG_List[TG_RemoteFile], TransferWindow, NULL, 1);
-	if (SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
-			   GA_Text,"0",
-			   TAG_DONE))
-	  RefreshGList((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL, 1);
-	fuelargs[0]=0;
-	fuelargs[1]=size;
-	SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
-		       FUELGAUGE_Level, 0,
-		       FUELGAUGE_VarArgs, &fuelargs,
-		       TAG_DONE);
-    }
-    if (CheckExists(localname, size, &restartpoint))
-      return TRSF_OK;
+	if (TransferWindow) {
+		//sprintf(buf,"%d",size);
+		FileSize=size;
+		last=0;
 
-    rval = recvrequest("RETR", localname, name, "w", restartpoint);
-    return rval;
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_LocalFile], TransferWindow, NULL,
+		               GA_Underscore,0, GA_Text,localname, TAG_DONE);
+
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_RemoteFile], TransferWindow, NULL,
+		               GA_Text,name, TAG_DONE);
+
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
+		               GA_Text,"0", TAG_DONE);
+
+		fuelargs[0]=0;
+		fuelargs[1]=size;
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
+		               FUELGAUGE_Level, 0,
+		               FUELGAUGE_VarArgs, &fuelargs,
+		              TAG_DONE);
+	}
+
+	if (CheckExists(localname, size, &restartpoint))
+		return TRSF_OK;
+
+	rval = recvrequest("RETR", localname, name, "w", restartpoint);
+
+	return rval;
 }
 
 char *make_path(char *parent, char *curdir)
 {
-    char	*tmp;
+	char	*tmp;
 
-    if (*curdir == '/') {
-	tmp = (char *)strdup(curdir);
-    } else {
-	tmp = (char *)calloc((unsigned int)(strlen(parent) + 1 +
-					    strlen(curdir) + 1),1);
-	if (tmp == NULL)
-	  return NULL;
-	strcpy(tmp, parent);
-	if (strcmp(parent, "/") && parent[strlen(parent)-1]!=':')
-	  strcat(tmp, "/");
-	strcat(tmp, curdir);
-    }
-    return tmp;
+	if (*curdir == '/') {
+		tmp = (char *)strdup(curdir);
+	}
+	else {
+		tmp = (char *)calloc((unsigned int)(strlen(parent) + 1 +
+		      strlen(curdir) + 1),1);
+
+		if (tmp == NULL) return NULL;
+
+		strcpy(tmp, parent);
+
+		if (strcmp(parent, "/") && parent[strlen(parent)-1]!=':')
+			strcat(tmp, "/");
+
+		strcat(tmp, curdir);
+	}
+
+	return tmp;
 }
 
 BOOL AskGetDir(void)
@@ -816,24 +814,23 @@ struct QueueEntry {
 	char *localname;
 	char *remote_parent;
 	char *local_parent;
-    };
+};
 
 void PrintQueue(struct List *queue)
 {
-    
-    struct QueueEntry *qe;
-    for (qe=(struct QueueEntry *)GetHead(queue);
-	 qe != NULL;
-	 qe=(struct QueueEntry *)GetSucc((struct Node *)qe)) {
-	Printf("remote_parent '%s' dirname '%s'\nlocal_parent '%s' localname '%s'\n",
-	       qe->remote_parent,qe->dirname,qe->local_parent,qe->localname);
-	Printf("----------------------------------------------------\n");
-    }
+	struct QueueEntry *qe;
+
+	for (qe=(struct QueueEntry *)GetHead(queue);
+	     qe != NULL;
+	     qe=(struct QueueEntry *)GetSucc((struct Node *)qe)) {
+		Printf("remote_parent '%s' dirname '%s'\nlocal_parent '%s' localname '%s'\n",
+qe->remote_parent,qe->dirname,qe->local_parent,qe->localname);
+		Printf("----------------------------------------------------\n");
+	}
 }
 
 int GetDir(char *remote_parent, char *local_parent, char *name, char *localname, const int binary)
 {
-   
     struct List Queue;
     struct QueueEntry *first,*entry;
     struct Node *node;
@@ -873,7 +870,7 @@ int GetDir(char *remote_parent, char *local_parent, char *name, char *localname,
     }
 
     AddHead(&Queue,(struct Node*)first);
-    while (entry=(struct QueueEntry *)RemTail(&Queue)) {
+    while ( (entry=(struct QueueEntry *)RemTail(&Queue)) ) {
 	char *ldir,*rdir;
 	struct dirlist *tmp;
 
@@ -1043,7 +1040,7 @@ int GetDir(char *remote_parent, char *local_parent, char *name, char *localname,
     command("CWD %s",remote_parent);
     return TRSF_OK;
   out:
-    while(entry=(struct QueueEntry *)RemHead(&Queue)) {
+    while( (entry=(struct QueueEntry *)RemHead(&Queue)) ) {
 	if (entry->filelist)
 	  free_dirlist(entry->filelist);
 	if (entry->remote_parent)
@@ -1054,6 +1051,7 @@ int GetDir(char *remote_parent, char *local_parent, char *name, char *localname,
 	  free(entry->localname);
 	free(entry);
     }
+
     command("CWD %s",remote_parent);
     return rval;
 }
@@ -1088,8 +1086,44 @@ void UpdateTransTitle(struct Node *node)
 	bytes/=(1024*1024);
 	sbytes="MB";
     }
-     
+
     sprintf(title, GetAmiFTPString(TW_WinTitle),
 	    numfiles, bytes, sbytes);
     SetAttrs(TransferWin_Object, WA_Title, title, TAG_DONE);
+}
+
+void showNotification(struct Screen *scr, int displaybeep, BOOL isDL)
+{
+	STRPTR txt = GetAmiFTPString(Str_Notify_UploadFinished);
+DBUG("showNotification(0x%08lx, %ld, %ld)\n",scr,displaybeep,isDL);
+	if(isDL) txt = GetAmiFTPString(Str_Notify_DownloadFinished);
+
+	switch(displaybeep) {
+		case 0: //Beep
+			DisplayBeep(scr);
+		break;
+		case 1: //Notify
+			displayNotification(scr, txt);
+		break;
+		case 2: //Beep & Notify
+			DisplayBeep(scr);
+			displayNotification(scr, txt);
+		break;
+		default: break; // Do nothing
+	}
+}
+
+void displayNotification(struct Screen *s, STRPTR txt)
+{
+DBUG("displayNotification() [0x%08lx] '%s'\n",appID,txt);
+	if(appID)
+		Notify(appID,
+		       APPNOTIFY_Title,         "AmiFTP",
+		       APPNOTIFY_Update,        TRUE,
+		       //APPNOTIFY_Pri,           0,
+		       APPNOTIFY_PubScreenName, "FRONT",
+		       APPNOTIFY_ImageFile,     "TBImages:ftp",
+		       //APPNOTIFY_CloseOnDC,     TRUE,
+		       APPNOTIFY_Text,          txt,
+		      TAG_DONE);
 }

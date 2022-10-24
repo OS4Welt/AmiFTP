@@ -4,7 +4,9 @@
 
 #include "AmiFTP.h"
 #include "gui.h"
-extern const char Version[];
+//extern const char Version[];
+#include "AmiFTP_rev.h"
+
 
 struct SiteNode curr_rexx;
 
@@ -39,6 +41,7 @@ static void  rexx_GetFile(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 	    else {
 		ac->ac_RC=RC_WARN;
 	    }
+Remove(node);
 	    FreeListBrowserNode(node);
 	}
 	else ac->ac_RC=RC_WARN;
@@ -82,6 +85,7 @@ static void rexx_View(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 	    else {
 		ac->ac_RC=RC_WARN;
 	    }
+Remove(node);
 	    FreeListBrowserNode(node);
 	}
 	else ac->ac_RC=RC_WARN;
@@ -163,6 +167,7 @@ static void rexx_MGetFile(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 	if (curr) {
 	    free(curr);
 	}
+Remove(node);
 	FreeListBrowserNode(node);
     }
 
@@ -201,7 +206,7 @@ static void  rexx_Connect(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 	else
 	  CurrentState.LoginName[0]=0;
 	if (curr_rexx.sn_Password)
-	  strncpy(CurrentState.Password, curr_rexx.sn_Password, 30);
+	  strncpy(CurrentState.Password, curr_rexx.sn_Password, 90);
 	else
 	  CurrentState.Password[0]=0;
 
@@ -368,7 +373,7 @@ static void rexx_Site(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
 	    else
 	      CurrentState.LoginName[0]=0;
 	    if (sn->sn_Password)
-	      strncpy(CurrentState.Password, sn->sn_Password, 30);
+	      strncpy(CurrentState.Password, sn->sn_Password, 90);
 	    else
 	      CurrentState.Password[0]=0;
 	    if (sn->sn_Node.ln_Name)
@@ -555,7 +560,8 @@ static void rexx_GetAttr(struct ARexxCmd *ac,  struct RexxMsg *rexxmsg)
     long err=0;
 
     strupr(args->stem);
-    err|=SetStemVar(rexxmsg, (STRPTR) Version, "%s.VERSION", args->stem);
+    //err|=SetStemVar(rexxmsg, (STRPTR) Version, "%s.VERSION", args->stem);
+    err|=SetStemVar(rexxmsg, VERSTAG, "%s.VERSION", args->stem);
     err|=SetStemVar(rexxmsg, MainPrefs.mp_PubScreen, "%s.SCREEN", args->stem);
     err|=SetStemVar(rexxmsg, CurrentState.CurrentSite, "%s.HOST", args->stem);
     sprintf(buff, "%ld", CurrentState.Port);
