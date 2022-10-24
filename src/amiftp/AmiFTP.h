@@ -45,6 +45,7 @@ extern struct Library *SocketBase;
 #include <proto/diskfont.h>
 #include <proto/locale.h>
 #include <devices/timer.h>
+#include <proto/application.h>
 
 #include <rexx/storage.h>
 #include <rexx/rxslib.h>
@@ -79,6 +80,8 @@ extern struct Library *SocketBase;
 #include "../tcphook/tcphooks.h"
 #include "dirlist_struct.h"
 #include "AmiFTP_Cat.h"
+
+#include "debug.h"
 
 #define USE_PROTOTYPES 1
 
@@ -206,8 +209,18 @@ struct SiteNode {
 };
 
 #define TEMPLATE "SITE,PUBSCREEN/K,FONT/K,FILEFONT/K,DEBUG/S,ICONIFIED/S,PORTNAME/K,SETTINGS/K,AS225/S"
-enum {OPT_SITE=0,OPT_SCREEN,OPT_FONT,OPT_FILEFONT,OPT_DEBUG,
-	OPT_ICONIFIED,OPT_PORTNAME,OPT_CONFIG,OPT_AS225,OPT_COUNT};
+enum {
+ OPT_SITE=0,
+ OPT_SCREEN,
+ OPT_FONT,
+ OPT_FILEFONT,
+ OPT_DEBUG,
+ OPT_ICONIFIED,
+ OPT_PORTNAME,
+ OPT_CONFIG,
+ OPT_AS225,
+ OPT_COUNT
+};
 struct CLIArguments {
     char *site;
     char *pubscreen;
@@ -246,7 +259,7 @@ struct CurrentState {
     struct TextFont *PropFont;
     struct TextFont *FixedFont;
 };
-    
+
 struct CacheNode {
     struct Node cn_Node;
     struct List *dirlist;
@@ -264,7 +277,7 @@ struct AGInfo {
 };
 extern struct AGInfo ag;
 extern ULONG AG_Signal;
-enum {AG_MAIN,
+enum { AG_MAIN,
 	AG_MENUCONNECT, AG_MENUDISCONNECT,
 	AG_MENURECONNECT, AG_MENURAWCOMMAND, AG_MENUADDTOSITELIST, AG_MENURESETADT, AG_MENUICONIFY,
 	AG_MENUABOUT,
@@ -277,7 +290,7 @@ enum {AG_MAIN,
 	AG_MENULOGWINDOW, AG_MENUTOGGLEDOT, AG_MENUTOGGLEADT, AG_MENULOADSETTINGS,
 	AG_MENUSAVESETTINGS, AG_MENUHOTLIST, AG_MAINWIN, AG_GLOBPREFS, AG_SITELIST,
 	AG_SITECONF, AG_TRANSWIN, AG_CONNECTWIN, AG_ABOUTWIN
-      };
+};
 
 /* Returncodes from lower level transfer routines */
 enum {TRSF_OK=0, TRSF_FAILED, TRSF_ABORTED, TRSF_BADFILE, TRSF_INITCONN};
@@ -336,31 +349,36 @@ extern struct TextAttr *ListViewAttrF;
 extern struct TextFont *PropFont;
 extern struct TextFont *LBFont;
 
-extern struct Library    *IntuitionBase;
-extern struct Library    *UtilityBase;
-extern struct Library    *GfxBase;
-extern struct Library    *DiskfontBase;
-extern struct Library    *AslBase;
-extern struct Library    *IFFParseBase;
-extern struct Library    *IconBase;
-extern struct Library    *RexxSysBase;
-extern struct Library    *WorkbenchBase;
-extern struct Library    *LocaleBase;
-extern struct Library    *AmigaGuideBase;
-extern struct Device     *TimerBase;
+extern struct Library *IntuitionBase;
+extern struct Library *UtilityBase;
+extern struct Library *GfxBase;
+extern struct Library *DiskfontBase;
+extern struct Library *AslBase;
+extern struct Library *IFFParseBase;
+extern struct Library *IconBase;
+extern struct Library *RexxSysBase;
+extern struct Library *WorkbenchBase;
+extern struct Library *LocaleBase;
+extern struct Library *AmigaGuideBase;
+extern struct Device  *TimerBase;
+extern struct Library *ApplicationLib;
 
-extern struct IntuitionIFace  *IIntuition;
-extern struct UtilityIFace    *IUtility;
-extern struct GraphicsIFace   *IGraphics;
-extern struct DiskfontIFace   *IDiskfont;
-extern struct AslIFace        *IAsl;
-extern struct IFFParseIFace   *IIFFParse;
-extern struct IconIFace       *IIcon;
-extern struct RexxSysIFace    *IRexxSys;
-extern struct WorkbenchIFace  *IWorkbench;
-extern struct LocaleIFace     *ILocale;
-extern struct AmigaGuideIFace *IAmigaGuide;
-extern struct TimerIFace      *ITimer;
+extern struct IntuitionIFace   *IIntuition;
+extern struct UtilityIFace     *IUtility;
+extern struct GraphicsIFace    *IGraphics;
+extern struct DiskfontIFace    *IDiskfont;
+extern struct AslIFace         *IAsl;
+extern struct IFFParseIFace    *IIFFParse;
+extern struct IconIFace        *IIcon;
+extern struct RexxSysIFace     *IRexxSys;
+extern struct WorkbenchIFace   *IWorkbench;
+extern struct LocaleIFace      *ILocale;
+extern struct AmigaGuideIFace  *IAmigaGuide;
+extern struct TimerIFace       *ITimer;
+extern struct ApplicationIFace *IApplication;
+
+
+//extern Class *TextEditorClass;
 
 
 extern struct MsgPort *RexxPort;
@@ -374,7 +392,7 @@ extern struct List TempList;
 extern struct Window *MainWindow;
 extern BOOL MenuNeedsUpdate;
 extern int TransferMode;
-
+extern ULONG appID;
 
 /* sprintf.c */
 void Sprintf(char *, const char *, ...);
@@ -416,7 +434,7 @@ int open_remote_ls(const int nlst);
 int initconn(void);
 int dataconn(void);
 void abort_remote(const int din);
-int recvrequest(char *cmd,char *local,char *remote,char *lmode,ULONG restartpoint);
+int recvrequest(char *cmd,char *local,char *remote,char *lmode, ULONG restartpoint);
 int sendrequest(char *cmd, char *local, char *remote);
 
 /* dofuncs.c */
@@ -479,11 +497,12 @@ int About(void);
 int SavePrefs(void);
 int SavePrefsAs(void);
 int LoadPrefs(void);
-void Rename_clicked();
-void CreateDir_clicked();
-void Delete_clicked();
+void Rename_clicked(void);
+void CreateDir_clicked(void);
+void Delete_clicked(void);
 void ViewFile(const char *file);
 char *NameToReadme(char *foo, int readmelen);
+void RawCommand_clicked(void);
 
 /* MainWindow.c */
 void UpdateMainButtons(const int state);
@@ -509,8 +528,8 @@ ULONG HandleConnectIDCMP(void);
 int DownloadFile(struct List *flist, const char *name, const int binary, const int move);
 int UploadFile(struct List *transferlist, const char *remote, const int binary);
 void UpdateDLGads(const long bytes, const long restart, const time_t timee);
-BOOL CheckExists(char *lfile,int size, ULONG *restartpoint);
-int get_file(char *name, char *localname, int size);
+BOOL CheckExists(char *lfile, ULONG size, ULONG *restartpoint);
+int get_file(char *name, char *localname, ULONG size);
 int get_dir(char *remote_parent, char *local_parent, char *name, char *localname);
 ULONG HandleTransferIDCMP(void);
 void SetTransferSize(const long size);
@@ -549,7 +568,7 @@ struct List *sort_ADT(struct List *list, int type);
 /* Menu.c */
 int BuildMenu(void);
 void UpdateMenus(void);
-#ifdef MENUCLASS
+#ifdef _MENUCLASS_
 Object *BuildMenuClass(struct Screen *);
 //void initMenuHotlist(void);
 void updateMenuHotlist(void);

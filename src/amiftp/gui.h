@@ -9,7 +9,7 @@
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
-#ifdef MENUCLASS
+#ifdef _MENUCLASS_
 	#include <intuition/menuclass.h> // menuclass
 #endif
 #include <libraries/gadtools.h>
@@ -130,14 +130,14 @@ enum {
     MG_SiteName, MG_DirName, MG_CacheList,
     //MG_DLString, MG_DLButton,
     MG_DLGetFile,
-    /*
-    MG_Parent, MG_Get, MG_Put, MG_View,
+    /*MG_Parent, MG_Get, MG_Put, MG_View,
     MG_Readme, MG_Get2, MG_Put2, MG_View2,
     MG_Connect, MG_Disconnect, MG_Reload,
-    MG_Page2, */
-    MG_SpeedBar,
+    MG_Page2,*/
+    MG_SpeedBarGroup, MG_SpeedBar,
     NumGadgets_main
   };
+
 void LBEditNode(Object *list, struct Window *window, struct Requester *r, struct Node *n, ULONG tag, ...);
 struct List *ChooserLabelsA(STRPTR *nameList);
 void FreeChooserLabels(struct List *list);
