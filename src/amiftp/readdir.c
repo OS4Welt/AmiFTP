@@ -3,6 +3,9 @@
 */
 
 #include "AmiFTP.h"
+#include <proto/listbrowser.h>
+//extern struct ColumnInfo columninfo[];
+extern struct ColumnInfo *columninfo;
 
 int parse_line(struct List *filelist,char *line,int *temp_non_unix);
 int parse_line_ls(struct List *filelist,char *line);
@@ -23,6 +26,17 @@ struct List *read_remote_dir()
     int	old_unix, temp_non_unix = 0;
     int          din = -1;
     int		vms_expect_dir;
+
+
+SetLBColumnInfoAttrs(columninfo,
+	LBCIA_Column,0, LBCIA_Weight,40,
+	LBCIA_Column,1, LBCIA_Weight,15, LBCIA_Separator,TRUE,
+	LBCIA_Column,2, LBCIA_Weight,10, LBCIA_Separator,TRUE,
+	LBCIA_Column,3, LBCIA_Weight,15, LBCIA_Separator,TRUE,
+	LBCIA_Column,4, LBCIA_Weight,10, LBCIA_Separator,TRUE,
+	LBCIA_Column,5, LBCIA_Weight,10, LBCIA_Separator,TRUE,
+TAG_DONE);
+
 
   restart:
     old_unix = temp_non_unix;
@@ -172,19 +186,19 @@ int	parse_line_pattern(struct List *filelist, char *pattern,
 {
 	/* default mode is a symbolic link. This is so if you don't have */
 	/* UNIX PERMS, it can be either a file or a directory. Maybe.  */
-	mode_t	mode = S_IFLNK;
-	int		intmode;
-	char	*curr;
-	static char	date[20];
-	static char	month[10];
-	static char	day[10];
-	static char	timeyear[10];
-	static char	name[MAXPATHLEN + 1];
+	mode_t mode = S_IFLNK;
+	int intmode;
+	char *curr;
+	static char date[20];
+	static char month[10];
+	static char day[10];
+	static char timeyear[10];
+	static char name[MAXPATHLEN + 1];
 	static char owner[25];
 	static char group[25];
-	int64  size = (int64)-1;
-	char	*tmp;
-	char	*dirtmp;
+	int64 size = (int64)-1;
+	char *tmp;
+	char *dirtmp;
 
 	month[0] = '\0';
 	day[0] = '\0';
@@ -616,15 +630,15 @@ int	parse_line_dos(struct List *filelist, char *line, int *temp_non_unix)
 
 	/* Format is */
 	/*
-    	 * 	33430            IO.SYS   Tue Apr 09 05:00:00 1991
-    	 * 	37394         MSDOS.SYS   Tue Apr 09 05:00:00 1991
-    	 * 	47845       COMMAND.COM   Tue Apr 09 05:00:00 1991
+	 *      33430            IO.SYS   Tue Apr 09 05:00:00 1991
+	 *      37394         MSDOS.SYS   Tue Apr 09 05:00:00 1991
+	 *      47845       COMMAND.COM   Tue Apr 09 05:00:00 1991
 	 * <dir>                    DOS   Wed Sep 23 19:43:32 1992
 	 * <dir>                  WPWIN   Fri Oct 30 03:04:50 1992
-     	 * 	9349         WINA20.386   Tue Apr 09 05:00:00 1991
+	 *      9349         WINA20.386   Tue Apr 09 05:00:00 1991
 	 * <dir>                VWCOMMS   Tue Dec 01 02:52:44 1992
-     	 * 	123          CONFIG.SYS   Fri Nov 27 03:17:40 1992
-     	 * 	589        AUTOEXEC.BAT   Tue Dec 01 02:42:42 1992
+	 *      123          CONFIG.SYS   Fri Nov 27 03:17:40 1992
+	 *      589        AUTOEXEC.BAT   Tue Dec 01 02:42:42 1992
 	 */
 	curr = line;
 	while (isspace(*curr))

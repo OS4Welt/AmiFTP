@@ -8,8 +8,7 @@
 static void CloseRecent(const int sin);
 static int OpenRecent(void);
 static void ParseRecentLine(long *date, long *length, long *readmelen,
-			    long *readmesize, char *dir, char *name, 
-			    char *desc, char *buf);
+                            long *readmesize, char *dir, char *name, char *desc, char *buf);
 static int ParseADT(struct List *list, char *buffer);
 
 static ULONG lastscanned;
@@ -23,6 +22,17 @@ struct List *ReadRecentList(void)
     struct List *filelist;
     struct Node *node;
     int din=-1;
+
+
+SetLBColumnInfoAttrs(columninfo,
+	LBCIA_Column,0, LBCIA_Weight,30,
+	LBCIA_Column,1, LBCIA_Weight,14, LBCIA_Separator,TRUE,
+	LBCIA_Column,2, LBCIA_Weight,14, LBCIA_Separator,TRUE,
+	LBCIA_Column,3, LBCIA_Weight,40, LBCIA_Separator,TRUE,
+	LBCIA_Column,4, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,5, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+TAG_DONE);
+
 
     filelist=(struct List *)malloc(sizeof(struct List));
     if (!filelist) {
@@ -104,20 +114,30 @@ struct List *ReadRecentList(void)
     }
 
     if (!node) {
+
+SetLBColumnInfoAttrs(columninfo,
+	LBCIA_Column,0, LBCIA_Weight,95,
+	LBCIA_Column,1, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,2, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,3, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,4, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,5, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+TAG_DONE);
+
 	node=AllocListBrowserNode(6,
 				  LBNA_Flags, LBFLG_READONLY,
 				  LBNA_Column, 0,
-				  LBNCA_Text, GetAmiFTPString(Str_NoNewAminetFiles),
+				   LBNCA_Text, GetAmiFTPString(Str_NoNewAminetFiles),
 				  LBNA_Column, 1,
-				  LBNCA_Text, "",
+				   LBNCA_Text, "",
 				  LBNA_Column, 2,
-				  LBNCA_Text, "",
+				   LBNCA_Text, "",
 				  LBNA_Column, 3,
-				  LBNCA_Text, "",
+				   LBNCA_Text, "",
 				  LBNA_Column, 4,
-				  LBNCA_Text, "",
+				   LBNCA_Text, "",
 				  LBNA_Column, 5,
-				  LBNCA_Text, "",
+				   LBNCA_Text, "",
 				  TAG_DONE);
 	if (node)
 	  AddTail(filelist, node);
@@ -241,20 +261,21 @@ static int ParseADT(struct List *list, char *buffer)
 	if (tmp=AllocListBrowserNode(6,
 				     LBNA_UserData, entry,
 				     LBNA_Column, 0,
-				     LBNCA_Text, entry->name,
+				      LBNCA_Text, entry->name,
 				     LBNA_Column, 1,
-                     LBNCA_Text, entry->stringSize,
-				     LBNCA_Justification, LCJ_RIGHT,
+				      LBNCA_Text, entry->stringSize,
+				      LBNCA_Justification, LCJ_RIGHT,
 				     LBNA_Column, 2,
-				     LBNCA_Text, entry->owner,
+				      LBNCA_Text, entry->owner,
+				      LBNCA_Justification, LCJ_CENTRE,
 				     LBNA_Column, 3,
-				     LBNCA_Text, entry->group,
+				      LBNCA_Text, entry->group,
 				     LBNA_Column, 4,
-				     LBNCA_CopyText, TRUE,
-				     LBNCA_Text, "",
+				      LBNCA_CopyText, TRUE,
+				      LBNCA_Text, "",
 				     LBNA_Column,5,
-				     LBNCA_CopyText, TRUE,
-				     LBNCA_Text, "",
+				      LBNCA_CopyText, TRUE,
+				      LBNCA_Text, "",
 				     TAG_DONE)) {
 	    if (SortMode==SORTBYNAME) {
 		for (node=GetHead(list); node; node=GetSucc(node))

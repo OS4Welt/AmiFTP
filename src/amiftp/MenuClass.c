@@ -6,39 +6,39 @@
 #include "gui.h"
 
 static int menu_Connect(struct MenuItem *menuitem);
-static int menu_Disconnect(struct MenuItem *menuitem);
+//static int menu_Disconnect(struct MenuItem *menuitem);
 static int menu_Parent(struct MenuItem *menuitem);
 static int menu_Get(struct MenuItem *menuitem);
 static int menu_Put(struct MenuItem *menuitem);
 static int menu_View(struct MenuItem *menuitem);
 static int menu_Quit(struct MenuItem *menuitem);
-static int menu_CreateDir(struct MenuItem *menuitem);
+//static int menu_CreateDir(struct MenuItem *menuitem);
 static int menu_SortByName(struct MenuItem *menuitem);
 static int menu_SortByDate(struct MenuItem *menuitem);
 static int menu_Iconify(struct MenuItem *menuitem);
 static int menu_SelectAll(struct MenuItem *menuitem);
 static int menu_UnselectAll(struct MenuItem *menuitem);
-static int menu_Delete(struct MenuItem *menuitem);
-static int menu_Move(struct MenuItem *menuitem);
-static int menu_ClearCache(struct MenuItem *menuitem);
+//static int menu_Delete(struct MenuItem *menuitem);
+//static int menu_Move(struct MenuItem *menuitem);
+//static int menu_ClearCache(struct MenuItem *menuitem);
 static int menu_HostlistPrefs(struct MenuItem *menuitem);
-static int menu_BinaryTransferMode(struct MenuItem *menuitem);
-static int menu_AsciiTransferMode(struct MenuItem *menuitem);
+//static int menu_BinaryTransferMode(struct MenuItem *menuitem);
+//static int menu_AsciiTransferMode(struct MenuItem *menuitem);
 static int menu_ResetADT(struct MenuItem *menuitem);
 	static int menu_ToggleADT(uint32 selected);
 	static int menu_ToggleDotFiles(uint32 selected);
 	static int menu_LogWindow(uint32 selected);
 static int menu_AddToSitelist(struct MenuItem *menuitem);
-static int menu_LoadPrefs(struct MenuItem *menuitem);
-static int menu_SavePrefs(struct MenuItem *menuitem);
-static int menu_SavePrefsAs(struct MenuItem *menuitem);
-static int menu_About(struct MenuItem *menuitem);
+//static int menu_LoadPrefs(struct MenuItem *menuitem);
+//static int menu_SavePrefs(struct MenuItem *menuitem);
+//static int menu_SavePrefsAs(struct MenuItem *menuitem);
+//static int menu_About(struct MenuItem *menuitem);
 static int menu_Reconnect(struct MenuItem *menuitem);
 static int menu_OpenPrefsWindow(struct MenuItem *menuitem);
 static int menu_PatternSelect(struct MenuItem *menuitem);
 static int menu_ViewReadme(struct MenuItem *menuitem);
-static int menu_RawCommand(struct MenuItem *menuitem);
-static int menu_Rename(struct MenuItem *menuitem);
+//static int menu_RawCommand(struct MenuItem *menuitem);
+//static int menu_Rename(struct MenuItem *menuitem);
 
 
 Object *menustripobj, *hotlistmenu;
@@ -97,7 +97,6 @@ enum {
 };
 
 //struct Menu *menu;
-//Class *RequesterClass;
 
 
 struct Image *MenuImage(CONST_STRPTR name, struct Screen *screen)
@@ -154,11 +153,10 @@ struct Image *MenuImage(CONST_STRPTR name, struct Screen *screen)
 
 void initMenuHotlist(void)
 {
-//DebugPrintF("initMenuHotlist()\n",NULL);
+DBUG("initMenuHotlist() 0x%08lx (0x%08lx)\n",hotlistmenu,menustripobj);
 	//Clear hotlist menu items
 	IDoMethod(menustripobj, OM_REMMEMBER, hotlistmenu);
 	DisposeObject(hotlistmenu);
-
 	//"Reattach" hotlist menu
 	hotlistmenu = NewObject(NULL, "menuclass",
 	                        MA_Type,T_MENU, MA_Label,GetAmiFTPString(MENU_HotList),
@@ -170,21 +168,19 @@ void initMenuHotlist(void)
 void updateMenuHotlist(void)
 {
 	struct SiteNode *ptr;
-	struct Node *lbn = GetHead(&SiteList);
+	struct Node *lbn;
 	Object *menuitem, *menugroup;
 	uint32 item_ID = MNU_HotListTitle;
-//DebugPrintF("updateMenuHotlist() 0x%08lx\n",MainWindow);
-//	SetAttrs(MainWin_Object, WINDOW_MenuStrip,NULL, TAG_DONE); // "remove" menu from window
-
+DBUG("updateMenuHotlist() 0x%08lx\n",hotlistmenu);
 	initMenuHotlist(); //clear hotlist menu items & reattach
 
 	menugroup = hotlistmenu;
 
-	for ( ; lbn; lbn=GetSucc(lbn) ) {
+	for ( lbn=GetHead(&SiteList); lbn; lbn=GetSucc(lbn) ) {
 		GetListBrowserNodeAttrs(lbn, LBNA_UserData,&ptr, TAG_DONE);
 		if(ptr) {
 			if(ptr->sn_HotList) {
-//DebugPrintF("group=%ld '%s' (0x%08lx)\n",ptr->sn_MenuType,ptr->sn_Node.ln_Name,ptr);
+//DBUG("group=%ld '%s' (0x%08lx)\n",ptr->sn_MenuType,ptr->sn_Node.ln_Name,ptr);
 				//Separator
 				if(ptr->sn_BarLabel) { menuitem = NewObject(NULL, "menuclass", MA_Type,T_ITEM, MA_Separator,TRUE, TAG_END); }
 				//Group
@@ -203,13 +199,12 @@ void updateMenuHotlist(void)
 				}
 				//SetAttrs(hotlistmenu, MA_AddChild,menuitem, TAG_END);
 				IDoMethod(menugroup, OM_ADDMEMBER, menuitem);
-//DebugPrintF("\t0x%08lx (0x%08lx)\n",item_ID,ptr);
+//DBUG("\t0x%08lx (0x%08lx)\n",item_ID,ptr);
 				if(ptr->sn_MenuType) { menugroup = menuitem; } // insert sites on this group
 			}
 		}
 	}
 
-//	SetAttrs(MainWin_Object, WINDOW_MenuStrip,menustripobj, TAG_DONE); // reattach menu
 }
 
 Object *BuildMenuClass(struct Screen *scr)
@@ -255,7 +250,7 @@ Object *BuildMenuClass(struct Screen *scr)
         MA_ID,    MNU_Iconify,
         MA_Image, MenuImage("iconify",scr),
       TAG_END),
-      MA_AddChild, NewObject(NULL, "menuclass", MA_Type,T_ITEM, MA_Separator,TRUE, TAG_END),
+      //MA_AddChild, NewObject(NULL, "menuclass", MA_Type,T_ITEM, MA_Separator,TRUE, TAG_END),
       MA_AddChild, NewObject(NULL, "menuclass",
         MA_Type,T_ITEM, MA_Label,GetAmiFTPString(MENU_About),
         MA_ID,    MNU_About,
@@ -433,7 +428,7 @@ Object *BuildMenuClass(struct Screen *scr)
 //Added/created on updateMenuHotlist()
 
 	TAG_DONE);
-
+DBUG("BuildMenuClass() 0x%08lx\n",menuobj);
 	return(menuobj);
 }
 
@@ -455,7 +450,7 @@ int HandleMenus(int32 mitem)
 			res = menu_Reconnect(NULL);
 		break;
 		case MNU_RawCommand:
-			//CreateDir_clicked();
+			RawCommand_clicked();
 		break;
 		case MNU_AddToSiteList:
 			res = menu_AddToSitelist(NULL);
@@ -569,11 +564,12 @@ int HandleMenus(int32 mitem)
 
 int BuildMenu(void)
 {
+	return 1;
 }
 
 void UpdateMenus(void)
 {
-//DebugPrintF("UpdateMenus()\n",NULL);
+DBUG("UpdateMenus()\n",NULL);
 	updateMenuHotlist();
 }
 
@@ -680,40 +676,40 @@ static int menu_UnselectAll(struct MenuItem *menuitem)
 	return 1;
 }
 
-static int menu_Delete(struct MenuItem *menuitem)
+/*static int menu_Delete(struct MenuItem *menuitem)
 {
     Delete_clicked();
     return 1;
-}
+}*/
 
-static int menu_CreateDir(struct MenuItem *menuitem)
+/*static int menu_CreateDir(struct MenuItem *menuitem)
 {
     CreateDir_clicked();
     return 1;
-}
+}*/
 
-static int menu_RawCommand(struct MenuItem *menuitem)
+/*static int menu_RawCommand(struct MenuItem *menuitem)
 {
     //CreateDir_clicked();
     return 1;
-}
+}*/
 
-static int menu_Rename(struct MenuItem *menuitem)
+/*static int menu_Rename(struct MenuItem *menuitem)
 {
     Rename_clicked();
     return 1;
-}
+}*/
 
-static int menu_Move(struct MenuItem *menuitem)
+/*static int menu_Move(struct MenuItem *menuitem)
 {
     return 1;
-}
+}*/
 
-static int menu_ClearCache(struct MenuItem *menuitem)
+/*static int menu_ClearCache(struct MenuItem *menuitem)
 {
     ClearCache(FALSE);
     return 1;
-}
+}*/
 
 static int menu_HostlistPrefs(struct MenuItem *menuitem)
 {
@@ -724,23 +720,23 @@ static int menu_HostlistPrefs(struct MenuItem *menuitem)
     return 17;
 }
 
-static int menu_BinaryTransferMode(struct MenuItem *menuitem)
+/*static int menu_BinaryTransferMode(struct MenuItem *menuitem)
 {
 	if (TransferMode!=BINARY) {
 		TransferMode=BINARY;
 	}
 
 	return 1;
-}
+}*/
 
-static int menu_AsciiTransferMode(struct MenuItem *menuitem)
+/*static int menu_AsciiTransferMode(struct MenuItem *menuitem)
 {
 	if (TransferMode!=ASCII) {
 		TransferMode=ASCII;
 	}
 
 	return 1;
-}
+}*/
 
 static int menu_ResetADT(struct MenuItem *menuitem)
 {
@@ -796,6 +792,7 @@ static int menu_ToggleADT(uint32 selected)//struct MenuItem *menuitem)
 					GetListBrowserNodeAttrs(node,LBNA_Flags, &flags, TAG_DONE);
 					if (!(flags&LBFLG_HIDDEN)) break;
 				}
+
 				if (!node) {
 					SetLBColumnInfoAttrs(columninfo,
 					                    LBCIA_Column,0, LBCIA_Weight,95,
@@ -820,9 +817,10 @@ static int menu_ToggleADT(uint32 selected)//struct MenuItem *menuitem)
 					      LBNA_Column, 5,
 					        LBNCA_Text, "",
 					     TAG_DONE);
-					if (node)
-						AddTail(FileList,node);
+
+					if (node) AddTail(FileList,node);
 				}
+
 				if (SetGadgetAttrs((struct Gadget*) MG_List[MG_ListView], MainWindow, NULL,
 				                   LISTBROWSER_Labels, FileList,
 				                   //LISTBROWSER_AutoFit, TRUE,
@@ -830,16 +828,13 @@ static int menu_ToggleADT(uint32 selected)//struct MenuItem *menuitem)
 				{
 					RefreshGList((struct Gadget*) MG_List[MG_ListView], MainWindow, NULL, 1);
 				}
-				GetAttr(LISTBROWSER_Selected, MG_List[MG_ListView], &attr);
-				if (attr) {
-					UpdateMainButtons(MB_FILESELECTED);
-				}
-				else {
-					UpdateMainButtons(MB_NONESELECTED);
-				}
-			}
-			MainPrefs.mp_ShowAllADTFiles=FALSE;
 
+				GetAttr(LISTBROWSER_Selected, MG_List[MG_ListView], &attr);
+				if (attr) { UpdateMainButtons(MB_FILESELECTED); }
+				else { UpdateMainButtons(MB_NONESELECTED); }
+			}
+
+			MainPrefs.mp_ShowAllADTFiles=FALSE;
 	}
 
 	UpdateWindowTitle();
@@ -878,15 +873,11 @@ static int menu_ToggleDotFiles(uint32 selected)//struct MenuItem *menuitem)
 				}
 				AttachToolList(FALSE);
 				GetAttr(LISTBROWSER_Selected, MG_List[MG_ListView], &attr);
-				if (attr) {
-					UpdateMainButtons(MB_FILESELECTED);
-				}
-				else {
-					UpdateMainButtons(MB_NONESELECTED);
-				}
+				if (attr) { UpdateMainButtons(MB_FILESELECTED); }
+				else { UpdateMainButtons(MB_NONESELECTED); }
 			}
-			MainPrefs.mp_Showdotfiles=FALSE;
 
+			MainPrefs.mp_Showdotfiles=FALSE;
 	}
 
 	return 1;
@@ -908,67 +899,68 @@ static int menu_LogWindow(uint32 selected)
 
 static int menu_AddToSitelist(struct MenuItem *menuitem)
 {
-    struct SiteNode *sn;
+	struct SiteNode *sn;
 
-    if (!TCPStack)
-      return 1;
+	if (!TCPStack) return 1;
 
-    if (CurrentState.CurrentSite[0]==0)
-      return 1;
- 
-    sn=(struct SiteNode*) AllocVecTags(sizeof(struct SiteNode), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
-    if (sn) {
-	sn->sn_Node.ln_Name=strdup(CurrentState.CurrentSite);
-	if (!sn->sn_Node.ln_Name) {
-	    FreeVec(sn);
-	    return 1;
-	}
-	sn->sn_SiteAddress=strdup(CurrentState.CurrentSite);
-	if (!sn->sn_Node.ln_Name) {
-	    free(sn->sn_Node.ln_Name);
-	    FreeVec(sn);
-	    return 1;
-	}
-	sn->sn_RemoteDir=strdup(CurrentState.CurrentRemoteDir);
-	if (!sn->sn_RemoteDir) {
-	    free(sn->sn_Node.ln_Name);
-	    free(sn->sn_SiteAddress);
-	    FreeVec(sn);
-	    return 1;
-	}
-	sn->sn_Port=21;
-	sn->sn_Proxy=MainPrefs.mp_DefaultProxy;
-	sn->sn_Anonymous=1;
-	AddLBNTail(&SiteList, sn);
-	ConfigChanged=TRUE;
-    }
+	if (CurrentState.CurrentSite[0]==0) return 1;
 
-    return 1;
+	sn=(struct SiteNode*) AllocVecTags(sizeof(struct SiteNode), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
+	if (sn) {
+		sn->sn_Node.ln_Name=strdup(CurrentState.CurrentSite);
+		if (!sn->sn_Node.ln_Name) {
+			FreeVec(sn);
+			return 1;
+		}
+
+		sn->sn_SiteAddress=strdup(CurrentState.CurrentSite);
+		if (!sn->sn_Node.ln_Name) {
+			free(sn->sn_Node.ln_Name);
+			FreeVec(sn);
+			return 1;
+		}
+
+		sn->sn_RemoteDir=strdup(CurrentState.CurrentRemoteDir);
+		if (!sn->sn_RemoteDir) {
+			free(sn->sn_Node.ln_Name);
+			free(sn->sn_SiteAddress);
+			FreeVec(sn);
+			return 1;
+		}
+
+		sn->sn_Port=21;
+		sn->sn_Proxy=MainPrefs.mp_DefaultProxy;
+		sn->sn_Anonymous=1;
+		AddLBNTail(&SiteList, sn);
+		ConfigChanged=TRUE;
+	}
+
+	return 1;
 }
 
-static int menu_LoadPrefs(struct MenuItem *menuitem)
+/*static int menu_LoadPrefs(struct MenuItem *menuitem)
 {
     LoadPrefs();
     return 1;
-}
+}*/
 
-static int menu_SavePrefs(struct MenuItem *menuitem)
+/*static int menu_SavePrefs(struct MenuItem *menuitem)
 {
     SavePrefs();
     return 1;
-}
+}*/
 
-static int menu_SavePrefsAs(struct MenuItem *menuitem)
+/*static int menu_SavePrefsAs(struct MenuItem *menuitem)
 {
     SavePrefsAs();
     return 1;
-}
+}*/
 
-static int menu_About(struct MenuItem *menuitem)
+/*static int menu_About(struct MenuItem *menuitem)
 {
     About();
     return 1;
-}
+}*/
 
 static int menu_Reconnect(struct MenuItem *menuitem)
 {
@@ -988,48 +980,43 @@ static int menu_Connect(struct MenuItem *menuitem)
     return 17;
 }
 
-static int menu_Disconnect(struct MenuItem *menuitem)
+/*static int menu_Disconnect(struct MenuItem *menuitem)
 {
     Disconnect_clicked();
     return 1;
-}
+}*/
 
 static int menu_Parent(struct MenuItem *menuitem)
 {
-    if (FileList && connected && !CurrentState.ADTMode)
-      Parent_clicked();
+    if (FileList && connected && !CurrentState.ADTMode) Parent_clicked();
 
     return 1;
 }
 
 static int menu_Get(struct MenuItem *menuitem)
 {
-    if (FileList && connected)
-      Get_clicked();
+    if (FileList && connected) Get_clicked();
 
     return 1;
 }
 
 static int menu_Put(struct MenuItem *menuitem)
 {
-    if (connected)
-      Put_clicked();
+    if (connected) Put_clicked();
 
     return 1;
 }
 
 static int menu_View(struct MenuItem *menuitem)
 {
-    if (FileList && connected)
-      View_clicked(FALSE);
+    if (FileList && connected) View_clicked(FALSE);
 
     return 1;
 }
 
 static int menu_ViewReadme(struct MenuItem *menuitem)
 {
-    if (FileList && connected && CurrentState.ADTMode)
-      View_clicked(TRUE);
+    if (FileList && connected && CurrentState.ADTMode) View_clicked(TRUE);
 
     return 1;
 }
@@ -1084,9 +1071,7 @@ static int menu_PatternSelect(struct MenuItem *menuitem)
 
 			if (!(flags&LBFLG_HIDDEN)) {
 				if (MatchPatternNoCase(pattern, ((struct dirlist *)node->ln_Name)->name)) {
-					SetListBrowserNodeAttrs(node,
-					                        LBNA_Selected, TRUE,
-					                        TAG_DONE);
+					SetListBrowserNodeAttrs(node, LBNA_Selected, TRUE, TAG_DONE);
 					n=1;
 				}
 			}
