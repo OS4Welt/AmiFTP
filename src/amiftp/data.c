@@ -41,22 +41,24 @@ char    *other_dir_pattern;
 char    *unix_dir_pattern= "\001 \002 \003 \004 \005 \006 \007 \010 \011";
 char    *defaultanonymouspw;
 
-struct Library    *IntuitionBase;
-struct Library          *UtilityBase;
-struct Library          *GfxBase;
-struct Library          *DiskfontBase;
-struct Library          *AslBase;
-struct Library          *IFFParseBase;
-struct Library          *RexxSysBase;
-struct Library         *IconBase;
-struct Library    *WorkbenchBase;
-struct Library          *LocaleBase;
-struct Library          *AmigaGuideBase;
-struct Device          *TimerBase;
+struct Library *IntuitionBase;
+struct Library *UtilityBase;
+struct Library *GfxBase;
+struct Library *DiskfontBase;
+struct Library *AslBase;
+struct Library *IFFParseBase;
+struct Library *RexxSysBase;
+struct Library *IconBase;
+struct Library *WorkbenchBase;
+struct Library *LocaleBase;
+struct Library *AmigaGuideBase;
+struct Device  *TimerBase;
+struct Library *ApplicationLib;
+
 struct AGInfo ag;
 
-struct MsgPort          *RexxPort;
-struct MsgPort          *TimerPort;
+struct MsgPort     *RexxPort;
+struct MsgPort     *TimerPort;
 struct TimeRequest *TimeRequest;
 ULONG AG_Signal=0UL;
 
@@ -145,125 +147,117 @@ int stcgfn(char *node, char *name, int size)
 
  __attribute__((linearvarargs)) int showStringRequester(struct Window *window, BOOL invisible, STRPTR icon, STRPTR Title, STRPTR Gadget, STRPTR buffer, uint32 maxChars, STRPTR Body, ...)
 {
-     static struct TagItem tags[] = {
-     { REQ_Type, REQTYPE_STRING },
-     { REQ_TitleText, 0UL},
-     { REQ_BodyText, 0UL},
-     { REQ_GadgetText, (ULONG)"_Ok|_Cancel" },
-     { REQ_VarArgs, 0UL},
-     { REQ_Image, 0UL} ,
-     { REQS_Buffer, 0UL },
-     { REQS_MaxChars, 0UL },
-     {REQS_Invisible, 0UL},
-     { TAG_END, 0 }
-     };
+	static struct TagItem tags[] = {
+		{ REQ_Type,       REQTYPE_STRING },
+		{ REQ_TitleText,  0UL},
+		{ REQ_BodyText,   0UL},
+		{ REQ_GadgetText, (ULONG)"_Ok|_Cancel" },
+		{ REQ_VarArgs,    0UL},
+		{ REQ_Image,      0UL} ,
+		{ REQS_Buffer,    0UL},
+		{ REQS_MaxChars,  0UL},
+		{REQS_Invisible,  0UL},
+		{ TAG_END, 0 }
+	};
 
-    tags[6].ti_Data = (Tag) buffer;
-    tags[7].ti_Data = (Tag) maxChars;
-    if (invisible)
-        tags[8].ti_Data = 1;
-    static struct orRequest reqmsg;
+	tags[6].ti_Data = (Tag)buffer;
+	tags[7].ti_Data = (Tag)maxChars;
+	if (invisible) tags[8].ti_Data = 1;
 
-    reqmsg.MethodID = RM_OPENREQ;
+	static struct orRequest reqmsg;
+
+	reqmsg.MethodID  = RM_OPENREQ;
 	reqmsg.or_Window = window;
 	reqmsg.or_Screen = NULL;
-	reqmsg.or_Attrs = tags;
+	reqmsg.or_Attrs  = tags;
 
-    int result = 0;
+	int result = 0;
 
-    tags[5].ti_Data = REQIMAGE_INFO;
-    Object *pictureImage = NULL;
-    if ((Tag)icon>REQIMAGE_INSERTDISK)
-    {
-    	pictureImage = NewObject(NULL, "bitmap.image",
-					   BITMAP_SourceFile, icon,
-					   BITMAP_Screen, window->WScreen,
-					   BITMAP_Precision, PRECISION_EXACT,
-					   BITMAP_Masking, TRUE,
-					   TAG_END);
-		if (pictureImage)
-        {
-        	tags[5].ti_Data = (Tag)pictureImage;
-            }
-    }
-    else tags[5].ti_Data = (Tag)icon;
+	tags[5].ti_Data = REQIMAGE_INFO;
 
-    Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
-    if (requester==NULL) return result;
+	Object *pictureImage = NULL;
+	if ((Tag)icon>REQIMAGE_INSERTDISK)
+	{
+		pictureImage = NewObject(BitMapClass, NULL, //"bitmap.image",
+		                         BITMAP_SourceFile, icon,
+		                         BITMAP_Screen, window->WScreen,
+		                         BITMAP_Precision, PRECISION_EXACT,
+		                         BITMAP_Masking, TRUE,
+		                        TAG_END);
+		if (pictureImage) { tags[5].ti_Data = (Tag)pictureImage; }
+	}
+	else tags[5].ti_Data = (Tag)icon;
 
+	Object *requester = NewObject(RequesterClass, NULL, /*"requester.class",*/ TAG_DONE);
+	if (requester==NULL) return result;
 
-    va_list ap;
-
+	va_list ap;
 	va_startlinear(ap, Body);
-    tags[1].ti_Data = (Tag)Title;
+	tags[1].ti_Data = (Tag)Title;
 	tags[2].ti_Data = (Tag)Body;
-    if (Gadget)
-		tags[3].ti_Data = (Tag)Gadget;
-    tags[4].ti_Data = (Tag)va_getlinearva(ap, void *);
-    result = IDoMethodA(requester, (Msg) &reqmsg);
-    va_end(ap);
+	if (Gadget) tags[3].ti_Data = (Tag)Gadget;
+	tags[4].ti_Data = (Tag)va_getlinearva(ap, void *);
+	result = IDoMethodA(requester, (Msg) &reqmsg);
+	va_end(ap);
 
-    DisposeObject(requester);
-    if (pictureImage) DisposeObject(pictureImage);
-    return result;
+	DisposeObject(requester);
+	if (pictureImage) DisposeObject(pictureImage);
+
+	return result;
 }
 
  __attribute__((linearvarargs)) int showRequester(struct Window *window, STRPTR icon, STRPTR Title, STRPTR Gadget, STRPTR Body, ...)
 {
-     static struct TagItem tags[] = {
-     { REQ_Type, REQTYPE_INFO },
-     { REQ_TitleText, 0UL},
-     { REQ_BodyText, 0UL},
-     { REQ_GadgetText, (ULONG)"_Ok" },
-     { REQ_VarArgs, 0UL},
-     { REQ_Image, 0UL} ,
-     { TAG_END, 0 }
-     };
-                
-    static struct orRequest reqmsg;
+	static struct TagItem tags[] = {
+		{ REQ_Type,       REQTYPE_INFO },
+		{ REQ_TitleText,  0UL },
+		{ REQ_BodyText,   0UL },
+		{ REQ_GadgetText, (ULONG)"_Ok" },
+		{ REQ_VarArgs,    0UL },
+		{ REQ_Image,      0UL },
+		{ TAG_END, 0 }
+	};
 
-    reqmsg.MethodID = RM_OPENREQ;
+	static struct orRequest reqmsg;
+
+	reqmsg.MethodID  = RM_OPENREQ;
 	reqmsg.or_Window = window;
 	reqmsg.or_Screen = NULL;
-	reqmsg.or_Attrs = tags;
+	reqmsg.or_Attrs  = tags;
 
-    int result = 0;
+	int result = 0;
 
-    tags[5].ti_Data = REQIMAGE_INFO;
-    Object *pictureImage = NULL;
-    if ((Tag)icon>REQIMAGE_INSERTDISK)
-    {
-    	pictureImage = NewObject(NULL, "bitmap.image",
-					   BITMAP_SourceFile, icon,
-					   BITMAP_Screen, window->WScreen,
-					   BITMAP_Precision, PRECISION_EXACT,
-					   BITMAP_Masking, TRUE,
-					   TAG_END);
-		if (pictureImage)
-        { 
-        	tags[5].ti_Data = (Tag)pictureImage;
-            }
-    }
-    else tags[5].ti_Data = (Tag)icon;
+	tags[5].ti_Data = REQIMAGE_INFO;
 
-    Object *requester = NewObject(NULL, "requester.class", TAG_DONE);
-    if (requester==NULL) return result;
+	Object *pictureImage = NULL;
+	if ((Tag)icon>REQIMAGE_INSERTDISK)
+	{
+		pictureImage = NewObject(BitMapClass, NULL, //"bitmap.image",
+		                         BITMAP_SourceFile, icon,
+		                         BITMAP_Screen, window->WScreen,
+		                         BITMAP_Precision, PRECISION_EXACT,
+		                         BITMAP_Masking, TRUE,
+		                        TAG_END);
+		if (pictureImage) { tags[5].ti_Data = (Tag)pictureImage; }
+	}
+	else tags[5].ti_Data = (Tag)icon;
 
+	Object *requester = NewObject(RequesterClass, NULL, /*"requester.class",*/ TAG_DONE);
+	if (requester==NULL) return result;
 
-    va_list ap;
-
+	va_list ap;
 	va_startlinear(ap, Body);
-    tags[1].ti_Data = (Tag)Title;
+	tags[1].ti_Data = (Tag)Title;
 	tags[2].ti_Data = (Tag)Body;
-    if (Gadget)
-		tags[3].ti_Data = (Tag)Gadget;
-    tags[4].ti_Data = (Tag)va_getlinearva(ap, void *);
-    result = IDoMethodA(requester, (Msg) &reqmsg);
-    va_end(ap);
+	if (Gadget) tags[3].ti_Data = (Tag)Gadget;
+	tags[4].ti_Data = (Tag)va_getlinearva(ap, void *);
+	result = IDoMethodA(requester, (Msg) &reqmsg);
+	va_end(ap);
 
-    DisposeObject(requester);
-    if (pictureImage) DisposeObject(pictureImage);
-    return result;
+	DisposeObject(requester);
+	if (pictureImage) DisposeObject(pictureImage);
+
+	return result;
 }
 
 int getfa(CONST_STRPTR name)
@@ -280,6 +274,3 @@ int getfa(CONST_STRPTR name)
 
     return result;
 }
-
-
-

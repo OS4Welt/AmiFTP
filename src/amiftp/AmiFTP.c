@@ -2,8 +2,10 @@
    Locked version: $Revision: 1.815 $
 */
 
+//#include "proto/exec.h"
 #include "AmiFTP.h"
 #include "gui.h"
+#include "AmiFTP_rev.h"
 
 extern char *connected_host;
 extern struct MsgPort *AppPort;
@@ -115,138 +117,133 @@ void ftpWindow()
 				ConnectSite(sn1, 0);
 			}
 		}
+
 	GetAttr(AREXX_SigMask, ARexx_Object, &rexxsignal);
 	appsignal = 1L << AppPort->mp_SigBit;
 
 	while (running)
 	{
 		fd_set rs;
-		int res;
+		//int res;
 
 		FD_ZERO(&rs);
-		if (cin != -1)
-			FD_SET(cin, &rs);
+
+		if (cin != -1) FD_SET(cin, &rs);
 
 		GetAttr(WINDOW_SigMask, MainWin_Object, &mainwinsignal);
 		gotsignal = rexxsignal | SIGBREAKF_CTRL_C | AG_Signal | mainwinsignal | appsignal;
+
 		if (TCPStack)
-			res = tcp_waitselect(cin == -1 ? 0 : cin + 1, &rs, NULL, NULL, NULL, &gotsignal);
+			/*res =*/ tcp_waitselect(cin == -1 ? 0 : cin + 1, &rs, NULL, NULL, NULL, &gotsignal);
 		else
 			gotsignal = Wait(rexxsignal | SIGBREAKF_CTRL_C | AG_Signal | mainwinsignal | appsignal);
 
 		if (gotsignal)
 		{
-			if (gotsignal & SIGBREAKF_CTRL_C)
-				break;
+			if (gotsignal & SIGBREAKF_CTRL_C) break;
 			if (gotsignal & (mainwinsignal | appsignal))
 			{
-				if (HandleMainWindowIDCMP(TRUE))
-					running = FALSE;
+				if (HandleMainWindowIDCMP(TRUE)) running = FALSE;
 			}
 			if (gotsignal & rexxsignal)
 			{
 				ARexxQuitBit = FALSE;
 				IDoMethod(ARexx_Object, AM_HANDLEEVENT, TAG_DONE);
 				//CA_HandleRexx(ARexx_Object);
-				if (ARexxQuitBit)
-					running = FALSE;
+				if (ARexxQuitBit) running = FALSE;
 			}
-			if (gotsignal & AG_Signal)
-				HandleAmigaGuide();
+			if (gotsignal & AG_Signal) HandleAmigaGuide();
 		}
 		else
 		{
-			if (MainWindow)
-				LockWindow(MainWin_Object);
+			if (MainWindow) LockWindow(MainWin_Object);
 			timeout_disconnect();
-			if (MainWindow)
-				UnlockWindow(MainWin_Object);
+			if (MainWindow) UnlockWindow(MainWin_Object);
 		}
-	}
+	} // END while(running)
 
-	if (connected)
-	{
-		quit_ftp();
-	}
+	if (connected) { quit_ftp(); }
 
 	CloseMainWindow();
 }
 
 void Delete_clicked()
 {
- 	struct dirlist *curr;
-    struct Node *node,*nnode;
-    int t=0;
-    int sel=0;
+	struct dirlist *curr;
+	struct Node *node,*nnode;
+	int t=0;
+	int sel=0;
 
-    if (FileList) {
+	if (FileList) {
+		int result = showRequester(MainWindow, REQTYPE_INFO, GetAmiFTPString(Str_AmiFTPRequest), GetAmiFTPString(MW_DeleteCancel), GetAmiFTPString(MW_DeleteRequest));
+		if (result==0) return;
 
-    int result = showRequester(MainWindow, REQTYPE_INFO, NULL, GetAmiFTPString(MW_DeleteCancel), GetAmiFTPString(MW_DeleteRequest));
-    if (result==0) return;
-
-	node=GetHead(FileList);
-	while (node) {
-	    nnode=GetSucc(node);
-	    sel=0;
-	    GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
-	    if (sel) {
-		curr=(void *)node->ln_Name; /* The dirlist-structure is in ln_Name */
-		if (curr) {
-		    if (delete_remote(curr->name,
-				      (!S_ISDIR(curr->mode))?"DELE":"RMD")) {
-            struct lbRemNode msg = {LBM_REMNODE, NULL, node};
-            IDoMethodA(MG_List[MG_ListView], (Msg)&msg);
-			//LBRemNode(MG_List[MG_ListView], MainWindow, NULL, node);
-			free_direntry(curr);
-		    }
-		    else
-		      t=1;
+		node=GetHead(FileList);
+		while (node) {
+			nnode=GetSucc(node);
+			sel=0;
+			GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
+			if (sel) {
+				curr=(void *)node->ln_Name; /* The dirlist-structure is in ln_Name */
+				if (curr) {
+					if (delete_remote(curr->name,(!S_ISDIR(curr->mode))?"DELE":"RMD")) {
+						struct lbRemNode msg = {LBM_REMNODE, NULL, node};
+						IDoMethodA(MG_List[MG_ListView], (Msg)&msg);
+						//LBRemNode(MG_List[MG_ListView], MainWindow, NULL, node);
+						free_direntry(curr);
+					}
+					else t=1;
+				}
+			}
+			node=nnode;
 		}
-	    }
-	    node=nnode;
-	}
-	if (t==0)
 
-        RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
-	  UpdateMainButtons(MB_NONESELECTED);
-	UnlockWindow(MainWin_Object);
-    }
-    UpdateWindowTitle();
-    //DisposeObject(requester);
+		if (t==0)
+			RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
+
+		UpdateMainButtons(MB_NONESELECTED);
+		UnlockWindow(MainWin_Object);
+	}
+
+	UpdateWindowTitle();
+	//DisposeObject(requester);
 }
 
 int Parent_clicked(void)
 {
 	struct List *head;
 
-	if (!TCPStack)
-		return 1;
+	if (!TCPStack) return 1;
 
 	LockWindow(MainWin_Object);
+
 	if (!change_remote_dir("..", 0))
 	{
-		if (head = LookupCache(CurrentState.CurrentRemoteDir))
+		if ( (head = LookupCache(CurrentState.CurrentRemoteDir)) )
 		{
-			SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, LISTBROWSER_Labels, ~0, TAG_DONE);
+			SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, LISTBROWSER_Labels,~0, TAG_DONE);
 			FileList = head;
 			if (SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL,
-							   LISTBROWSER_Labels, FileList,
-							   LISTBROWSER_AutoFit, TRUE, LISTBROWSER_ColumnInfo, &columninfo, LISTBROWSER_Selected, -1, LISTBROWSER_MakeVisible, 0, TAG_DONE))
+			                   LISTBROWSER_Labels,FileList,
+			                   /*LISTBROWSER_AutoFit,TRUE,*/ LISTBROWSER_ColumnInfo,columninfo, LISTBROWSER_Selected,-1, LISTBROWSER_MakeVisible,0, TAG_DONE))
 				RefreshGList((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, 1);
 		}
-		else if (head = read_remote_dir())
-		{
-			AddCacheEntry(head, CurrentState.CurrentRemoteDir);
-			SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, LISTBROWSER_Labels, ~0, TAG_DONE);
-			FileList = head;
-			if (SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL,
-							   LISTBROWSER_Labels, FileList,
-							   LISTBROWSER_AutoFit, TRUE, LISTBROWSER_ColumnInfo, &columninfo, LISTBROWSER_Selected, -1, LISTBROWSER_MakeVisible, 0, TAG_DONE))
-				RefreshGList((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, 1);
-		}
+		else
+			if ( (head = read_remote_dir()) )
+			{
+				AddCacheEntry(head, CurrentState.CurrentRemoteDir);
+				SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, LISTBROWSER_Labels,~0, TAG_DONE);
+				FileList = head;
+				if (SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL,
+				                   LISTBROWSER_Labels, FileList,
+				                   /*LISTBROWSER_AutoFit,TRUE,*/ LISTBROWSER_ColumnInfo,columninfo, LISTBROWSER_Selected,-1, LISTBROWSER_MakeVisible,0, TAG_DONE))
+					RefreshGList((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, 1);
+			}
 	}
+
 	UpdateMainButtons(MB_NONESELECTED);
 	UnlockWindow(MainWin_Object);
+
 	return 1;
 }
 
@@ -255,51 +252,54 @@ int Get_clicked(void)
 	struct Node *node;
 	ULONG sel = 0;
 
-	if (!TCPStack)
-		return 1;
+	if (!TCPStack) return 1;
 
 	for (node = GetHead(FileList); node != NULL; node = GetSucc(node))
 	{
 		GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
-		if (sel)
-			break;
+		if (sel) break;
 	}
 
 	if (node)
 	{
 		LockWindow(MainWin_Object);
+
 		if (CurrentState.ADTMode)
 			DownloadFile(FileList, MainPrefs.mp_PreserveAminetDir ? "T:" : NULL, TransferMode, 0);
 		else
 			DownloadFile(FileList, NULL, TransferMode, 0);
+
 		UnlockWindow(MainWin_Object);
 	}
+
 	return 1;
 }
 
 int DLPath_clicked(void)
 {
-    struct gfileRequest pathList = {GFILE_REQUEST, MainWindow};
-    uint32 result = IDoMethodA(MG_List[MG_DLGetFile], (struct _Msg *)&pathList);
+	struct gfileRequest pathList = {GFILE_REQUEST, MainWindow};
+	uint32 result = IDoMethodA(MG_List[MG_DLGetFile], (struct _Msg *)&pathList);
 
 	if (result)
-    {
-        char *strBuffer = NULL;
-        GetAttr(GETFILE_Drawer, MG_List[MG_DLGetFile], (ULONG*)&strBuffer);
-        if (strBuffer)
-        {
-            if (strlen(strBuffer)>0)
-            {
-                strncpy(CurrentState.CurrentDLDir, strBuffer, sizeof(CurrentState.CurrentDLDir)-1);
-                }
-             else
-             {
-                strncpy(CurrentState.CurrentDLDir, "Ram:", sizeof(CurrentState.CurrentDLDir)-1);
-                SetAttrs(MG_List[MG_DLGetFile], GETFILE_Drawer, "Ram:", TAG_DONE);
-                }
-            UpdateWindowTitle();
-            }
-        }
+	{
+		char *strBuffer = NULL;
+		GetAttr(GETFILE_Drawer, MG_List[MG_DLGetFile], (ULONG*)&strBuffer);
+		if (strBuffer)
+		{
+			if (strlen(strBuffer)>0)
+			{
+				strncpy(CurrentState.CurrentDLDir, strBuffer, sizeof(CurrentState.CurrentDLDir)-1);
+			}
+			else
+			{
+				strncpy(CurrentState.CurrentDLDir, "Ram:", sizeof(CurrentState.CurrentDLDir)-1);
+				SetAttrs(MG_List[MG_DLGetFile], GETFILE_Drawer, "Ram:", TAG_DONE);
+			}
+
+			UpdateWindowTitle();
+		}
+	}
+
 	return 1;
 }
 
@@ -310,47 +310,42 @@ int Put_clicked(void)
 	int i;
 	struct FileRequester *fileRequester;
 	static ULONG put_tags[] = {
-		ASLFR_Window, 0UL,
-		ASLFR_PrivateIDCMP, TRUE,
-		ASLFR_SleepWindow, FALSE,
+		ASLFR_Window,        0UL,
+		ASLFR_PrivateIDCMP,  TRUE,
+		ASLFR_SleepWindow,   FALSE,
 		ASLFR_InitialDrawer, 0UL,
-		ASLFR_RejectIcons, TRUE,
-		ASLFR_TitleText, 0UL,
+		ASLFR_RejectIcons,   TRUE,
+		ASLFR_TitleText,     0UL,
 		ASLFR_DoMultiSelect, TRUE,
-		ASLFR_DoPatterns, TRUE,
+		ASLFR_DoPatterns,    TRUE,
 		TAG_END
 	};
 	char DummyBuffer[1024];
 
-	if (!TCPStack)
-		return 1;
+	if (!TCPStack) return 1;
 
-	put_tags[1] = (unsigned long) MainWindow;
-	put_tags[7] = (unsigned long) CurrentState.CurrentDLDir;
+	put_tags[1]  = (unsigned long) MainWindow;
+	put_tags[7]  = (unsigned long) CurrentState.CurrentDLDir;
 	put_tags[11] = (unsigned long) GetAmiFTPString(Str_SelectULFiles);
 
 	NewList(&UploadList);
 
 	fileRequester = AllocAslRequest(ASL_FileRequest, NULL);
-	if (!fileRequester)
-		return 1;
+	if (!fileRequester) return 1;
 
 	LockWindow(MainWin_Object);
 
-	if (i = AslRequest(fileRequester, (struct TagItem *) put_tags))
+	if ( (i = AslRequest(fileRequester, (struct TagItem *) put_tags)) )
 	{
 #define MAX_FILENAME_LENGTH 1024
-
 		for (i = 0; i < fileRequester->fr_NumArgs; i++)
 		{
-
 			if (fileRequester->fr_ArgList[i].wa_Lock)
 			{
 				if (!NameFromLock(fileRequester->fr_ArgList[i].wa_Lock, DummyBuffer, MAX_FILENAME_LENGTH))
 					DummyBuffer[0] = 0;
 			}
-			else
-				strcpy(DummyBuffer, fileRequester->fr_Drawer);
+			else strcpy(DummyBuffer, fileRequester->fr_Drawer);
 
 			if (fileRequester->fr_ArgList[i].wa_Name)
 			{
@@ -363,7 +358,6 @@ int Put_clicked(void)
 				//struct FileInfoBlock fib;
 				int64 fileSize = 0;
 				struct dirlist *entry;
-
 				/*
 				   BPTR lock;
 				   lock=Lock(DummyBuffer, SHARED_LOCK);
@@ -379,32 +373,29 @@ int Put_clicked(void)
 					FreeDosObject(DOS_EXAMINEDATA, data);
 				}
 
-				if (entry = new_direntry(DummyBuffer, DummyBuffer, NULL, NULL, NULL, S_IFREG, fileSize))
+				if ( (entry = new_direntry(DummyBuffer, DummyBuffer, NULL, NULL, NULL, S_IFREG, fileSize)) )
 				{				//fib.fib_Size)) {
-					if (node = AllocListBrowserNode(1, LBNA_UserData, entry, LBNA_Column, 0, LBNCA_Text, entry->name, LBNA_Selected, TRUE, TAG_DONE))
+					if ( (node = AllocListBrowserNode(1, LBNA_UserData,entry, LBNA_Column,0, LBNCA_Text,entry->name, LBNA_Selected,TRUE, TAG_DONE)) )
 					{
 						node->ln_Name = (void *) entry;
 						AddTail(&UploadList, node);
 					}
-					else
-						free_direntry(entry);
+					else free_direntry(entry);
 				}
 			}
-			else
-			{
-			}
+//			else {}
 		}
 	}
 	else
 	{
 		FreeAslRequest(fileRequester);
 		UnlockWindow(MainWin_Object);
+
 		return 1;
 	}
 	FreeAslRequest(fileRequester);
 
-	if (GetHead(&UploadList) != NULL)
-		UploadFile(&UploadList, NULL, TransferMode);
+	if (GetHead(&UploadList) != NULL) UploadFile(&UploadList, NULL, TransferMode);
 	free_dirlist(&UploadList);
 
 	UnlockWindow(MainWin_Object);
@@ -416,41 +407,38 @@ int Connect_clicked(void)
 {
 	struct SiteNode *sn;
 
-	if (!TCPStack)
-		return 1;
+	if (!TCPStack) return 1;
 
 	LockWindow(MainWin_Object);
 	if ((sn = OpenSiteListWindow(TRUE)))
 	{
 		UnlockWindow(MainWin_Object);
 		ConnectSite(sn, 0);
-		if (connected)
-			strncpy(CurrentState.LastLVSite, sn->sn_Node.ln_Name, 60);
+		if (connected) strncpy(CurrentState.LastLVSite, sn->sn_Node.ln_Name, 60);
 	}
-	else
-		UnlockWindow(MainWin_Object);
+	else UnlockWindow(MainWin_Object);
 
 	return 1;
 }
 
 int Reconnect(void)
 {
-	if (!TCPStack)
-		return 1;
+	if (!TCPStack) return 1;
 
 	//geta4();
 
-	if (CurrentState.CurrentSite[0] == 0)
-		return 1;
+	if (CurrentState.CurrentSite[0] == 0) return 1;
 
 	if (CurrentState.LastLVSite[0])
 	{
 		struct SiteNode *sn;
 		struct Node *node;
+
 		node = FindName(&SiteList, CurrentState.LastLVSite);
 		if (node)
 		{
 			struct SiteNode sn1;
+
 			GetListBrowserNodeAttrs(node, LBNA_UserData, &sn, TAG_DONE);
 			if (sn)
 			{
@@ -458,8 +446,9 @@ int Reconnect(void)
 				sn1.sn_RemoteDir = strdup(CurrentState.CurrentRemoteDir);
 				sn1.sn_LocalDir = CurrentState.CurrentDLDir;
 				ConnectSite(&sn1, 0);
-				if (sn1.sn_RemoteDir)
-					free(sn1.sn_RemoteDir);
+
+				if (sn1.sn_RemoteDir) free(sn1.sn_RemoteDir);
+
 				strncpy(CurrentState.LastLVSite, sn->sn_Node.ln_Name, 60);
 			}
 		}
@@ -467,7 +456,9 @@ int Reconnect(void)
 	else
 	{
 		struct SiteNode sn;
+
 		memset(&sn, 0, sizeof(struct SiteNode));
+
 		sn.sn_RemoteDir = strdup(CurrentState.CurrentRemoteDir);
 		sn.sn_LocalDir = CurrentState.CurrentDLDir;
 		sn.sn_Node.ln_Name = CurrentState.CurrentSite;
@@ -475,8 +466,8 @@ int Reconnect(void)
 		sn.sn_Port = ftp_port;
 		sn.sn_Proxy = MainPrefs.mp_DefaultProxy;
 		ConnectSite(&sn, 0);
-		if (sn.sn_RemoteDir)
-			free(sn.sn_RemoteDir);
+
+		if (sn.sn_RemoteDir) free(sn.sn_RemoteDir);
 	}
 
 	return 1;
@@ -484,11 +475,11 @@ int Reconnect(void)
 
 int Disconnect_clicked(void)
 {
-	if (!TCPStack)
-		return 1;
+	if (!TCPStack) return 1;
 
 	quit_ftp();
 	UpdateMainButtons(MB_DISCONNECTED);
+
 	return 1;
 }
 
@@ -499,8 +490,10 @@ char *NameToReadme(char *foo, int readmelen)
 	{
 		strcpy(bar, foo);
 		strcpy(bar + strlen(bar) - readmelen, ".readme");
+
 		return bar;
 	}
+
 	return NULL;
 }
 
@@ -510,15 +503,14 @@ int View_clicked(BOOL Readme)
 	struct Node *node;
 	ULONG sel;
 
-	if (!TCPStack)
-		return 1;
+	if (!TCPStack) return 1;
 
 	for (node = GetHead(FileList); node != NULL; node = GetSucc(node))
 	{
 		GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
-		if (sel)
-			break;
+		if (sel) break;
 	}
+
 	if (node)
 	{
 		LockWindow(MainWin_Object);
@@ -529,7 +521,7 @@ int View_clicked(BOOL Readme)
 
 			if (curr->readmelen)
 			{
-				if (readmename = NameToReadme(curr->name, curr->readmelength))
+				if ( (readmename = NameToReadme(curr->name, curr->readmelength)) )
 				{
 					struct List tlist;
 					struct Node *tmpnode;
@@ -537,16 +529,20 @@ int View_clicked(BOOL Readme)
 					char fname[200];
 
 					strmfp(fname, curr->owner, readmename, 200);
+
 					NewList(&tlist);
+
 					memset(&tmpentry, 0, sizeof(tmpentry));
-					tmpnode = AllocListBrowserNode(1, LBNA_Column, 0, LBNCA_Text, fname, LBNA_Selected, TRUE, TAG_DONE);
+					tmpnode = AllocListBrowserNode(1, LBNA_Column,0, LBNCA_Text,fname, LBNA_Selected,TRUE, TAG_DONE);
 					if (tmpnode)
 					{
 						tmpentry.name = fname;
 						tmpentry.size = curr->readmelen;
 						tmpnode->ln_Name = (char *) &tmpentry;
 						tmpentry.mode = S_IFREG;
+
 						AddTail(&tlist, tmpnode);
+
 						if (!DownloadFile(&tlist, "T:", TransferMode, 0))
 						{
 							strmfp(fname, "T:", readmename, 200);
@@ -559,140 +555,168 @@ int View_clicked(BOOL Readme)
 		}
 		else
 			/* Check for link */
-		if (S_ISLNK(curr->mode))
-		{
-			char *name;
-			name = linkname(curr->name);
-			if (name)
+			if (S_ISLNK(curr->mode))
 			{
-				char loc_name[200];
-				struct List tlist;
-				struct Node *tmpnode;
-				struct dirlist tmpentry;
-				CopyMem(curr, &tmpentry, sizeof(struct dirlist));
-				NewList(&tlist);
-				tmpnode = AllocListBrowserNode(1, LBNA_Column, 0, LBNCA_Text, curr->name, LBNA_Selected, TRUE, TAG_DONE);
-				if (tmpnode)
+				char *name;
+				name = linkname(curr->name);
+				if (name)
 				{
-					tmpnode->ln_Name = (void *) curr;
-					AddTail(&tlist, tmpnode);
-					if (!DownloadFile(&tlist, "T:", TransferMode, 0))
+					char loc_name[200];
+					struct List tlist;
+					struct Node *tmpnode;
+					struct dirlist tmpentry;
+
+					CopyMem(curr, &tmpentry, sizeof(struct dirlist));
+
+					NewList(&tlist);
+
+					tmpnode = AllocListBrowserNode(1, LBNA_Column,0, LBNCA_Text,curr->name, LBNA_Selected,TRUE, TAG_DONE);
+					if (tmpnode)
 					{
-						DetachToolList();
-						SetListBrowserNodeAttrs(node, LBNA_Selected, FALSE, TAG_DONE);
-						AttachToolList(FALSE);
-						strmfp(loc_name, "T:", name, 200);
-						ViewFile(loc_name);
+						tmpnode->ln_Name = (void *) curr;
+
+						AddTail(&tlist, tmpnode);
+
+						if (!DownloadFile(&tlist, "T:", TransferMode, 0))
+						{
+							DetachToolList();
+							SetListBrowserNodeAttrs(node, LBNA_Selected, FALSE, TAG_DONE);
+							AttachToolList(FALSE);
+							strmfp(loc_name, "T:", name, 200);
+							ViewFile(loc_name);
+						}
+Remove(tmpnode);
+						FreeListBrowserNode(tmpnode);
 					}
-					FreeListBrowserNode(tmpnode);
+					free(name);
 				}
-				free(name);
 			}
-		}
-		else if (curr->mode & 0x4000)
-		{						/* Check for file or dir */
-			ShowErrorReq(GetAmiFTPString(Str_CannotDLDirs));
-		}
-		else
-		{
-			char loc_name[200];
-			struct List tlist;
-			struct Node *tmpnode;
-			NewList(&tlist);
-			if (tmpnode = AllocListBrowserNode(1, LBNA_Column, 0, LBNCA_Text, curr->name, LBNA_Selected, TRUE, TAG_DONE))
-			{
-				tmpnode->ln_Name = (void *) curr;
-				AddTail(&tlist, tmpnode);
-				if (!DownloadFile(&tlist, "T:", TransferMode, 0))
+			else
+				if (curr->mode & 0x4000)
+				{						/* Check for file or dir */
+					ShowErrorReq(GetAmiFTPString(Str_CannotDLDirs));
+				}
+				else
 				{
-					DetachToolList();
-					SetListBrowserNodeAttrs(node, LBNA_Selected, FALSE, TAG_DONE);
-					AttachToolList(FALSE);
-					strmfp(loc_name, "T:", curr->name, 200);
-					ViewFile(loc_name);
+					char loc_name[200];
+					struct List tlist;
+					struct Node *tmpnode;
+
+					NewList(&tlist);
+
+					if ( (tmpnode = AllocListBrowserNode(1, LBNA_Column,0, LBNCA_Text,curr->name, LBNA_Selected,TRUE, TAG_DONE)) )
+					{
+						tmpnode->ln_Name = (void *) curr;
+
+						AddTail(&tlist, tmpnode);
+
+						if (!DownloadFile(&tlist, "T:", TransferMode, 0))
+						{
+							DetachToolList();
+							SetListBrowserNodeAttrs(node, LBNA_Selected, FALSE, TAG_DONE);
+							AttachToolList(FALSE);
+							strmfp(loc_name, "T:", curr->name, 200);
+							ViewFile(loc_name);
+						}
+Remove(tmpnode);
+						FreeListBrowserNode(tmpnode);
+					}
 				}
-				FreeListBrowserNode(tmpnode);
-			}
-		}
-		sel = 0;
-		for (node = GetHead(FileList); node != NULL; node = GetSucc(node))
-		{
-			GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
-			if (sel)
-				break;
-		}
-		if (sel)
-			UpdateMainButtons(MB_FILESELECTED);
-		else
-			UpdateMainButtons(MB_NONESELECTED);
+				sel = 0;
+				for (node = GetHead(FileList); node != NULL; node = GetSucc(node))
+				{
+					GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
+					if (sel) break;
+				}
+
+		if (sel) UpdateMainButtons(MB_FILESELECTED);
+		else UpdateMainButtons(MB_NONESELECTED);
+
 		UnlockWindow(MainWin_Object);
 	}
+
 	return 1;
 }
 
-void CreateDir_clicked()
+void CreateDir_clicked(void)
 {
-    char dirname[256];
+	char dirname[256] = "";
 
-    if (!connected)
-      return;
+	if (!connected) return;
 
-    memset(dirname,0,256);
+	//memset(dirname,0,256);
 
+	int result = showStringRequester(MainWindow, FALSE, NULL, GetAmiFTPString(Str_AmiFTPRequest), GetAmiFTPString(Str_OkCancel), dirname, 255, GetAmiFTPString(Str_RemoteDir));
 
-    int result = showStringRequester(MainWindow, FALSE, NULL, GetAmiFTPString(Str_AmiFTPRequest), NULL, dirname, 255, GetAmiFTPString(Str_RemoteDir));
+	if (result) {
+		char comm[270];
+		sprintf(comm, "MKD %s", dirname);
+		if (command(comm)==ERROR) {
+			ShowErrorReq(GetAmiFTPString(Str_MakeDirError));//"Couldn't create directory");
+			return;
+		}
 
-    if (result){
-	char comm[270];
-	sprintf(comm, "MKD %s", dirname);
-	if (command(comm)==ERROR) {
-	    ShowErrorReq("Couldn't create directory");
-        return;
+		Dir_clicked();
 	}
-    Dir_clicked();
-    }
 }
 
-void Rename_clicked()
+void RawCommand_clicked(void)
 {
-    char comm[256];
-    char newname[256];
-    struct Node *node;
-    ULONG sel;
+	char rawcmd[256] = "";
 
-    if (!connected || !FileList)
-      return;
-    memset(newname, 0, sizeof(newname));
+	if (!connected) return;
 
+	//memset(rawcmd,0,256);
 
-    for (node = GetHead(FileList); node; node = GetSucc(node)) {
-	GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
-	if (sel) {
-	    char *filename = ((struct dirlist  *)(node->ln_Name))->name;
-
-        int result = showStringRequester(MainWindow, FALSE, NULL, "AmiFTP Request", NULL, newname, 255, "Old name %s:\nEnter new name", filename);
-
-
-        
-       
-        if (result) {
-		sprintf(comm, "RNFR %s", filename);
-		if (command(comm) == ERROR) {
-		    ShowErrorReq("Couldn't rename file.");
+	int result = showStringRequester(MainWindow, FALSE, NULL, GetAmiFTPString(Str_AmiFTPRequest), GetAmiFTPString(Str_OkCancel), rawcmd, 255, GetAmiFTPString(Str_RawFTPCommand));
+	if (result) {
+		//char comm[270];
+		//sprintf(comm, "%s", rawcmd);
+DBUG("'%s'\n",rawcmd);
+		if (command(rawcmd)==ERROR) {
+DBUG("ERROR: '%s'\n",GetAmiFTPString(Str_RawFTPError));
+			ShowErrorReq(GetAmiFTPString(Str_RawFTPError));
+			return;
 		}
-		else {
-		    sprintf(comm, "RNTO %s", newname);
-		    if (command(comm) == ERROR) {
-			ShowErrorReq("Couldn't rename file.");
-		    }
-            else
-            {
-                Dir_clicked();
-                }
-		}
-	    }
+		Dir_clicked();
 	}
-    }
+}
+
+void Rename_clicked(void)
+{
+	char comm[256];
+	char newname[240];
+	struct Node *node;
+	ULONG sel;
+
+	if (!connected || !FileList) return;
+
+	//memset(newname, 0, sizeof(newname));
+
+	for (node = GetHead(FileList); node; node = GetSucc(node)) {
+		GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
+		if (sel) {
+			char *filename = ((struct dirlist  *)(node->ln_Name))->name;
+
+			Strlcpy(newname, filename,  sizeof(newname)); // show "old name" in rename requester
+
+			//int result = showStringRequester(MainWindow, FALSE, NULL, "AmiFTP Request", NULL, newname, 255, "Old name %s:\nEnter new name", filename);
+			int result = showStringRequester(MainWindow, FALSE, NULL, GetAmiFTPString(Str_AmiFTPRequest), GetAmiFTPString(Str_OkCancel), newname, 255, GetAmiFTPString(Str_RenameFile), filename);
+			if (result) {
+				sprintf(comm, "RNFR %s", filename);
+				if (command(comm) == ERROR) {
+					ShowErrorReq(GetAmiFTPString(Str_RenameError));//"Couldn't rename file.");
+				}
+				else {
+					sprintf(comm, "RNTO %s", newname);
+					if (command(comm) == ERROR) {
+						ShowErrorReq(GetAmiFTPString(Str_RenameError));//"Couldn't rename file.");
+					}
+					else { Dir_clicked(); }
+				}
+			}
+		}
+	}
 
 }
 void ViewFile(const char *file)
@@ -711,8 +735,7 @@ void ViewFile(const char *file)
 		{
 			AddTail(&TempList, node);
 		}
-		else
-			free(node);
+		else free(node);
 	}
 
 	while (*str)
@@ -737,20 +760,21 @@ void ViewFile(const char *file)
 				break;
 		}
 	}
+
 	*t = 0;
-	      
+
 	SystemTags(buffer, SYS_Input, NULL, SYS_Output, NULL, SYS_Asynch, TRUE, TAG_DONE);
 }
 
 int Site_clicked(void)
 {
-	if (!TCPStack)
-		return 1;
+	if (!TCPStack) return 1;
 
 	if (!strlen(GetString(((struct Gadget *) MG_List[MG_SiteName]))))
 	{
 		Disconnect_clicked();
 		CurrentState.CurrentSite[0] = 0;
+
 		return 1;
 	}
 
@@ -784,21 +808,21 @@ int Dir_clicked(void)
 {
 	struct List *head;
 
-	if (!TCPStack)
-		return 1;
+	if (!TCPStack) return 1;
 
 	LockWindow(MainWin_Object);
+
 	if (!change_remote_dir(GetString(((struct Gadget *) MG_List[MG_DirName])), 0))
 	{
 		RemoveCacheEntry(CurrentState.CurrentRemoteDir);
-		if (head = read_remote_dir())
+		if ( (head = read_remote_dir()) )
 		{
 			AddCacheEntry(head, CurrentState.CurrentRemoteDir);
-			SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, LISTBROWSER_Labels, ~0, TAG_DONE);
+			SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, LISTBROWSER_Labels,~0, TAG_DONE);
 			FileList = head;
 			if (SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL,
-							   LISTBROWSER_Labels, FileList,
-							   LISTBROWSER_AutoFit, TRUE, LISTBROWSER_ColumnInfo, &columninfo, LISTBROWSER_Selected, -1, LISTBROWSER_MakeVisible, 0, TAG_DONE))
+			                   LISTBROWSER_Labels, FileList, LISTBROWSER_Striping,TRUE,
+			                   /*LISTBROWSER_AutoFit,TRUE,*/ LISTBROWSER_ColumnInfo,columninfo, LISTBROWSER_Selected,-1, LISTBROWSER_MakeVisible,0, TAG_DONE))
 				RefreshGList((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, 1);
 			UpdateMainButtons(MB_NONESELECTED);
 		}
@@ -811,57 +835,56 @@ int Dir_clicked(void)
 		UnlockWindow(MainWin_Object);
 		RemoteCDFailed();
 	}
+
 	return 1;
 }
 
 void RemoteCDFailed(void)
 {
 	if (MainWindow)
-		if (timedout)
-			ShowErrorReq(GetAmiFTPString(Str_CDFailedTimedout));
-		else
-			ShowErrorReq(GetAmiFTPString(Str_CDFailed));
-	if (timedout)
-		quit_ftp();
+	{
+		if (timedout) ShowErrorReq(GetAmiFTPString(Str_CDFailedTimedout));
+		else ShowErrorReq(GetAmiFTPString(Str_CDFailed));
+	}
+
+	if (timedout) quit_ftp();
 }
 
 void ShowErrorReq(char *str, ...)
 {
 	va_list ap;
-
 	extern BOOL SilentMode;
 
-	if (!MainWindow)
-		return;
+	if (!MainWindow) return;
 
-	if (SilentMode)
-		return;
+	if (SilentMode) return;
+
 	va_start(ap, str);
-    showRequester(MainWindow, (STRPTR)REQIMAGE_ERROR, GetAmiFTPString(Str_AmiFTPError), GetAmiFTPString(Str_OK), str);
+	showRequester(MainWindow, (STRPTR)REQIMAGE_ERROR, GetAmiFTPString(Str_AmiFTPError), GetAmiFTPString(Str_OK), str);
 	va_end(ap);
 }
 
 char *GetPassword(char *user, char *passbuf)
 {
 	extern struct Window *ConnectWindow;	/* Fix this: Bug in reqtools */
-    int result = showStringRequester(ConnectWindow, TRUE, NULL, GetAmiFTPString(Str_PasswordRequest), NULL, passbuf, 99, GetAmiFTPString(Str_PasswordEntry), user);
-    if (result)
-			return passbuf;
-	return NULL;
 
+	int result = showStringRequester(ConnectWindow, TRUE, NULL, GetAmiFTPString(Str_PasswordRequest), NULL, passbuf, 99, GetAmiFTPString(Str_PasswordEntry), user);
+	if (result) return passbuf;
+
+	return NULL;
 }
 
-extern char *infotext;
+//extern char *infotext;
 //UWORD mapping[4];
 #include "icons/AmiFTPbrsh.c"
-
 Object *AboutWin_Object;
-
 int About(void)
 {
-
-	showRequester(MainWindow, "PROGDIR:images/AmiFTP_ICON.png", GetAmiFTPString(Str_AboutAmiFTP), "OK", "%s\n%s\n%s", infotext, CurrentState.RexxPort,
-				  GetAmiFTPString(Str_Translator));
+	showRequester(MainWindow, "PROGDIR:images/AmiFTP_ICON.png", GetAmiFTPString(Str_AboutAmiFTP), GetAmiFTPString(Str_OK),
+"\033b"VERS" ("DATE")\033n\n%s %s\n%s",
+GetAmiFTPString(Str_AboutInfotext),
+CurrentState.RexxPort,
+GetAmiFTPString(Str_Translator));
 
 #if 0
 	Object *AboutLayout;
@@ -916,8 +939,6 @@ int About(void)
 		return 1;
 	}
 
-
-
 	//LockWindow(MainWin_Object);
 
 	if (AboutWindow = (struct Window *) IDoMethod(AboutWin_Object, WM_OPEN))
@@ -960,6 +981,7 @@ int About(void)
 	DisposeObject(AboutWin_Object);
 	//UnlockWindow(MainWin_Object);
 #endif
+
 	return 1;
 }
 
@@ -970,27 +992,28 @@ int SavePrefs(void)
 	if (ConfigChanged || CurrentState.LeftEdge != MainWindow->LeftEdge || CurrentState.TopEdge != MainWindow->TopEdge)
 	{
 		LockWindow(MainWin_Object);
-		MainPrefs.mp_Height = MainWindow->Height - MainWindow->BorderTop - MainWindow->BorderBottom;
-		MainPrefs.mp_Width = MainWindow->Width - MainWindow->BorderLeft - MainWindow->BorderRight;
-		MainPrefs.mp_TopEdge = MainWindow->TopEdge + Screen->ViewPort.DyOffset;
+		MainPrefs.mp_Height   = MainWindow->Height - MainWindow->BorderTop - MainWindow->BorderBottom;
+		MainPrefs.mp_Width    = MainWindow->Width - MainWindow->BorderLeft - MainWindow->BorderRight;
+		MainPrefs.mp_TopEdge  = MainWindow->TopEdge + Screen->ViewPort.DyOffset;
 		MainPrefs.mp_LeftEdge = MainWindow->LeftEdge + Screen->ViewPort.DxOffset;
 		MainPrefs.mp_SortMode = SortMode;
 		WriteConfigFile(ConfigName);
 		UnlockWindow(MainWin_Object);
 		ConfigChanged = FALSE;
 	}
+
 	return 1;
 }
 
 ULONG prefs_tags[] = {
-	ASLFO_Window, 0UL,
-	ASLFO_PrivateIDCMP, TRUE,
-	ASLFO_SleepWindow, TRUE,
+	ASLFO_Window,        0UL,
+	ASLFO_PrivateIDCMP,  TRUE,
+	ASLFO_SleepWindow,   TRUE,
 	ASLFR_InitialDrawer, 0UL,
-	ASLFR_InitialFile, 0UL,
-	ASLFR_RejectIcons, TRUE,
-	ASLFO_TitleText, 0UL,
-	ASLFR_DoSaveMode, 0UL,
+	ASLFR_InitialFile,   0UL,
+	ASLFR_RejectIcons,   TRUE,
+	ASLFO_TitleText,     0UL,
+	ASLFR_DoSaveMode,    0UL,
 	TAG_END
 };
 
@@ -1003,30 +1026,32 @@ int SavePrefsAs(void)
 	memset(tmp, 0, 150);
 	CopyMem(ConfigName, tmp, (ULONG) PathPart(ConfigName) - (ULONG) ConfigName);
 
-	prefs_tags[1] = (unsigned long) MainWindow;
-	prefs_tags[7] = (unsigned long) tmp;
-	prefs_tags[9] = (unsigned long) FilePart(ConfigName);
+	prefs_tags[1]  = (unsigned long) MainWindow;
+	prefs_tags[7]  = (unsigned long) tmp;
+	prefs_tags[9]  = (unsigned long) FilePart(ConfigName);
 	prefs_tags[13] = (unsigned long) GetAmiFTPString(Str_SelectSettingsFile);
 	prefs_tags[15] = (unsigned long) TRUE;
 
 	fileRequester = (struct FileRequester *) AllocAslRequest(ASL_FileRequest, NULL);
-	if (!fileRequester)
-		return 1;
+	if (!fileRequester) return 1;
+
 	if (AslRequest(fileRequester, (struct TagItem *) prefs_tags))
 	{
 		strcpy(tmp, fileRequester->fr_Drawer);
 		AddPart(tmp, fileRequester->fr_File, sizeof(tmp));
-		if (ConfigName)
-			free(ConfigName);
+
+		if (ConfigName) free(ConfigName);
+
 		ConfigName = strdup(tmp);
-		MainPrefs.mp_Height = MainWindow->Height - MainWindow->BorderTop - MainWindow->BorderBottom;
-		MainPrefs.mp_Width = MainWindow->Width - MainWindow->BorderLeft - MainWindow->BorderRight;
-		MainPrefs.mp_TopEdge = MainWindow->TopEdge + Screen->ViewPort.DyOffset;
+		MainPrefs.mp_Height   = MainWindow->Height - MainWindow->BorderTop - MainWindow->BorderBottom;
+		MainPrefs.mp_Width    = MainWindow->Width - MainWindow->BorderLeft - MainWindow->BorderRight;
+		MainPrefs.mp_TopEdge  = MainWindow->TopEdge + Screen->ViewPort.DyOffset;
 		MainPrefs.mp_LeftEdge = MainWindow->LeftEdge + Screen->ViewPort.DxOffset;
 		MainPrefs.mp_SortMode = SortMode;
 		WriteConfigFile(ConfigName);
 		ConfigChanged = FALSE;
 	}
+
 	FreeAslRequest(fileRequester);
 
 	return 1;
@@ -1041,24 +1066,27 @@ int LoadPrefs(void)
 	memset(tmp, 0, 150);
 	CopyMem(ConfigName, tmp, (ULONG) PathPart(ConfigName) - (ULONG) ConfigName);
 
-	prefs_tags[1] = (unsigned long) MainWindow;
-	prefs_tags[7] = (unsigned long) tmp;
-	prefs_tags[9] = (unsigned long) FilePart(ConfigName);
+	prefs_tags[1]  = (unsigned long) MainWindow;
+	prefs_tags[7]  = (unsigned long) tmp;
+	prefs_tags[9]  = (unsigned long) FilePart(ConfigName);
 	prefs_tags[13] = (unsigned long) GetAmiFTPString(Str_SelectSettingsFile);
 	prefs_tags[15] = (unsigned long) FALSE;
 
 	fileRequester = (struct FileRequester *) AllocAslRequest(ASL_FileRequest, NULL);
-	if (!fileRequester)
-		return 1;
+	if (!fileRequester) return 1;
+
 	if (AslRequest(fileRequester, (struct TagItem *) prefs_tags))
 	{
 		strcpy(tmp, fileRequester->fr_Drawer);
 		AddPart(tmp, fileRequester->fr_File, sizeof(tmp));
-		if (ConfigName)
-			free(ConfigName);
+
+		if (ConfigName) free(ConfigName);
+
 		ConfigName = strdup(tmp);
 		FreeSiteList(&SiteList);
+
 		NewList(&SiteList);
+
 		if (MainPrefs.mp_LocalDir)
 		{
 			free(MainPrefs.mp_LocalDir);
@@ -1089,23 +1117,26 @@ int LoadPrefs(void)
 			free(MainPrefs.mp_ViewCommand);
 			MainPrefs.mp_ViewCommand = NULL;
 		}
+
 		ReadConfigFile(ConfigName);
 		MenuNeedsUpdate = TRUE;
 		ConfigChanged = FALSE;
 	}
+
 	FreeAslRequest(fileRequester);
+
 	return 1;
 }
 
 void Log(char *file, unsigned long size, unsigned long cps, BOOL download, char *site, BOOL incomplete)
 {
-	BPTR fh;
 #if 0
 	if (MainPrefs->Log)
 	{
+		BPTR fh;
 		if (fh = Open(MainPrefs->LogFile, MODE_READWRITE))
 		{
-			FPrintf(fh, "Date %s %ld %ld %s %s %s\n", file, size, cps, download ? "Down" : "Up", site, incomplete ? "Incomplete" : "");
+			FPrintf(fh, "Date %s %ld %ld %s %s %s\n", file, size, cps, download? "Down" : "Up", site, incomplete? "Incomplete" : "");
 			Close(fh);
 		}
 	}

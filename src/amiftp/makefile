@@ -16,7 +16,7 @@ endif
 # "make DEBUG=" to disable
 DEBUG = -D_DEBUG_
 # "make MENUCLASS=" to disable
-MENUCLASS = -DMENUCLASS
+MENUCLASS = -D_MENUCLASS_
 
 
 EXE    = AmiFTP
@@ -138,4 +138,4 @@ $(EXE) : $(OBJS)
 
 clean:
 	-$(RM) $(EXE) $(EXE)_debug
-	-$(RM) $(OBJDIR)*.o
+	-$(RM) $(OBJDIR)#?.o
