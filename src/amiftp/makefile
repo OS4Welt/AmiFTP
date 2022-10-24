@@ -113,7 +113,7 @@ $(OBJDIR)MenuClass.o : MenuClass.c AmiFTP.h gui.h AmiFTP_Cat.h
 
 
 #OBJS = $(OBJDIR)version.o $(OBJDIR)bsdsocket.o $(OBJDIR)tcp.o $(OBJDIR)ADT.o $(OBJDIR)aguide.o $(OBJDIR)AmiFTP.o $(OBJDIR)AmiFTP_Cat.o $(OBJDIR)cache.o $(OBJDIR)change_dir.o $(OBJDIR)config.o $(OBJDIR)ConnectWindow.o $(OBJDIR)data.o $(OBJDIR)dirlist.o $(OBJDIR)dofuncs.o $(OBJDIR)ftp.o $(OBJDIR)locale.o $(OBJDIR)main.o $(OBJDIR)MainWindow.o $(OBJDIR)Menu.o $(OBJDIR)misc.o $(OBJDIR)PrefsWindow.o $(OBJDIR)readdir.o $(OBJDIR)rexx.o $(OBJDIR)SiteWindow.o $(OBJDIR)SpeedBar.o $(OBJDIR)TransferWindow.o
-OBJS = $(OBJDIR)version.o $(OBJDIR)bsdsocket.o $(OBJDIR)tcp.o $(OBJDIR)ADT.o \
+OBJS = $(OBJDIR)bsdsocket.o $(OBJDIR)tcp.o $(OBJDIR)ADT.o \
 $(OBJDIR)aguide.o $(OBJDIR)AmiFTP.o $(OBJDIR)AmiFTP_Cat.o $(OBJDIR)cache.o \
 $(OBJDIR)change_dir.o $(OBJDIR)config.o $(OBJDIR)ConnectWindow.o $(OBJDIR)data.o \
 $(OBJDIR)dirlist.o $(OBJDIR)dofuncs.o $(OBJDIR)ftp.o $(OBJDIR)main.o \
