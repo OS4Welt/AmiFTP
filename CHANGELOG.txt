@@ -58,7 +58,7 @@ Replacement of deprecated functions and type conversion warnings
 #javierdlr 30.08.2022
 Speedbar can be changed to TEXT/IMAGES/BOTH
 #
-#javierdlr 18.09.2022
+#javierdlr 18.09.2022 bumprev 1.953
 "Cleaned" some of the GUI's ReAction code.
 Added missing speedbar buttons localized strings.
 Changed to use menuclass.
