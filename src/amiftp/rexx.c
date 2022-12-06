@@ -7,6 +7,7 @@
 //extern const char Version[];
 #include "AmiFTP_rev.h"
 
+#include <stdarg.h> // used in SetStemVar()
 
 struct SiteNode curr_rexx;
 
@@ -535,17 +536,23 @@ static void  rexx_SetAttr(struct ARexxCmd *ac, struct RexxMsg *rexxmsg)
     return;
 }
 
-static int SetStemVar(struct RexxMsg *rexxmsg, char *value, char *stemname,...)
+static int VARARGS68K SetStemVar(struct RexxMsg *rexxmsg, char *value, char *stemname,...)
 {
     UBYTE Name[256];
-    va_list VarArgs;
+    va_list ap;//VarArgs;
+    APTR args;
 
-    va_start(VarArgs, stemname);
-    vsprintf(Name, stemname, VarArgs);
-    va_end(VarArgs);
+    //va_start(VarArgs, stemname);
+    va_startlinear(ap, stemname);
+    args = va_getlinearva(ap, APTR);
+
+    //vsprintf(Name, stemname, VarArgs);
+    VSNPrintf(Name, sizeof(Name), stemname, args);
+
+    va_end(ap);//VarArgs);
 
     //return SetRexxVar(rexxmsg, Name, value, strlen(value));
-    SetRexxVarFromMsg(Name, value, rexxmsg);
+    return SetRexxVarFromMsg(Name, value, rexxmsg);
 }
 
 
@@ -560,29 +567,35 @@ static void rexx_GetAttr(struct ARexxCmd *ac,  struct RexxMsg *rexxmsg)
     long err=0;
 
     strupr(args->stem);
-    //err|=SetStemVar(rexxmsg, (STRPTR) Version, "%s.VERSION", args->stem);
-    err|=SetStemVar(rexxmsg, VERSTAG, "%s.VERSION", args->stem);
-    err|=SetStemVar(rexxmsg, MainPrefs.mp_PubScreen, "%s.SCREEN", args->stem);
-    err|=SetStemVar(rexxmsg, CurrentState.CurrentSite, "%s.HOST", args->stem);
-    sprintf(buff, "%ld", CurrentState.Port);
-    err|=SetStemVar(rexxmsg, buff, "%s.PORT", args->stem);
-    err|=SetStemVar(rexxmsg, MainPrefs.mp_ProxyServer?MainPrefs.mp_ProxyServer:"",
-		    "%s.PROXYHOST", args->stem);
-    sprintf(buff, "%ld", MainPrefs.mp_ProxyPort);
-    err|=SetStemVar(rexxmsg, buff, "%s.PROXYPORT", args->stem);
-    err|=SetStemVar(rexxmsg, CurrentState.Proxy?"1":"0", "%s.USEPROXY", args->stem);
-    sprintf(buff, "%s.ANONYMOUS", args->stem);
-    err|=SetStemVar(rexxmsg, CurrentState.LoginName[0]?"0":"1", "%s.ANONYMOUS",
-		    args->stem);
-    err|=SetStemVar(rexxmsg, CurrentState.LoginName[0]?CurrentState.LoginName:"",
-		    "%s.USERNAME", args->stem);
-/*    sprintf(buff, "%s.PASSWORD", args->stem);
-    err|=SetStemVar(rexxmsg, buff, "");*/
-    err|=SetStemVar(rexxmsg, CurrentState.CurrentDLDir, "%s.LOCALDIR", args->stem);
-    err|=SetStemVar(rexxmsg, CurrentState.CurrentRemoteDir, "%s.REMOTEDIR",
-		    args->stem);
-    err|=SetStemVar(rexxmsg, TCPStack?ping_server()?"0":"1":"0", "%s.CONNECTED", args->stem);
-    err|=SetStemVar(rexxmsg, SilentMode?"1":"0", "%s.QUIET", args->stem);
+	err|=SetStemVar(rexxmsg, (STRPTR)VERS" ("__AMIGADATE__")",
+	                "%s.VERSION", args->stem);
+	err|=SetStemVar(rexxmsg, MainPrefs.mp_PubScreen? MainPrefs.mp_PubScreen : "",
+	                "%s.SCREEN", args->stem);
+	err|=SetStemVar(rexxmsg, CurrentState.CurrentSite[0]? CurrentState.CurrentSite : "",
+	                "%s.HOST", args->stem);
+	SNPrintf(buff, sizeof(buff), "%ld", CurrentState.Port);
+	err|=SetStemVar(rexxmsg, buff,
+	                "%s.PORT", args->stem);
+	err|=SetStemVar(rexxmsg, MainPrefs.mp_ProxyServer? MainPrefs.mp_ProxyServer : "",
+	                "%s.PROXYHOST", args->stem);
+	SNPrintf(buff, sizeof(buff), "%ld", MainPrefs.mp_ProxyPort);
+	err|=SetStemVar(rexxmsg, buff,
+	                "%s.PROXYPORT", args->stem);
+	err|=SetStemVar(rexxmsg, CurrentState.Proxy? "1" : "0",
+	                "%s.USEPROXY", args->stem);
+	err|=SetStemVar(rexxmsg, CurrentState.LoginName[0]? "0" : "1",
+	                "%s.ANONYMOUS", args->stem);
+	err|=SetStemVar(rexxmsg, CurrentState.LoginName[0]? CurrentState.LoginName : "",
+	                "%s.USERNAME", args->stem);
+	err|=SetStemVar(rexxmsg, CurrentState.CurrentDLDir[0]? CurrentState.CurrentDLDir : "",
+	                "%s.LOCALDIR", args->stem);
+	err|=SetStemVar(rexxmsg, CurrentState.CurrentRemoteDir[0]? CurrentState.CurrentRemoteDir : "",
+	                "%s.REMOTEDIR", args->stem);
+	err|=SetStemVar(rexxmsg, TCPStack? ping_server()?"0":"1" : "0",
+	                "%s.CONNECTED", args->stem);
+	err|=SetStemVar(rexxmsg, SilentMode? "1" : "0",
+	                "%s.QUIET", args->stem);
+
     if (args->hotlist) {
 	int i;
 	struct SiteNode *sn;
@@ -592,23 +605,25 @@ static void rexx_GetAttr(struct ARexxCmd *ac,  struct RexxMsg *rexxmsg)
 	    GetListBrowserNodeAttrs(lbn,
 				    LBNA_UserData, &sn,
 				    TAG_DONE);
-	    err|=SetStemVar(rexxmsg, sn->sn_Node.ln_Name, "%s.HOTLIST.%d.NAME",
-			    args->stem, i);
-	    err|=SetStemVar(rexxmsg, sn->sn_SiteAddress, "%s.HOTLIST.%d.ADDRESS",
-			    args->stem, i);
-	    sprintf(buff, "%ld", sn->sn_Port);
-	    err|=SetStemVar(rexxmsg, buff, "%s.HOTLIST.%d.PORT", args->stem, i);
-	    err|=SetStemVar(rexxmsg, sn->sn_LoginName?sn->sn_LoginName:"",
-			    "%s.HOTLIST.%d.USERNAME", args->stem, i);
-	    err|=SetStemVar(rexxmsg, "", "%s.HOTLIST.%d.PASSWORD", args->stem, i);
-	    err|=SetStemVar(rexxmsg, sn->sn_LoginName?"0":"1",
-			    "%s.HOTLIST.%d.ANONYMOUS", args->stem, i);
-	    err|=SetStemVar(rexxmsg, sn->sn_RemoteDir?sn->sn_RemoteDir:"",
-			    "%s.HOTLIST.%d.REMOTEDIR", args->stem, i);
-	    err|=SetStemVar(rexxmsg, sn->sn_LocalDir?sn->sn_LocalDir:"",
-			    "%s.HOTLIST.%d.LOCALDIR", args->stem, i);
-	    err|=SetStemVar(rexxmsg, sn->sn_Proxy?"1":"0",
-			    "%s.HOTLIST.%d.USEPROXY", args->stem, i);
+				err|=SetStemVar(rexxmsg, sn->sn_Node.ln_Name,
+				                "%s.HOTLIST.%ld.NAME", args->stem, i);
+				err|=SetStemVar(rexxmsg, sn->sn_SiteAddress,
+				                "%s.HOTLIST.%ld.ADDRESS", args->stem, i);
+				SNPrintf(buff, sizeof(buff), "%ld", sn->sn_Port);
+				err|=SetStemVar(rexxmsg, buff,
+				                "%s.HOTLIST.%ld.PORT", args->stem, i);
+				err|=SetStemVar(rexxmsg, sn->sn_LoginName? sn->sn_LoginName : "",
+					               "%s.HOTLIST.%ld.USERNAME", args->stem, i);
+				/*err|=SetStemVar(rexxmsg, sn->sn_Password? sn->sn_Password : "",
+				                "%s.HOTLIST.%ld.PASSWORD", args->stem, i);*/
+				err|=SetStemVar(rexxmsg, sn->sn_LoginName? "0" : "1",
+				                "%s.HOTLIST.%ld.ANONYMOUS", args->stem, i);
+				err|=SetStemVar(rexxmsg, sn->sn_RemoteDir?sn->sn_RemoteDir : "",
+				                "%s.HOTLIST.%ld.REMOTEDIR", args->stem, i);
+				err|=SetStemVar(rexxmsg, sn->sn_LocalDir? sn->sn_LocalDir : "",
+				                "%s.HOTLIST.%ld.LOCALDIR", args->stem, i);
+				err|=SetStemVar(rexxmsg, sn->sn_Proxy? "1" : "0",
+				                "%s.HOTLIST.%ld.USEPROXY", args->stem, i);
 	}
 	sprintf(buff, "%ld", i);
 	err|=SetStemVar(rexxmsg, buff, "%s.HOTLIST.COUNT", args->stem);
@@ -623,14 +638,18 @@ static void rexx_GetAttr(struct ARexxCmd *ac,  struct RexxMsg *rexxmsg)
 	       node=GetSucc(node),i++) {
 	      curr = (struct dirlist *)node->ln_Name;
 	      /*kprintf("Rexx: %s %ld\n", curr->name, curr->size);*/
-	      err|=SetStemVar(rexxmsg, curr->name, "%s.FILELIST.%d.NAME", args->stem,
-			      i);
-	      sprintf(buff, "%ld", curr->size);
-	      err|=SetStemVar(rexxmsg, buff, "%s.FILELIST.%d.SIZE", args->stem, i);
-	      err|=SetStemVar(rexxmsg, S_ISDIR(curr->mode)?"DIR":S_ISLNK(curr->mode)?"LINK":"FILE", "%s.FILELIST.%d.TYPE", args->stem, i);
-	  }
-	sprintf(buff, "%ld", i);
-	err|=SetStemVar(rexxmsg, buff, "%s.FILELIST.COUNT", args->stem);
+				err|=SetStemVar(rexxmsg, curr->name,
+				                "%s.FILELIST.%ld.NAME", args->stem, i);
+				SNPrintf(buff, sizeof(buff), "%lld", curr->size);
+				err|=SetStemVar(rexxmsg, buff,
+				                "%s.FILELIST.%ld.SIZE", args->stem, i);
+				err|=SetStemVar(rexxmsg, S_ISDIR(curr->mode)? "DIR" : S_ISLNK(curr->mode)?"LINK":"FILE",
+				                "%s.FILELIST.%ld.TYPE", args->stem, i);
+			}
+
+		SNPrintf(buff, sizeof(buff), "%ld", i);
+		err|=SetStemVar(rexxmsg, buff,
+		                "%s.FILELIST.COUNT", args->stem);
     }
     if (err)
       ac->ac_RC=RC_WARN;
