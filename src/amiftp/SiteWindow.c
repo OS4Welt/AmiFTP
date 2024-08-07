@@ -652,7 +652,7 @@ ULONG HandleSiteListIDCMP(void)
 			     LISTBROWSER_Selected, &attr,
 			     LISTBROWSER_SelectedNode, &selnode,
 			     TAG_DONE);
-		    if (attr>0) { /* Kolla pÂ attr==-1, annars blir det en hit */
+		    if (attr>0) { /* Kolla p√• attr==-1, annars blir det en hit */
 			struct SiteNode *sn;
 			struct Node *node;
 			ULONG i;
@@ -1690,6 +1690,11 @@ int RemoveClicked(void)
 
 	GetAttr(LISTBROWSER_SelectedNode, SLG_List[SLG_SiteList], (ULONG *)&lbn);
 	if (lbn) {
+		LockWindow(SiteListWin_Object);
+		int result = showRequester(SiteListWindow, REQIMAGE_WARNING, GetAmiFTPString(Str_AmiFTPRequest), GetAmiFTPString(MW_DeleteCancel), GetAmiFTPString(MW_DeleteRequest));
+		UnlockWindow(SiteListWin_Object);
+		if (result==0) return 0;
+
 		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 		               LISTBROWSER_Labels, ~0, TAG_DONE);
 		lbns=GetSucc(lbn);
