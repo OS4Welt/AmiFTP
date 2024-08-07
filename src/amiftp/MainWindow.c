@@ -4,6 +4,7 @@
 
 #include "AmiFTP.h"
 #include "gui.h"
+#include "MenuClass.h"
 #include "AmiFTP_rev.h"
 
 struct Window *MainWindow;
