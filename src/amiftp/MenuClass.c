@@ -61,7 +61,7 @@ struct Image *MenuImage(CONST_STRPTR name, struct Screen *screen)
 	uint32 len, totlen;
 
 	len = Strlen(name);
-	totlen = 2*len + 6; // [name_LENGHT + 3] + [name_LENGTH + 3] -> [name_s] + [name_g]
+	totlen = 2*len + 6; // [name_LENGTH + 3] + [name_LENGTH + 3] -> [name_s] + [name_g]
 
 	name_s = AllocVecTags(totlen, TAG_END);
 	if(name_s)
