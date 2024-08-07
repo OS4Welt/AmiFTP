@@ -4,6 +4,8 @@
 
 #include "AmiFTP.h"
 #include "gui.h"
+#include "MenuClass.h"
+
 
 static int menu_Connect(struct MenuItem *menuitem);
 //static int menu_Disconnect(struct MenuItem *menuitem);
@@ -13,8 +15,10 @@ static int menu_Put(struct MenuItem *menuitem);
 static int menu_View(struct MenuItem *menuitem);
 static int menu_Quit(struct MenuItem *menuitem);
 //static int menu_CreateDir(struct MenuItem *menuitem);
+#ifndef __amigaos4__
 static int menu_SortByName(struct MenuItem *menuitem);
 static int menu_SortByDate(struct MenuItem *menuitem);
+#endif
 static int menu_Iconify(struct MenuItem *menuitem);
 static int menu_SelectAll(struct MenuItem *menuitem);
 static int menu_UnselectAll(struct MenuItem *menuitem);
@@ -44,57 +48,6 @@ static int menu_ViewReadme(struct MenuItem *menuitem);
 Object *menustripobj, *hotlistmenu;
 int32 mimgsize = 24;
 
-
-enum {
-    MNU_ProjectTitle=0,
-    MNU_Connect,
-    MNU_Disconnect,
-    MNU_Reconnect,
-    MNU_RawCommand,
-    MNU_AddToSiteList,
-    MNU_BarLabel1,
-    MNU_ResetADT,
-    MNU_BarLabel2,
-    MNU_Iconify,
-    MNU_BarLabel3,
-    MNU_About,
-    MNU_BarLabel4,
-    MNU_Quit,
-    MNU_FilesTitle,
-    MNU_SelectAll,
-    MNU_UnselectAll,
-    MNU_PatternSelect,
-    MNU_BarLabel5,
-    MNU_TransferMode,
-    MNU_BinaryTransferMode,
-    MNU_AsciiTransferMode,
-    MNU_BarLabel6,
-    MNU_ClearCache,
-    MNU_BarLabel7,
-    MNU_Parent,
-    MNU_Get,
-    MNU_Put,
-    MNU_View,
-    MNU_ViewReadme,
-    MNU_CreateDir,
-    MNU_Delete,
-    MNU_Rename,
-    MNU_SortTitle,
-    MNU_SortByName,
-    MNU_SortByDate,
-    MNU_SettingsTitle,
-    MNU_OpenPrefsWindow,
-    MNU_HostlistPrefs,
-    MNU_BarLabel8,
-    MNU_LogWindow,
-    MNU_ToggleDotFiles,
-    MNU_ToggleADT,
-    MNU_BarLabel9,
-    MNU_LoadPrefs,
-    MNU_SavePrefs,
-    MNU_SavePrefsAs,
-    MNU_HotListTitle,
-};
 
 //struct Menu *menu;
 
@@ -128,7 +81,7 @@ struct Image *MenuImage(CONST_STRPTR name, struct Screen *screen)
 		{
 			prev_dir = SetCurrentDir(dir);
 
-			i = (struct Image *)BitMapObject,
+			i = (struct Image *)NewObject(BitMapClass, NULL,//BitMapObject,
 			                     (mimgsize!=24)? IA_Scalable : TAG_IGNORE, TRUE,
 			                     //IA_Width,24, IA_Height,24+2,
 			                     BITMAP_SourceFile,         name,
@@ -180,11 +133,11 @@ DBUG("updateMenuHotlist() 0x%08lx\n",hotlistmenu);
 		GetListBrowserNodeAttrs(lbn, LBNA_UserData,&ptr, TAG_DONE);
 		if(ptr) {
 			if(ptr->sn_HotList) {
-//DBUG("group=%ld '%s' (0x%08lx)\n",ptr->sn_MenuType,ptr->sn_Node.ln_Name,ptr);
+DBUG("sn_MenuType=%ld '%s' (0x%08lx)\n",ptr->sn_MenuType,ptr->sn_Node.ln_Name,ptr);
 				//Separator
 				if(ptr->sn_BarLabel) { menuitem = NewObject(NULL, "menuclass", MA_Type,T_ITEM, MA_Separator,TRUE, TAG_END); }
 				//Group
-				else if(ptr->sn_MenuType) {
+				else if(ptr->sn_MenuType==SLN_PARENT) {
 					menuitem = NewObject(NULL, "menuclass",
 					                     MA_Type,T_ITEM, MA_Label,ptr->sn_Node.ln_Name,
 					                     MA_UserData,(uint32)ptr,
@@ -200,7 +153,7 @@ DBUG("updateMenuHotlist() 0x%08lx\n",hotlistmenu);
 				//SetAttrs(hotlistmenu, MA_AddChild,menuitem, TAG_END);
 				IDoMethod(menugroup, OM_ADDMEMBER, menuitem);
 //DBUG("\t0x%08lx (0x%08lx)\n",item_ID,ptr);
-				if(ptr->sn_MenuType) { menugroup = menuitem; } // insert sites on this group
+				if(ptr->sn_MenuType==SLN_PARENT) { menugroup = menuitem; } // insert sites on this group
 			}
 		}
 	}
@@ -210,7 +163,7 @@ DBUG("updateMenuHotlist() 0x%08lx\n",hotlistmenu);
 Object *BuildMenuClass(struct Screen *scr)
 {
 	Object *menuobj = NewObject(NULL, "menuclass",
-
+//PROJECT
      MA_AddChild, NewObject(NULL, "menuclass",
       MA_Type,T_MENU, MA_Label,GetAmiFTPString(MENU_Project),
       MA_AddChild, NewObject(NULL, "menuclass",
@@ -220,18 +173,21 @@ Object *BuildMenuClass(struct Screen *scr)
       TAG_END),
       MA_AddChild, NewObject(NULL, "menuclass",
         MA_Type,T_ITEM, MA_Label,GetAmiFTPString(MENU_Disconnect),
-        MA_ID,    MNU_Disconnect,
-        MA_Image, MenuImage("disconnect",scr),
+        MA_ID,       MNU_Disconnect,
+        MA_Image,    MenuImage("disconnect",scr),
+        MA_Disabled, TRUE, // disabled by default
       TAG_END),
       MA_AddChild, NewObject(NULL, "menuclass",
         MA_Type,T_ITEM, MA_Label,GetAmiFTPString(MENU_Reconnect),
-        MA_ID,    MNU_Reconnect,
-        MA_Image, MenuImage("sync",scr),
+        MA_ID,       MNU_Reconnect,
+        MA_Image,    MenuImage("sync",scr),
+        MA_Disabled, TRUE, // disabled by default
       TAG_END),
       MA_AddChild, NewObject(NULL, "menuclass",
         MA_Type,T_ITEM, MA_Label,GetAmiFTPString(MENU_RawCommand),
-        MA_ID,    MNU_RawCommand,
-        MA_Image, MenuImage("shell",scr),
+        MA_ID,       MNU_RawCommand,
+        MA_Image,    MenuImage("shell",scr),
+        MA_Disabled, TRUE, // disabled by default
       TAG_END),
       MA_AddChild, NewObject(NULL, "menuclass",
         MA_Type,T_ITEM, MA_Label,GetAmiFTPString(MENU_AddToSiteList),
@@ -263,9 +219,11 @@ Object *BuildMenuClass(struct Screen *scr)
         MA_Image, MenuImage("quit",scr),
       TAG_END),
      TAG_END),
-
+//FILES
      MA_AddChild, NewObject(NULL, "menuclass",
       MA_Type,T_MENU, MA_Label,GetAmiFTPString(MENU_Files),
+      MA_ID,       MNU_FilesTitle,
+      MA_Disabled, TRUE, // FILES menu disabled by default
       MA_AddChild, NewObject(NULL, "menuclass",
         MA_Type,T_ITEM, MA_Label,GetAmiFTPString(MENU_TagAll),
         MA_ID,    MNU_SelectAll,
@@ -349,7 +307,8 @@ Object *BuildMenuClass(struct Screen *scr)
         MA_Image, MenuImage("rename",scr),
       TAG_END),
      TAG_END),
-
+#ifndef __amigaos4__
+//SORT
      MA_AddChild, NewObject(NULL, "menuclass",
       MA_Type,T_MENU, MA_Label,GetAmiFTPString(MENU_Sort),
       MA_AddChild, NewObject(NULL, "menuclass",
@@ -367,7 +326,8 @@ Object *BuildMenuClass(struct Screen *scr)
         MA_Image, MenuImage("date",scr),
       TAG_END),
      TAG_END),
-
+#endif
+//SETTINGS
      MA_AddChild, NewObject(NULL, "menuclass",
       MA_Type,T_MENU, MA_Label,GetAmiFTPString(MENU_Settings),
       MA_AddChild, NewObject(NULL, "menuclass",
@@ -479,11 +439,11 @@ int HandleMenus(int32 mitem)
 		break;
 		case MNU_BinaryTransferMode:
 			TransferMode = BINARY;
-//DebugPrintF("TransferMode = %ld\n",TransferMode);
+//DBUG("TransferMode = %ld\n",TransferMode);
 		break;
 		case MNU_AsciiTransferMode:
 			TransferMode = ASCII;
-//DebugPrintF("TransferMode = %ld\n",TransferMode);
+//DBUG("TransferMode = %ld\n",TransferMode);
 		break;
 		case MNU_ClearCache:
 			ClearCache(FALSE);
@@ -512,13 +472,17 @@ int HandleMenus(int32 mitem)
 		case MNU_Rename:
 			Rename_clicked();
 		break;
+#ifndef __amigaos4__
 //SORT
 		case MNU_SortByName:
+DBUG("MNU_SortByName\n",NULL);
 			menu_SortByName(NULL);
 		break;
 		case MNU_SortByDate:
+DBUG("MNU_SortByDate\n",NULL);
 			menu_SortByDate(NULL);
 		break;
+#endif
 //SETTINGS
 		case MNU_OpenPrefsWindow:
 			res = menu_OpenPrefsWindow(NULL);
@@ -552,7 +516,7 @@ int HandleMenus(int32 mitem)
 		{
 			struct SiteNode *sn_ptr;
 			GetAttr(MA_UserData, obj, (uint32 *)&sn_ptr);
-//DebugPrintF("'%s' 0x%08lx\n",sn_ptr->sn_Node.ln_Name,sn_ptr);
+//DBUG("'%s' 0x%08lx\n",sn_ptr->sn_Node.ln_Name,sn_ptr);
 			ConnectSite(sn_ptr, 0);
 			if(connected) { strncpy(CurrentState.LastLVSite, sn_ptr->sn_Node.ln_Name, sizeof(CurrentState.LastLVSite)); }
 		}
@@ -578,6 +542,7 @@ static int menu_Quit(struct MenuItem *menuitem)
     return 0;
 }
 
+#ifndef __amigaos4__
 static int menu_SortByName(struct MenuItem *menuitem)
 {
 	SortMode=SORTBYNAME;
@@ -617,6 +582,7 @@ static int menu_SortByDate(struct MenuItem *menuitem)
 
 	return 1;
 }
+#endif
 
 static int menu_Iconify(struct MenuItem *menuitem)
 {
@@ -795,26 +761,26 @@ static int menu_ToggleADT(uint32 selected)//struct MenuItem *menuitem)
 
 				if (!node) {
 					SetLBColumnInfoAttrs(columninfo,
-					                    LBCIA_Column,0, LBCIA_Weight,95,
-					                    LBCIA_Column,1, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
-					                    LBCIA_Column,2, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
-					                    LBCIA_Column,3, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
-					                    LBCIA_Column,4, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
-					                    LBCIA_Column,5, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+					                    LBCIA_Column,COL_NAME, LBCIA_Weight,95,
+					                    LBCIA_Column,COL_SIZE, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+					                    LBCIA_Column,COL_TYPE, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+					                    LBCIA_Column,COL_DATE, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+					                    LBCIA_Column,COL_OWN,  LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+					                    LBCIA_Column,COL_GRP,  LBCIA_Weight, 1, LBCIA_Separator,FALSE,
 					                   TAG_DONE);
 
-					node=AllocListBrowserNode(6,
-					      LBNA_Column, 0,
+					node=AllocListBrowserNode(TOT_COLS,
+					      LBNA_Column, COL_NAME,
 					        LBNCA_Text, GetAmiFTPString(Str_NoNewAminetFiles),
-					      LBNA_Column, 1,
+					      LBNA_Column, COL_SIZE,
 					        LBNCA_Text, "",
-					      LBNA_Column, 2,
+					      LBNA_Column, COL_TYPE,
 					        LBNCA_Text, "",
-					      LBNA_Column, 3,
+					      LBNA_Column, COL_DATE,
 					        LBNCA_Text, "",
-					      LBNA_Column, 4,
+					      LBNA_Column, COL_OWN,
 					        LBNCA_Text, "",
-					      LBNA_Column, 5,
+					      LBNA_Column, COL_GRP,
 					        LBNCA_Text, "",
 					     TAG_DONE);
 
@@ -1023,49 +989,20 @@ static int menu_ViewReadme(struct MenuItem *menuitem)
 
 static int menu_PatternSelect(struct MenuItem *menuitem)
 {
-	/*static ULONG tags[]={
-		RT_Window, NULL,
-		RT_LockWindow, TRUE,
-		RTGS_TextFmt, NULL,
-		RTGS_Flags, GSREQF_CENTERTEXT,
-		RT_ReqPos, REQPOS_CENTERWIN,
-	TAG_END
-	};*/
-
 	char patterbuf[50]="";
-	struct orRequest reqmsg;
-	struct TagItem tags[] = {
-		{ REQ_Type,      REQTYPE_STRING },
-		{ REQ_TitleText, (Tag)GetAmiFTPString(Str_PatternRequest) },
-		{ REQ_BodyText,  (Tag)GetAmiFTPString(Str_SelectPattern) },
-		{ REQS_Buffer,   (Tag)patterbuf },
-		{ REQS_MaxChars, 49},
-		//{ REQ_GadgetText, (Tag)gadgetTxt },
-		{ TAG_END, 0 }
-	};
 
 	if (!FileList || !connected) return 1;
 
-	//tags[1]=(ULONG)MainWindow;
-	//tags[5]=(ULONG)GetAmiFTPString(Str_SelectPattern);
+	LockWindow(MainWin_Object);
 
-	reqmsg.MethodID  = RM_OPENREQ;
-	reqmsg.or_Window = MainWindow;
-	reqmsg.or_Screen = NULL;
-	reqmsg.or_Attrs  = tags;
-
-	Object *requester = NewObject(RequesterClass, NULL, /*"requester.class",*/ TAG_DONE);
-	if (requester==NULL) return 1;
-
-	//if (rtGetStringA(patterbuf, 50, GetAmiFTPString(Str_PatternRequest), NULL, (struct TagItem *)tags)) {
-
-	if (IDoMethodA(requester, (Msg) &reqmsg)) {
+	int result = showStringRequester(MainWindow, FALSE, REQIMAGE_INFO, GetAmiFTPString(Str_PatternRequest), GetAmiFTPString(Str_OkCancel), patterbuf, sizeof(patterbuf)-1, GetAmiFTPString(Str_SelectPattern));
+	if(result) {
 		char pattern[104];
 		struct Node *node;
 		ULONG flags;
 		int n=0;
 
-		ParsePatternNoCase(patterbuf, pattern, 104);
+		ParsePatternNoCase(patterbuf, pattern, sizeof(pattern));
 		for (node=GetHead(FileList); node; node=GetSucc(node)) {
 			GetListBrowserNodeAttrs(node, LBNA_Flags, &flags, TAG_DONE);
 
@@ -1083,7 +1020,7 @@ static int menu_PatternSelect(struct MenuItem *menuitem)
 		}
 	}
 
-	DisposeObject(requester);
+	UnlockWindow(MainWin_Object);
 
 	return 1;
 }
