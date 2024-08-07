@@ -16,7 +16,7 @@
 ; shortcut should look like this:
 ; Q\000Quit
 ;
-; $VER: amiftp.cd 1.3 (2022.10.19)
+; $VER: amiftp.cd 2.5 (2024.08.06)
 ;
 #language english
 ;
@@ -46,9 +46,8 @@ _Remove
 SLW_Cancel (/1/)
 _Cancel
 ;
-;UNUSED (2022.10.22)
 SLW_OK (/1/)
-_OK
+OK
 ;
 SLW_Up (/1/)
 Up
@@ -72,7 +71,7 @@ _Sort
 ; SiteConfiguration Window
 ;
 SCW_SiteConfigurationWindow (/1/)
-AmiFTP Site Configuration
+AmiFTP Site configuration
 ;
 SCW_Name (/1/)
 _Name
@@ -140,7 +139,7 @@ TW_Abort (/1/)
 Abort transfer
 ;
 TW_FileExists (/1/)
-\033c'%s' already exists!\n\n\033bOLD:\033n%ld bytes   \033bNEW:\033n%ld bytes\n
+\033c'%s'\nalready exists!\n\n\033bOLD:\033n %lD bytes   \033bNEW:\033n %lD bytes\n
 ;
 TW_Overwrite (/1/)
 Overwrite
@@ -149,7 +148,7 @@ TW_Resume (/1/)
 Resume transfer
 ;
 TW_CancelTransfer (/1/)
-Cancel transfer
+Cancel
 ;
 TW_DownloadDir (/1/)
 \033cYou are about to download a directory tree.\nAre you sure you want to do this?
@@ -161,7 +160,7 @@ Yes, download it!|Skip this entry
 ; Main preferences window
 ;
 MPW_WinTitle (/1/)
-AmiFTP Global Preferences
+AmiFTP Global preferences
 ;
 MPW_Password (/1/)
 _Anonymous password
@@ -179,7 +178,8 @@ MPW_ProxyDefault (/1/)
 Use pro_xy per default
 ;
 MPW_DefDownloadDir (/1/)
-_Default local drawer
+_Default download drawer
+;_Default local drawer
 ;
 MPW_IgnoreCase (/1/)
 _Ignore case
@@ -194,7 +194,8 @@ MW_DirName (/1/)
 Drawer
 ;
 MW_DownloadDir (/1/)
-L_ocal drawer
+D_ownload drawer
+;L_ocal drawer
 ;
 MW_Parent (/1/)
 _Parent
@@ -215,7 +216,7 @@ MW_Disconnect (/1/)
 Disco_nnect
 ;
 MW_DeleteRequest (/1/)
-\033cAre you sure you want to\ndelete selected items?
+\033cAre you sure you want to\ndelete selected item(s)?
 ;Are you sure you want to\ndelete these files?
 ;
 MW_DeleteCancel (/1/)
@@ -348,7 +349,7 @@ Str_CannotDLDirs (/1/)
 Cannot download entire directories!\n
 ;
 Str_SelectDLPath (/1/)
-Select download path
+Select download drawer
 ;
 Str_SelectULFiles (/1/)
 Select file(s) to upload
@@ -360,7 +361,7 @@ Str_CDFailed (/1/)
 Remote CD failed.
 ;
 Str_AmiFTPError (/1/)
-AmiFTP error
+AmiFTP ERROR
 ;
 Str_OK (/1/)
 OK
@@ -483,7 +484,7 @@ MPW_ShowMOTD (//)
 Show _MOTD-file
 ;
 MPW_GetReadme (//)
-Do_wnload readme
+Do_wnload '.readme'
 ;
 SCW_AminetMode (//)
 A_minet-mode
@@ -527,7 +528,7 @@ MPW_Display (//)
 Display
 ;
 Str_PatternRequest (//)
-AmiFTP request
+AmiFTP Request
 ;
 Str_SelectPattern (//)
 Enter AmigaDOS pattern:
@@ -614,7 +615,7 @@ AmiFTP - %ld items selected (%ld%c%ld %s) %ld %s free on disk
 ; AmiFTP - 10 files selected (4.3 MB) 15 MB free on disk
 ;
 ;(2022.09.08)
-Str_AboutInfotext (//200)
+Str_AboutInfotext (//500)
 Copyright ©1995-1998 Magnus Lilja. All rights reserved.\n\
 ©2020 by Frank Menzel <goos@entwickler-x.de>\n\
 \n\
@@ -665,4 +666,61 @@ Download finished!
 ;
 Str_Notify_UploadFinished (//)
 Upload finished!
+;
+;(2022.11.20)
+Str_ErrorOpenLib (//)
+Couldn't open version %ld of '%s'.
+;
+Str_ErrorNoPort (//)
+Couldn't open message port.
+;
+Str_ErrorTimerDevice (//)
+Couldn't allocate/open 'timer.device'.
+;
+Str_ErrorOpenIFace (//)
+Couldn't open '%s'.
+;
+SCW_GroupConfigurationWindow (//)
+AmiFTP Group configuration
+;
+Str_AboutStrFmt (//)
+\033b%s (%s)\033n\n%s %s\n\%s
+;VERSION, DATE, Str_AboutInfotext, REXXPORT, Str_Translator
+;
+;first %s is for "align" 'OLD: %lld' (64bit)
+;TW_FileExists64 (/1/)
+;\033c%s'%s'\nalready exists!\n\n\033bOLD:\033n %llD bytes   \033bNEW:\033n %lD bytes
+;
+;Str_Notify_TransferAborted (//)
+;Transfer aborted!
+;
+;(2022.12.13)
+MW_COL_NAME (//)
+Name
+;
+MW_COL_SIZE (//)
+Size
+;
+MW_COL_TYPE (//)
+Type
+;
+MW_COL_DATETIME (//)
+Date/Time
+;
+MW_COL_OWNER (//)
+Owner
+;
+MW_COL_GROUP (//)
+Group
+;
+;(2024.07.31)
+Str_AboutStr_info01 (//)
+Copyright ©1995-1998 by Magnus Lilja
+;
+Str_AboutStr_info02 (//)
+©2020 by Frank Menzel for Amiga OS4 community
+;
+; used in AMINET/ADT mode
+MW_COL_DESC (//)
+Description
 ;
