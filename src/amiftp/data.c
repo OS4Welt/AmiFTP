@@ -41,20 +41,6 @@ char    *other_dir_pattern;
 char    *unix_dir_pattern= "\001 \002 \003 \004 \005 \006 \007 \010 \011";
 char    *defaultanonymouspw;
 
-struct Library *IntuitionBase;
-struct Library *UtilityBase;
-struct Library *GfxBase;
-struct Library *DiskfontBase;
-struct Library *AslBase;
-struct Library *IFFParseBase;
-struct Library *RexxSysBase;
-struct Library *IconBase;
-struct Library *WorkbenchBase;
-struct Library *LocaleBase;
-struct Library *AmigaGuideBase;
-struct Device  *TimerBase;
-struct Library *ApplicationLib;
-
 struct AGInfo ag;
 
 struct MsgPort     *RexxPort;
@@ -69,7 +55,7 @@ struct CurrentState CurrentState;
 
 BOOL MenuNeedsUpdate=FALSE; /* Tells main idcmp routine to update the menus when it's safe to do so */
 int TransferMode=BINARY;
-           
+
 //little helper for amigaos4
 #include <gadgets/listbrowser.h>
 #include <gadgets/chooser.h>
@@ -81,18 +67,18 @@ __attribute__((linearvarargs)) void LBEditNode(Object *list, struct Window *wind
 {
     static struct lbEditNode msg =
     {
-        LBM_EDITNODE,      /* LBM_EDITNODE */
-        NULL,     /* to provide rendering info */
-        NULL,      /* modify this node */
-        NULL/* according to this tag list */
+        LBM_EDITNODE, /* LBM_EDITNODE */
+        NULL,         /* to provide rendering info */
+        NULL,         /* modify this node */
+        NULL          /* according to this tag list */
     };
-
-
+DBUG("LBEditNode()\n",NULL);
     va_list args;
-    va_startlinear (args, tag);
+    va_startlinear(args, tag);
     msg.lbe_Node = n;
     msg.lbe_NodeAttrs = va_getlinearva(args, struct TagItem*);
-    IDoMethodA(list, (Msg) &msg);
+    //IDoMethodA(list, (Msg)&msg);
+    DoGadgetMethodA((struct Gadget *)list, window , NULL, (Msg)&msg);
     va_end(args);
 }
 
@@ -101,12 +87,10 @@ struct List *ChooserLabelsA(STRPTR *nameList)
     struct List *newList;
     newList = (struct List *)AllocSysObjectTags(ASOT_LIST, TAG_DONE);
 
-
 	if (newList && nameList)
     {
         while(*nameList)
         {
-
           AddTail(newList, AllocChooserNode(CNA_Text, *nameList, TAG_END));
           nameList++;
         }
@@ -156,7 +140,7 @@ int stcgfn(char *node, char *name, int size)
 		{ REQ_Image,      0UL} ,
 		{ REQS_Buffer,    0UL},
 		{ REQS_MaxChars,  0UL},
-		{REQS_Invisible,  0UL},
+		{ REQS_Invisible, 0UL},
 		{ TAG_END, 0 }
 	};
 
@@ -230,7 +214,7 @@ int stcgfn(char *node, char *name, int size)
 	tags[5].ti_Data = REQIMAGE_INFO;
 
 	Object *pictureImage = NULL;
-	if ((Tag)icon>REQIMAGE_INSERTDISK)
+	if ((Tag)icon > REQIMAGE_INSERTDISK)
 	{
 		pictureImage = NewObject(BitMapClass, NULL, //"bitmap.image",
 		                         BITMAP_SourceFile, icon,
@@ -274,3 +258,48 @@ int getfa(CONST_STRPTR name)
 
     return result;
 }
+
+
+/************************************************************/
+/* This part of code is from Andy Broad's dockapps examples */
+STRPTR DupStr(CONST_STRPTR str, int32 length)
+{
+	STRPTR dup;
+	uint32 str_len = 0;
+
+	if(!str) return NULL;
+
+	str_len = Strlen(str);
+	if(length < 0)
+	{
+		length = str_len;
+	}
+
+	if( (dup=AllocVecTags(length+1, AVT_ClearWithValue,0, TAG_DONE)) )
+	{
+		uint32 copy_len = str_len;
+
+		if(length < str_len)
+		{
+			copy_len = length;
+		}
+		MoveMem(str, dup, copy_len);
+		dup[length] = '\0';
+	}
+
+	return dup;
+}
+
+VOID FreeString(STRPTR *string)
+{
+	if(string)
+	{
+		if(*string)
+		{
+			FreeVec( (APTR)*string );
+		}
+		string = NULL;
+	}
+}
+/* This part of code is from Andy Broad's dockapps examples */
+/************************************************************/

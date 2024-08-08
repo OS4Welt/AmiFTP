@@ -640,11 +640,16 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 	if (command("%s %s",cmd,remote) != PRELIM) {
 	    return TRSF_BADFILE;
 	}
+
+
+extern ULONG FileSize;
+DBUG("FileSize=%ld\n",FileSize);
+if(FileSize == 0)
 	/* "150 Opening BINARY mode data connection for README (899 bytes)." */
 	{
 	    char *ptr;
 	    long size;
-
+DBUG("response_line: '%s'\n",response_line);
 	    //response_line[strlen(response_line)-9]='\0';
         int len =strlen(response_line);
         while(len)
@@ -664,10 +669,14 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 	    }
 	    ptr++;
 	    size=atol(ptr);
-
-	    if (size)
-	      SetTransferSize(size);
+DBUG("size=%ld (%s)\n",size,ptr);
+	    if (size) {
+	      FileSize = size;
+	      //SetTransferSize(size);
+	    }
 	}
+
+
     }
     else {
 	if (command("%s",cmd)!=PRELIM) {
@@ -691,10 +700,10 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
     sin=dataconn();
     if (sin==-1)
       goto abort;
-        /*
+/*
     ASyncFH=OpenAsync(local, restartpoint?MODE_APPEND:MODE_WRITE,
 		      MainPrefs.mp_BufferSize);
-              */
+*/
 
     fh = FOpen(local, restartpoint?MODE_OLDFILE:MODE_NEWFILE,MainPrefs.mp_BufferSize);
     //if (!ASyncFH) {
@@ -731,7 +740,6 @@ int recvrequest(char *cmd, char *local, char *remote,char *lmode,
 	FD_ZERO(&exceptmask);
 	ret=0;
 
-                                              
 	FD_SET(sin,&readmask);
 	FD_SET(sin,&exceptmask);
 	ret=tcp_waitselect(sin+1,&readmask,NULL,&exceptmask,NULL,&mask);
