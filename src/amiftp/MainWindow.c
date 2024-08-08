@@ -4,6 +4,7 @@
 
 #include "AmiFTP.h"
 #include "gui.h"
+#include "MenuClass.h"
 #include "AmiFTP_rev.h"
 
 struct Window *MainWindow;
@@ -725,7 +726,7 @@ TAG_DONE);
 #endif
     MainWin_Object = WindowObject,
                        WA_Title,       "AmiFTP",//wintitle,
-                       WA_ScreenTitle, VERS " ("DATE") ©2022 Frank Menzel <goos.entwickler-x.de>",//wintitle,
+                       WA_ScreenTitle, VERS " ("DATE") Â©2022 Frank Menzel <goos.entwickler-x.de>",//wintitle,
                        WA_PubScreen,   Screen,
                        WA_SizeGadget,  TRUE,
                        WA_SizeBBottom, TRUE,
@@ -881,6 +882,11 @@ DBUG("CloseMainWindow()\n",NULL);
 	FreeInfoList(&dummy_list);
 }
 
+void disableMenuItem(uint32 id, BOOL status)
+{
+	Object *obj = (Object *)IDoMethod(menustripobj, MM_FINDID, 0, id);
+	SetAttrs(obj, MA_Disabled,status, TAG_DONE);
+}
 
 #define DisableGadget(gadget, disable) if (SetGadgetAttrs((struct Gadget*)gadget, MainWindow, NULL, GA_Disabled, disable, TAG_DONE) && MainWindow) RefreshGList((struct Gadget*)gadget, MainWindow, NULL, 1);
 
@@ -888,11 +894,24 @@ void UpdateMainButtons(const int state)
 {
     UpdateWindowTitle();
 
+#ifdef _MENUCLASS_
+    disableMenuItem(MNU_Disconnect, FALSE); // enabling DISCONNECT entry
+    disableMenuItem(MNU_Reconnect, FALSE);  // enabling RCONNECT entry
+    disableMenuItem(MNU_RawCommand, FALSE); // enabling SEND_FT_CMD entry
+    disableMenuItem(MNU_FilesTitle, FALSE); // enabling FILES menu
+#endif
+
     if (state == prev_state)
       return;
 
     switch (state) {
       case MB_DISCONNECTED:
+#ifdef _MENUCLASS_
+        disableMenuItem(MNU_Disconnect, TRUE); // disabling DISCONNECT entry
+        disableMenuItem(MNU_Reconnect, TRUE);  // disabling RCONNECT entry
+        disableMenuItem(MNU_RawCommand, TRUE); // disabling SEND_FT_CMD entry
+        disableMenuItem(MNU_FilesTitle, TRUE); // disabling FILES menu
+#endif
         /*
 	if (MainPrefs.mp_ShowButtons) {
 	    if (CurrentState.ADTMode) {
@@ -1160,7 +1179,7 @@ void ChangeAmiFTPMode(void)
 
 void UpdateWindowTitle()
 {
-	static char title[100] = VERS " ("DATE") ©2022 Frank Menzel <goos.entwickler-x.de>";
+	static char title[100] = VERS " ("DATE") Â©2022 Frank Menzel <goos.entwickler-x.de>";
 	int numselfiles=0, numselbytes=0, round=0;
 	char *bytes="kB";
 	int freebytes=0;
@@ -1255,8 +1274,8 @@ void CreateInfoList(struct List *list)
 	//extern char *linfotext;
 	int i;
 	char *infostrings[4]={ VERS " ("DATE")",
-	                       "Copyright ©1995-1998 by Magnus Lilja",
-	                       "©2020 by Frank Menzel for Amiga OS4 community",
+	                       "Copyright Â©1995-1998 by Magnus Lilja",
+	                       "Â©2020 by Frank Menzel for Amiga OS4 community",
 	                       "<www.OS4Welt.de>" };
 
 	//infostrings[0]=linfotext;

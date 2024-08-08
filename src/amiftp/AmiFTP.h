@@ -301,6 +301,9 @@ enum {TRANS_OK=0, TRANS_GUI, TRANS_ABORTED, TRANS_ERROR};
 /* Returncodes from ConnectSite */
 enum {CONN_OK=0,CONN_GUI,CONN_ERROR, CONN_ABORTED};
 
+/* Listbrowser's columns (2024.08.04) */
+enum {COL_NAME=0, COL_SIZE, COL_TYPE, COL_DATE, COL_OWN, COL_GRP, TOT_COLS};
+
 extern LONG opts[];
 extern struct RDArgs *argsptr;
 extern struct CurrentState CurrentState;
