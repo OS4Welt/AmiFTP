@@ -27,11 +27,13 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 	int retcode, result;
 	extern BOOL SilentMode;
 	extern ULONG MOTDDate;
-
+DBUG("ConnectSite()\n",NULL);
 	if (MainWindow)
 		if (!OpenConnectWindow()) return CONN_GUI;
 
 	LockWindow(MainWin_Object);
+	//APTR lw = SleepWindow(MainWindow);
+
 	if (ConnectWindow) {
 		if (SetGadgetAttrs((struct Gadget*)CG_List[CG_Status], ConnectWindow, NULL,
 		                   GA_Text,GetAmiFTPString(CW_Connecting),
@@ -77,12 +79,42 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 
 					AddCacheEntry(head, CurrentState.CurrentRemoteDir);
 					FileList=head;
+
+							SetAttrs(MG_List[MG_ListView],
+							         LISTBROWSER_Labels, FileList,
+							         //LISTBROWSER_AutoFit, TRUE,
+							         //LISTBROWSER_ColumnInfo, &columninfo,
+							         LISTBROWSER_ColumnInfo, columninfo,
+LISTBROWSER_ColumnTitles,TRUE,
+LISTBROWSER_TitleClickable,TRUE,
+LISTBROWSER_SortColumn, COL_NAME,
+							         LISTBROWSER_Striping, TRUE,
+							         LISTBROWSER_MakeVisible, 0,
+							         LISTBROWSER_Selected, -1,
+							        TAG_DONE);
+//DBUG("LBM_SORT 0x%08lx\n",MainWindow);
+if(MainWindow) {
+SetLBColumnInfoAttrs(columninfo, // restore "normal" ftp mode columns
+                     LBCIA_Column,COL_DATE, LBCIA_Sortable,TRUE,
+                                            LBCIA_Title,GetAmiFTPString(MW_COL_DATETIME),
+                     LBCIA_Column,COL_OWN, LBCIA_Title,GetAmiFTPString(MW_COL_OWNER),
+                     LBCIA_Column,COL_GRP, LBCIA_Title,GetAmiFTPString(MW_COL_GROUP),
+                    TAG_DONE);
+DoGadgetMethod((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
+               LBM_SORT, NULL, COL_NAME, LBMSORT_FORWARD, NULL);
+RefreshGadgets((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL);
+//	RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
+}
+/*
 					if (MainWindow)
 						if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
 						                   LISTBROWSER_Labels, FileList,
 						                   //LISTBROWSER_AutoFit, TRUE,
 						                   //LISTBROWSER_ColumnInfo, &columninfo,
 						                   LISTBROWSER_ColumnInfo, columninfo,
+LISTBROWSER_ColumnTitles,TRUE,
+LISTBROWSER_TitleClickable,TRUE,
+LISTBROWSER_SortColumn, COL_NAME,
 						                   LISTBROWSER_Striping, TRUE,
 						                   LISTBROWSER_MakeVisible, 0,
 						                   LISTBROWSER_Selected, -1,
@@ -94,15 +126,18 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 							         //LISTBROWSER_AutoFit, TRUE,
 							         //LISTBROWSER_ColumnInfo, &columninfo,
 							         LISTBROWSER_ColumnInfo, columninfo,
+LISTBROWSER_ColumnTitles,TRUE,
+LISTBROWSER_TitleClickable,TRUE,
+LISTBROWSER_SortColumn, COL_NAME,
 							         LISTBROWSER_Striping, TRUE,
 							         LISTBROWSER_MakeVisible, 0,
 							         LISTBROWSER_Selected, -1,
 							        TAG_DONE);
-
+*/
 					Continue=FALSE;
 				}
 				else Continue=TRUE;
-
+DBUG("Continue = %ld\n",Continue);
 		}
 		else Continue=FALSE;
 
@@ -115,6 +150,7 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 	if (result==CONN_ABORTED) {
 		CloseConnectWindow();
 		UnlockWindow(MainWin_Object);
+		//WakeWindow(MainWindow,lw);
 		return CONN_ERROR;
 	}
 
@@ -137,7 +173,7 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 		                   GA_Disabled, TRUE, TAG_DONE))
 			RefreshGList((struct Gadget*)CG_List[CG_Abort], ConnectWindow, NULL, 1);
 
-		done=Continue?FALSE:TRUE;
+		done = Continue? FALSE : TRUE;
 		GetAttr(WINDOW_SigMask, ConnectWin_Object, &signal);
 		GetAttr(WINDOW_SigMask, MainWin_Object, &mainwinsignal);
 
@@ -183,6 +219,7 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan)
 	}
 
 	UnlockWindow(MainWin_Object);
+	//WakeWindow(MainWindow,lw);
 
 	return retcode;
 }
@@ -216,7 +253,7 @@ struct Window *OpenConnectWindow()
     if (ConnectWindow)
       return ConnectWindow;
 
-    ConnectLayout=LayoutObject,
+    ConnectLayout=NewObject(LayoutClass, NULL,//LayoutObject,
                      GA_DrawInfo, DrawInfo,
                      GA_TextAttr, AmiFTPAttrF,
                      LAYOUT_DeferLayout, TRUE,
@@ -224,34 +261,34 @@ struct Window *OpenConnectWindow()
                      LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                      LAYOUT_HorizAlignment, LALIGN_CENTRE,
 
-                     StartMember, CG_List[CG_Host]=ButtonObject,
+                     LAYOUT_AddChild, CG_List[CG_Host]=NewObject(ButtonClass, NULL,//ButtonObject,
                        GA_ID, CG_Host,
                        GA_RelVerify, TRUE,
                        GA_ReadOnly, TRUE,
                        GA_Text, " ",
                        BUTTON_Justification, BCJ_LEFT,
-                       StringEnd,
+                       TAG_DONE),
                        CHILD_MinWidth, PropFont->tf_XSize*30,
                        Label(GetAmiFTPString(CW_Site)),
 
-                     StartMember, CG_List[CG_Status]=ButtonObject,
+                     LAYOUT_AddChild, CG_List[CG_Status]=NewObject(ButtonClass, NULL,//ButtonObject,
                        GA_ID, CG_Status,
                        GA_RelVerify, TRUE,
                        GA_ReadOnly, TRUE,
                        GA_Text, " ",
                        BUTTON_Justification, BCJ_LEFT,
-                       StringEnd,
+                       TAG_DONE),
                        CHILD_MinWidth, PropFont->tf_XSize*30,
                        Label(GetAmiFTPString(CW_Status)),
 
-                     StartMember, CG_List[CG_Abort]=ButtonObject,
+                     LAYOUT_AddChild, CG_List[CG_Abort]=NewObject(ButtonClass, NULL,//ButtonObject,
                        GA_ID, CG_Abort,
                        GA_RelVerify, TRUE,
                        GA_Text, GetAmiFTPString(CW_Abort),
-                       ButtonEnd,
+                       TAG_DONE),
                        CHILD_WeightedWidth, 0,
                        //CHILD_NominalSize, TRUE,
-                   LayoutEnd;
+                   TAG_DONE);
 
     if (!ConnectLayout)
       return NULL;
@@ -260,7 +297,7 @@ struct Window *OpenConnectWindow()
     //limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
     //limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
 
-    ConnectWin_Object = WindowObject,
+    ConnectWin_Object = NewObject(WindowClass, NULL,//WindowObject,
                           WA_Title,        GetAmiFTPString(CW_WinTitle),
                           WA_PubScreen,    Screen,
                           WA_DepthGadget,  TRUE,
@@ -270,12 +307,11 @@ struct Window *OpenConnectWindow()
                           WA_SmartRefresh, TRUE,
                           //WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
                           //WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
+                          WA_IDCMP, IDCMP_RAWKEY,
                           WINDOW_Position,  WPOS_CENTERWINDOW,
                           WINDOW_RefWindow, MainWindow,
-                          //WINDOW_ParentGroup, ConnectLayout,
-                          WINDOW_Layout, ConnectLayout,
-                          WA_IDCMP, IDCMP_RAWKEY,
-                        EndWindow;
+                          WINDOW_Layout,    ConnectLayout,
+                        TAG_DONE);
 
     if (!ConnectWin_Object)
       return NULL;
