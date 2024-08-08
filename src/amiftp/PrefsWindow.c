@@ -85,6 +85,7 @@ int OpenPrefsWindow(void)
 	GetAttr(WINDOW_SigMask, MainPrefsWin_Object, &signal);
 	GetAttr(WINDOW_SigMask, MainWin_Object, &mainwinsignal);
 	LockWindow(MainWin_Object);
+	//APTR lw = SleepWindow(MainWindow);
 
 	while (!done) {
 		wait=Wait(signal|mainwinsignal|AG_Signal);
@@ -95,6 +96,7 @@ int OpenPrefsWindow(void)
 
 	CloseMainPrefsWindow();
 	UnlockWindow(MainWin_Object);
+	//WakeWindow(MainWindow,lw);
 
 DBUG("MainInterfaceRestart %ld\n",MainInterfaceRestart);
 	if (MainInterfaceRestart) {
@@ -170,8 +172,8 @@ ULONG HandleMainPrefsIDCMP(void)
     			if (newAttrib)
                 {
                     listsize = newAttrib->ta_YSize;
-                    strncpy(listfont, newAttrib->ta_Name, sizeof(listfont)-1);
-    				sprintf(listfontname, "%s/%d", listfont, listsize);
+                    Strlcpy(listfont, newAttrib->ta_Name, sizeof(listfont));//-1);
+    				SNPrintf(listfontname, sizeof(listfontname), "%s/%ld", listfont,listsize);
                 }
         	}
 		}
@@ -190,9 +192,9 @@ ULONG HandleMainPrefsIDCMP(void)
     			if (newAttrib)
                 {
                     intsize = newAttrib->ta_YSize;
-                    strncpy(intfont, newAttrib->ta_Name, sizeof(intfont)-1);
-                    sprintf(intfontname, "%s/%d", intfont, intsize);
-                }   
+                    Strlcpy(intfont, newAttrib->ta_Name, sizeof(intfont));//-1);
+                    SNPrintf(intfontname, sizeof(intfontname), "%s/%ld", intfont, intsize);
+                }
         	}
 		}
     	break;
@@ -207,7 +209,7 @@ ULONG HandleMainPrefsIDCMP(void)
         			GetAttr(GETFILE_Drawer, MPG_List[MPG_DefaultDLDir], (ULONG*)&strBuffer);
         			if (strBuffer)
                     {
-                        strncpy(buf3, strBuffer, sizeof(buf3)-1);
+                        Strlcpy(buf3, strBuffer, sizeof(buf3));//-1);
 
                         }
                     }
@@ -220,7 +222,7 @@ ULONG HandleMainPrefsIDCMP(void)
 		    ULONG attr;
 		    GetAttr(GA_Selected, MPG_List[MPG_DefaultScreen], &attr);
 		    SetGadgetAttrs((struct Gadget*)MPG_List[MPG_PublicScreen], MainPrefsWindow, NULL,
-				       GA_Disabled, attr?TRUE:FALSE,
+				       GA_Disabled, attr? TRUE : FALSE,
 				       TAG_DONE);
 			RefreshGList((struct Gadget*)MPG_List[MPG_PublicScreen], MainPrefsWindow, NULL, 1);
 		}
@@ -279,8 +281,8 @@ struct Window *OpenMainPrefsWindow(void)
 
     memcpy(&fileListFontTextAttrs, ListViewAttrF, sizeof(fileListFontTextAttrs));
 
-    sprintf(intfontname, "%s/%d", intfont, intsize);
-    sprintf(listfontname, "%s/%d", listfont, listsize);
+    SNPrintf(intfontname, sizeof(intfontname), "%s/%ld", intfont,intsize);
+    SNPrintf(listfontname, sizeof(listfontname), "%s/%d", listfont,listsize);
 
     showLog = MainPrefs.mp_Log;
 
@@ -333,69 +335,70 @@ notify_array[1] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_Notify);
 notify_array[2] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_Both);
 notify_array[3] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_DoNothing);
 
-    MainPrefsLayout=LayoutObject,
+    MainPrefsLayout=NewObject(LayoutClass, NULL,//LayoutObject,
                      GA_DrawInfo, DrawInfo,
                      GA_TextAttr, AmiFTPAttrF,
                      LAYOUT_DeferLayout, TRUE,
                      LAYOUT_SpaceOuter,  FALSE,
                      LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
 
-                     StartMember, MPG_List[MPG_Tab]=ClickTabObject,
+                     LAYOUT_AddChild, MPG_List[MPG_Tab]=NewObject(ClickTabClass, NULL,//ClickTabObject,
                           GA_ID,        MPG_Tab,
                           GA_RelVerify, TRUE,
                           CLICKTAB_Labels,  &tablist,
                           CLICKTAB_Current, LastPage,
-                     EndMember,
+                     TAG_DONE),
 
-                     LAYOUT_AddChild, pagelayout=LayoutObject,
+                     LAYOUT_AddChild, pagelayout=NewObject(LayoutClass, NULL,//LayoutObject,
                        LAYOUT_SpaceOuter, TRUE,
-                     LAYOUT_AddChild, MPG_List[MPG_Page]=PageObject,
+                     LAYOUT_AddChild, MPG_List[MPG_Page]=NewObject(NULL,"page.gadget",//PageObject,
 
-                     PAGE_Add, LayoutObject, /* Start of page 0 General */
+                     PAGE_Add, NewObject(LayoutClass, NULL,//LayoutObject, /* Start of page 0 General */
                      GA_TextAttr, AmiFTPAttrF,
                      LAYOUT_Orientation,    LAYOUT_ORIENT_VERT,
                      LAYOUT_HorizAlignment, LALIGN_RIGHT,
-                     StartVGroup,
-                     StartMember, MPG_List[MPG_AnonymousPW]=StringObject,
+                     LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartVGroup,
+                     LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                     LAYOUT_AddChild, MPG_List[MPG_AnonymousPW]=NewObject(StringClass, NULL,//StringObject,
                        GA_ID,        MPG_AnonymousPW,
                        GA_RelVerify, TRUE,
                        GA_TabCycle,  TRUE,
                        STRINGA_Buffer,   (ULONG)buf1,
                        STRINGA_MaxChars, 50,
-                       StringEnd,
+                       TAG_DONE),
                        Label(GetAmiFTPString(MPW_Password)),
 
-                     StartMember, MPG_List[MPG_ViewCommand]=StringObject,
+                     LAYOUT_AddChild, MPG_List[MPG_ViewCommand]=NewObject(StringClass, NULL,//StringObject,
                        GA_ID,        MPG_ViewCommand,
                        GA_RelVerify, TRUE,
                        GA_TabCycle,  TRUE,
                        STRINGA_Buffer,   (ULONG)buf2,
                        STRINGA_MaxChars, 50,
-                       StringEnd,
+                       TAG_DONE),
                        Label(GetAmiFTPString(MPW_ViewCommand)),
-                       StartMember, MPG_List[MPG_DefaultDLDir] = GetFileObject,
+                       LAYOUT_AddChild, MPG_List[MPG_DefaultDLDir] = NewObject(GetFileClass, NULL,//GetFileObject,
                        GA_ID,        MG_DLGetFile,
                        GA_RelVerify, TRUE,
                        GETFILE_DrawersOnly, TRUE,
                        GETFILE_TitleText,   GetAmiFTPString(Str_SelectDLPath),
                        GETFILE_Drawer,      buf3,
                        GETFILE_ReadOnly,    TRUE,
-	                      End,
+	                      TAG_DONE),
                        Label(GetAmiFTPString(MPW_DefDownloadDir)),
 
-                     StartMember, MPG_List[MPG_BufferSize]=IntegerObject,
+                     LAYOUT_AddChild, MPG_List[MPG_BufferSize]=NewObject(IntegerClass, NULL,//IntegerObject,
                        GA_ID,        MPG_BufferSize,
                        GA_RelVerify, TRUE,
                        GA_TabCycle,  TRUE,
                        INTEGER_Minimum,  512,
                        INTEGER_Number,   (ULONG)MainPrefs.mp_BufferSize,
                        INTEGER_MaxChars, 8,
-                       IntegerEnd,
+                       TAG_DONE),
 //                       CHILD_NominalSize, TRUE,
 //                       CHILD_WeightedWidth, 0,
                        Label(GetAmiFTPString(MPW_BufferSize)),
 
-                     StartMember, MPG_List[MPG_CacheSize]=IntegerObject,
+                     LAYOUT_AddChild, MPG_List[MPG_CacheSize]=NewObject(IntegerClass, NULL,//IntegerObject,
                        GA_ID,        MPG_CacheSize,
                        GA_RelVerify, TRUE,
                        GA_TabCycle,  TRUE,
@@ -403,34 +406,36 @@ notify_array[3] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_DoNothing);
                        INTEGER_Minimum,   1,
                        INTEGER_Maximum,  10,
                        INTEGER_MaxChars,  6,
-                       IntegerEnd,
+                       TAG_DONE),
 //                       CHILD_NominalSize,TRUE,
 //                       CHILD_WeightedWidth,0,
                        Label(GetAmiFTPString(MPW_DirCacheSize)),
-                     EndGroup,
-                     StartHGroup,
-                     StartVGroup,
-                     StartMember, MPG_List[MPG_DeleteOnExit]=CheckBoxObject,
+                     TAG_DONE),
+                     LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartHGroup,
+                     LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartVGroup,
+                     LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                     LAYOUT_AddChild, MPG_List[MPG_DeleteOnExit]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
                        GA_ID,        MPG_DeleteOnExit,
                        GA_RelVerify, TRUE,
                        GA_Text,      GetAmiFTPString(MPW_DeleteViewed),
                        GA_Selected,  MainPrefs.mp_DeleteFiles,
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
-                     EndGroup,
+                       TAG_DONE),
+                     TAG_DONE),
 
-                     StartVGroup,
+                     LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartVGroup,
+                     LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                      LAYOUT_HorizAlignment, LALIGN_RIGHT,
-                     StartMember, MPG_List[MPG_IgnoreCase]=CheckBoxObject,
+                     LAYOUT_AddChild, MPG_List[MPG_IgnoreCase]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
                        GA_ID,        MPG_IgnoreCase,
                        GA_RelVerify, TRUE,
                        GA_Text,      GetAmiFTPString(MPW_IgnoreCase),
                        GA_Selected,  MainPrefs.mp_IgnoreCase,
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
+                       TAG_DONE),
                        //CHILD_WeightMinimum, TRUE,
-                     StartMember, MPG_List[MPG_DisplayBeep]=ChooserObject,
-                     //StartMember, MPG_List[MPG_DisplayBeep]=CheckBoxObject,
+                     LAYOUT_AddChild, MPG_List[MPG_DisplayBeep]=NewObject(ChooserClass, NULL,//ChooserObject,
+                     //LAYOUT_AddChild, MPG_List[MPG_DisplayBeep]=CheckBoxObject,
                        GA_ID,        MPG_DisplayBeep,
                        GA_RelVerify, TRUE,
                        //GA_Text,      GetAmiFTPString(MPW_Beep),
@@ -438,113 +443,121 @@ notify_array[3] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_DoNothing);
                        CHOOSER_Selected,   MainPrefs.mp_DisplayBeep,
                        //GA_Selected,  MainPrefs.mp_DisplayBeep,
                        //CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       ChooserEnd,
+                       TAG_DONE),
                        Label(GetAmiFTPString(MPW_AfterTransf)),
                        CHILD_WeightedWidth, 0,
-                     EndGroup,
+                     TAG_DONE),
                      CHILD_WeightedHeight, 0,
-                     EndGroup,
+                     TAG_DONE),
                      //CHILD_WeightedWidth,  0,
                      CHILD_WeightedHeight, 0,
-                   LayoutEnd, /* End of page 0 */
+                   TAG_DONE), /* End of page 0 */
 
-                   PAGE_Add, VGroupObject, TAligned, //LayoutObject, /* Start of page 1 ADT */
+                   PAGE_Add, NewObject(LayoutClass, NULL,//VGroupObject,
+                   LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                   LAYOUT_VertAlignment, LALIGN_TOP,//TAligned, //LayoutObject, /* Start of page 1 ADT */
                      GA_TextAttr, AmiFTPAttrF,
-                     StartVGroup, TAligned, 
-                     StartMember, MPG_List[MPG_ADTPattern]=StringObject,
+                     LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartVGroup,
+                     LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                     LAYOUT_VertAlignment, LALIGN_TOP,//TAligned, 
+                     LAYOUT_AddChild, MPG_List[MPG_ADTPattern]=NewObject(StringClass, NULL,//StringObject,
                        GA_ID,     MPG_ADTPattern,
                        GA_RelVerify, TRUE,
                        GA_TabCycle,  TRUE,
                        STRINGA_Buffer,   (ULONG)buf6,
                        STRINGA_MaxChars, 511,
-                       StringEnd,
+                       TAG_DONE),
                        Label(GetAmiFTPString(MPW_HideDirectories)),
 
-                     StartMember, MPG_List[MPG_PreserveDir]=CheckBoxObject,
+                     LAYOUT_AddChild, MPG_List[MPG_PreserveDir]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
                        GA_ID,        MPG_PreserveDir,
                        GA_RelVerify, TRUE,
                        GA_Disabled,  TRUE,
                        GA_Text,      GetAmiFTPString(MPW_PreservePath),
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
+                       TAG_DONE),
                        //CHILD_WeightMinimum, TRUE,
 
-                     StartMember, MPG_List[MPG_ShowMOTD]=CheckBoxObject,
+                     LAYOUT_AddChild, MPG_List[MPG_ShowMOTD]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
                        GA_ID,        MPG_ShowMOTD,
                        GA_RelVerify, TRUE,
                        GA_Text,      GetAmiFTPString(MPW_ShowMOTD),
                        GA_Selected,  MainPrefs.mp_ShowMOTD,
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
+                       TAG_DONE),
                        //CHILD_WeightMinimum, TRUE,
 
-                     StartMember, MPG_List[MPG_GetReadme]=CheckBoxObject,
+                     LAYOUT_AddChild, MPG_List[MPG_GetReadme]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
                        GA_ID,        MPG_GetReadme,
                        GA_RelVerify, TRUE,
                        GA_Selected,  MainPrefs.mp_GetReadme,
                        GA_Text,      GetAmiFTPString(MPW_GetReadme),
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
+                       TAG_DONE),
                        //CHILD_WeightMinimum, TRUE,
-                   EndGroup,
+                   TAG_DONE),
                    CHILD_WeightedHeight, 0,
-                   LayoutEnd, /* End of page 1 */
+                   TAG_DONE), /* End of page 1 */
 
-                   PAGE_Add, VGroupObject, TAligned, /* Start of page 3 display */
+                   PAGE_Add, NewObject(LayoutClass, NULL,//VGroupObject,
+                   LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                   LAYOUT_VertAlignment, LALIGN_TOP,//TAligned, /* Start of page 3 display */
                      GA_TextAttr, AmiFTPAttrF,
-                     StartVGroup, TAligned,
+                     LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartVGroup,
+                     LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                     LAYOUT_VertAlignment, LALIGN_TOP,//TAligned,
                      LAYOUT_HorizAlignment, LALIGN_RIGHT,
-                     StartMember, MPG_List[MPG_DefaultScreen]=CheckBoxObject,
+                     LAYOUT_AddChild, MPG_List[MPG_DefaultScreen]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
                        GA_ID,        MPG_DefaultScreen,
                        GA_RelVerify, TRUE,
                        GA_Selected,  MainPrefs.mp_OpenOnDefaultScreen,
                        GA_Text,      GetAmiFTPString(MPW_DefaultScreen),
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
+                       TAG_DONE),
                        //CHILD_WeightMinimum, TRUE,
 
-                     StartMember, MPG_List[MPG_PublicScreen]=StringObject,
+                     LAYOUT_AddChild, MPG_List[MPG_PublicScreen]=NewObject(StringClass, NULL,//StringObject,
                        GA_ID,        MPG_PublicScreen,
-                       GA_Disabled,  MainPrefs.mp_OpenOnDefaultScreen?TRUE:FALSE,
+                       GA_Disabled,  MainPrefs.mp_OpenOnDefaultScreen? TRUE : FALSE,
                        GA_RelVerify, TRUE,
                        GA_TabCycle,  TRUE,
                        STRINGA_Buffer,   (ULONG)pubscreen,
                        STRINGA_MaxChars, 255,
-                       StringEnd,
+                       TAG_DONE),
                        Label(GetAmiFTPString(MPW_PublicScreen)),
 
-                     StartMember, MPG_List[MPG_DefaultFonts]=CheckBoxObject,
+                     LAYOUT_AddChild, MPG_List[MPG_DefaultFonts]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
                        GA_ID,        MPG_DefaultFonts,
                        GA_RelVerify, TRUE,
                        GA_Selected,  MainPrefs.mp_UseDefaultFonts,
                        GA_Text,      GetAmiFTPString(MPW_SystemFonts),
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
+                       TAG_DONE),
                        //CHILD_WeightMinimum, TRUE,
 
-                       StartMember, MPG_List[MPG_InterfaceGetFontB] = GetFontObject,
+                       LAYOUT_AddChild, MPG_List[MPG_InterfaceGetFontB] = NewObject(GetFontClass, NULL,//GetFontObject,
                        GA_ID,        MPG_InterfaceGetFontB,
                        GA_RelVerify, TRUE,
                        GA_TextAttr,  AmiFTPAttrF,
                        GA_Disabled,  MainPrefs.mp_UseDefaultFonts?TRUE:FALSE,
                        //GETFONT_TitleText, GetAmiFTPString(MPW_SelectFont),//"Select font...",
                        GETFONT_TextAttr,  &interfaceFontTextAttrs,
-                       End,
+                       TAG_DONE),
                        CHILD_WeightedHeight, 0,
                      Label(GetAmiFTPString(MPW_InterfaceFont)),
 
-                     StartMember, MPG_List[MPG_FilelistGetFontB] = GetFontObject,
+                     LAYOUT_AddChild, MPG_List[MPG_FilelistGetFontB] = NewObject(GetFontClass, NULL,//GetFontObject,
                        GA_ID,        MPG_FilelistGetFontB,
                        GA_RelVerify, TRUE,
                        GA_TextAttr,  AmiFTPAttrF,
                        GA_Disabled,  MainPrefs.mp_UseDefaultFonts?TRUE:FALSE,
                        //GETFONT_TitleText, GetAmiFTPString(MPW_SelectFont),//"Select font...",
                        GETFONT_TextAttr,  &fileListFontTextAttrs,
-                       End,
+                       TAG_DONE),
                        CHILD_WeightedHeight, 0,
                      Label(GetAmiFTPString(MPW_FilelistFont)),
 
-                     /*StartMember, MPG_List[MPG_ShowButtons]=CheckBoxObject,
+                     /*LAYOUT_AddChild, MPG_List[MPG_ShowButtons]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
                        GA_ID, MPG_ShowButtons,
                        GA_RelVerify, TRUE,
                        GA_Selected, MainPrefs.mp_ShowButtons,
@@ -553,8 +566,8 @@ notify_array[3] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_DoNothing);
                        CheckBoxEnd,
                        CHILD_WeightMinimum, TRUE,  */
 
-                     StartMember, MPG_List[MPG_ToolBar]=ChooserObject,
-                     //StartMember, MPG_List[MPG_ToolBar]=CheckBoxObject,
+                     LAYOUT_AddChild, MPG_List[MPG_ToolBar]=NewObject(ChooserClass, NULL,//ChooserObject,
+                     //LAYOUT_AddChild, MPG_List[MPG_ToolBar]=CheckBoxObject,
                        GA_ID,        MPG_ToolBar,
                        GA_RelVerify, TRUE,
                        CHOOSER_LabelArray, &toolbar_array,
@@ -563,27 +576,31 @@ notify_array[3] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_DoNothing);
                        //GA_Text, GetAmiFTPString(MPW_ShowToolbar),
                        //CHECKBOX_TextPlace, PLACETEXT_LEFT,
                        //CheckBoxEnd,
-                       ChooserEnd,
+                       TAG_DONE),
                        Label(GetAmiFTPString(MPW_ShowToolbar)),
                        CHILD_WeightedWidth, 0,
                        //CHILD_WeightMinimum, TRUE,
-                   EndGroup,
+                   TAG_DONE),
                    CHILD_WeightedHeight, 0,
-                   LayoutEnd, /* End of page 3 */
+                   TAG_DONE), /* End of page 3 */
 
-                   PAGE_Add, VGroupObject, TAligned, /* Start of page 2 proxy */
+                   PAGE_Add, NewObject(LayoutClass, NULL,//VGroupObject,
+                   LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                   LAYOUT_VertAlignment, LALIGN_TOP,//TAligned, /* Start of page 2 proxy */
                      GA_TextAttr, AmiFTPAttrF,
-                     StartVGroup, TAligned, 
-                     StartMember, MPG_List[MPG_ProxyHost]=StringObject,
+                     LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartVGroup,
+                     LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                     LAYOUT_VertAlignment, LALIGN_TOP,//TAligned, 
+                     LAYOUT_AddChild, MPG_List[MPG_ProxyHost]=NewObject(StringClass, NULL,//StringObject,
                        GA_ID,        MPG_ProxyHost,
                        GA_RelVerify, TRUE,
                        GA_TabCycle,  TRUE,
                        STRINGA_Buffer,   (ULONG)buf4,
                        STRINGA_MaxChars, 40,
-                       StringEnd,
+                       TAG_DONE),
                        Label(GetAmiFTPString(MPW_ProxyHost)),
 
-                     StartMember, MPG_List[MPG_ProxyPort]=IntegerObject,
+                     LAYOUT_AddChild, MPG_List[MPG_ProxyPort]=NewObject(IntegerClass, NULL,//IntegerObject,
                        GA_ID,        MPG_ProxyPort,
                        GA_RelVerify, TRUE,
                        GA_TabCycle,  TRUE,
@@ -593,27 +610,31 @@ notify_array[3] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_DoNothing);
                        INTEGER_MinVisible, 5,
                        INTEGER_Minimum, 0,
                        INTEGER_Maximum, 65535,
-                       IntegerEnd,
+                       TAG_DONE),
                        //CHILD_NominalSize, TRUE,
                        CHILD_WeightedWidth, 0,
                        Label(GetAmiFTPString(MPW_ProxyPort)),
-                     StartMember, MPG_List[MPG_ProxyDefault]=CheckBoxObject,
+                     LAYOUT_AddChild, MPG_List[MPG_ProxyDefault]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
                        GA_ID,        MPG_ProxyDefault,
                        GA_RelVerify, TRUE,
                        GA_Text,      GetAmiFTPString(MPW_ProxyDefault),
                        GA_Selected,  MainPrefs.mp_DefaultProxy,
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
+                       TAG_DONE),
                        //CHILD_WeightMinimum, TRUE,
-                   EndGroup,
+                   TAG_DONE),
                    CHILD_WeightedHeight, 0,
-                   LayoutEnd, /* End of page 2 */
+                   TAG_DONE), /* End of page 2 */
 
-                   PAGE_Add, VGroupObject, TAligned, /* Start of page log */
+                   PAGE_Add, NewObject(LayoutClass, NULL,//VGroupObject,
+                   LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                   LAYOUT_VertAlignment, LALIGN_TOP,//TAligned, /* Start of page log */
                      GA_TextAttr, AmiFTPAttrF,
-                     StartVGroup, TAligned,
+                     LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartVGroup,
+                     LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                     LAYOUT_VertAlignment, LALIGN_TOP,//TAligned,
                      /*
-                     StartMember, IntegerObject,
+                     LAYOUT_AddChild, IntegerObject,
                        GA_ID, MPG_ProxyPort,
                        GA_RelVerify, TRUE,
                        GA_TabCycle, TRUE,
@@ -624,48 +645,50 @@ notify_array[3] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_DoNothing);
                        CHILD_NominalSize, TRUE,
                        CHILD_WeightedWidth, 0,
                        Label("Log: size"),  */
-                     StartMember, MPG_List[MPG_Log] = CheckBoxObject,
+                     LAYOUT_AddChild, MPG_List[MPG_Log] = NewObject(CheckBoxClass, NULL,//CheckBoxObject,
                        GA_ID,        MPG_ProxyDefault,
                        GA_RelVerify, TRUE,
                        GA_Text,      GetAmiFTPString(MPW_ShowLogWindow),
                        GA_Selected,  showLog!=0,
                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
+                       TAG_DONE),
                        //CHILD_WeightMinimum, TRUE,
-                   EndGroup,
+                   TAG_DONE),
                    //CHILD_WeightedHeight, 0,
-                   LayoutEnd, /* End of page 2 */
+                   TAG_DONE), /* End of page 2 */
 
-                   PAGE_Current, LastPage, PageEnd, /* End of pageobject */
-                   LayoutEnd, /* End of layout containing pageobject */
+                   PAGE_Current, LastPage, TAG_DONE), /* End of pageobject */
+                   TAG_DONE), /* End of layout containing pageobject */
 
                    /*LAYOUT_AddImage, BevelObject,
                      BEVEL_Style, BVS_SBAR_VERT,
                    BevelEnd,*/
 
-                   StartHGroup, EvenSized,
+                   LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartHGroup,
+                   //
+                   LAYOUT_EvenSize, TRUE,//EvenSized,
                      LAYOUT_SpaceOuter, TRUE,
                      LAYOUT_BevelStyle, BVS_SBAR_VERT,
 
-                     StartMember, MPG_List[MPG_OK]=ButtonObject, 
+                     LAYOUT_AddChild, MPG_List[MPG_OK]=NewObject(ButtonClass, NULL,//ButtonObject,
                        GA_Text,      GetAmiFTPString(MPW_OK),
                        GA_ID,        MPG_OK,
                        GA_RelVerify, TRUE,
-                     ButtonEnd,
+                     TAG_DONE),
                      //CHILD_NominalSize, TRUE,
                      CHILD_WeightedWidth, 0,
 
-                     StartMember, MPG_List[MPG_Cancel]=ButtonObject,
+                     LAYOUT_AddChild, MPG_List[MPG_Cancel]=NewObject(ButtonClass, NULL,//ButtonObject,
                        GA_Text,      GetAmiFTPString(MPW_Cancel),
                        GA_ID,        MPG_Cancel,
                        GA_RelVerify, TRUE,
-                     ButtonEnd,
+                     TAG_DONE),
                      //CHILD_NominalSize, TRUE,
                      CHILD_WeightedWidth, 0,
-                   EndGroup,
+                   TAG_DONE),
                    CHILD_WeightedHeight, 0,
                    //CHILD_WeightMinimum, TRUE,
-                   LayoutEnd;
+                   TAG_DONE);
 
     if (!MainPrefsLayout)
       return NULL;
@@ -676,7 +699,7 @@ notify_array[3] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_DoNothing);
     //limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
     //limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
 
-    MainPrefsWin_Object = WindowObject,
+    MainPrefsWin_Object = NewObject(WindowClass, NULL,//WindowObject,
                           WA_Title,        GetAmiFTPString(MPW_WinTitle),
                           WA_PubScreen,    Screen,
                           WA_DepthGadget,  TRUE,
@@ -690,11 +713,10 @@ notify_array[3] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_DoNothing);
                           WA_IDCMP, IDCMP_RAWKEY,
                           WINDOW_Position,  WPOS_CENTERWINDOW,
                           WINDOW_RefWindow, MainWindow,
-                          //WINDOW_ParentGroup, MainPrefsLayout,
-                          WINDOW_Layout, MainPrefsLayout,
-                          WINDOW_InterpretUserData, WGUD_FUNC,
+                          WINDOW_Layout,    MainPrefsLayout,
+                          WINDOW_GadgetUserData, WGUD_FUNC,
                           WINDOW_LockHeight, TRUE,
-                        EndWindow;
+                        TAG_DONE);
 
     if (!MainPrefsWin_Object)
       return NULL;

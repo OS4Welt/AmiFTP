@@ -28,6 +28,7 @@ extern struct Library *SocketBase;
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
+#include <string.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -73,7 +74,6 @@ extern struct Library *SocketBase;
 #include <exec/devices.h>
 #include <exec/memory.h>
 #include <utility/hooks.h>
-#include <string.h>
 #include <workbench/startup.h>
 #include <workbench/workbench.h>
 
@@ -130,8 +130,9 @@ extern struct Library *SocketBase;
    #pragma amiga-align
 #endif
 
-extern char decimalSeperator;
-extern uint8 seperatorSize;
+extern char decimalSeparator;
+//extern char groupSeparator;
+//extern uint8 separatorSize;
 
 struct MainPrefs {
     char       *mp_LocalDir;
@@ -311,48 +312,48 @@ extern struct MainPrefs MainPrefs;
 extern struct List SiteList;
 extern struct mysockaddr_in data_addr;
 extern struct sockaddr_in myctladdr;
-extern int      connected;
-extern int      timedout;
-extern int      non_unix;
-extern int      code;
-extern int      data;
-extern int      remote_os_type;
-extern int      which_up_cmd;
-extern int      SortMode;
-extern int      remote_sort_direction;
-extern int      current_year;
-extern int      current_month;
-extern int      cpend;
-extern int      curtype;
-extern int      crflag;
-extern int      verbose;
-extern int      sendport;
+extern int    connected;
+extern int    timedout;
+extern int    non_unix;
+extern int    code;
+extern int    data;
+extern int    remote_os_type;
+extern int    which_up_cmd;
+extern int    SortMode;
+extern int    remote_sort_direction;
+extern int    current_year;
+extern int    current_month;
+extern int    cpend;
+extern int    curtype;
+extern int    crflag;
+extern int    verbose;
+extern int    sendport;
 
-extern BOOL     SilentMode;
+extern BOOL   SilentMode;
 
-extern int      cin,cout;
+extern int    cin,cout;
 
-extern int      ftp_port;
+extern int    ftp_port;
 
-extern BOOL    DEBUG;
-extern BOOL    TCPStack;
+extern BOOL   DEBUG;
+extern BOOL   TCPStack;
 
 #define MAXLINE 1024
 #define UNIX_DIR_PATTERN "PERMS LINKS USER GROUP SIZE MONTH DAY TIME NAME"
 
-extern char     response_line[MAXLINE];
-extern char     scratch[1024 + 1024 + 10];
-extern char    *header_name;
-extern char    *unix_dir_pattern;
-extern char    *other_dir_pattern;
-extern char    *defaultanonymouspw;
-extern BOOL     ConfigChanged;
+extern char   response_line[MAXLINE];
+extern char   scratch[1024 + 1024 + 10];
+extern char   *header_name;
+extern char   *unix_dir_pattern;
+extern char   *other_dir_pattern;
+extern char   *defaultanonymouspw;
+extern BOOL   ConfigChanged;
 extern struct TextAttr *AmiFTPAttrF;
 extern struct TextAttr *ListViewAttrF;
 extern struct TextFont *PropFont;
 extern struct TextFont *LBFont;
 
-extern struct Library *IntuitionBase;
+/*extern struct Library *IntuitionBase;
 extern struct Library *UtilityBase;
 extern struct Library *GfxBase;
 extern struct Library *DiskfontBase;
@@ -364,7 +365,7 @@ extern struct Library *WorkbenchBase;
 extern struct Library *LocaleBase;
 extern struct Library *AmigaGuideBase;
 extern struct Device  *TimerBase;
-extern struct Library *ApplicationLib;
+extern struct Library *ApplicationLib;*/
 
 extern struct IntuitionIFace   *IIntuition;
 extern struct UtilityIFace     *IUtility;
@@ -380,7 +381,7 @@ extern struct AmigaGuideIFace  *IAmigaGuide;
 extern struct TimerIFace       *ITimer;
 extern struct ApplicationIFace *IApplication;
 
-
+extern struct ARexxIFace *IARexx;
 //extern Class *TextEditorClass;
 
 
@@ -393,15 +394,15 @@ extern struct TimeRequest *TimeRequest;
 extern struct List *FileList;
 extern struct List TempList;
 extern struct Window *MainWindow;
-extern BOOL MenuNeedsUpdate;
-extern int TransferMode;
-extern ULONG appID;
+extern BOOL   MenuNeedsUpdate;
+extern int    TransferMode;
+extern ULONG  appID;
 
 /* sprintf.c */
 void Sprintf(char *, const char *, ...);
 
 /* main.c */
-void MyOpenLibs(void);
+BOOL MyOpenLibs(void);
 void CleanUp(void);
 
 /* misc.c */
@@ -422,6 +423,7 @@ void FixSiteList(void);
 //int DLPath(Object *winobject, char *initialpath, char *newpath);
 
 /* ftp.c */
+extern struct Window *TransferWindow;
 int ftp_hookup(char *host,short port);
 int ftp_login(char *user,char *pass, char *acct);
 int command(char *fmt,...);
@@ -517,9 +519,10 @@ void UpdateRemoteDir(const char *dir);
 void UpdateLocalDir(const char *dir);
 void UpdateSiteName(const char *site);
 void ChangeAmiFTPMode(void);
-
 void LockWindow(Object *win);
+//APTR SleepWindow(struct Window *win);
 void UnlockWindow(Object *win);
+//void WakeWindow(struct Window *win, APTR lock);
 void UpdateWindowTitle(void);
 
 /* connect_gui.c */
@@ -527,7 +530,7 @@ int ConnectSite(struct SiteNode *sn, const BOOL noscan);
 void PrintConnectStatus(char *text);
 ULONG HandleConnectIDCMP(void);
 
-/* dl_gui.c */
+/* TransferWindow.c */
 int DownloadFile(struct List *flist, const char *name, const int binary, const int move);
 int UploadFile(struct List *transferlist, const char *remote, const int binary);
 void UpdateDLGads(const long bytes, const long restart, const time_t timee);
@@ -535,7 +538,7 @@ BOOL CheckExists(char *lfile, ULONG size, ULONG *restartpoint);
 int get_file(char *name, char *localname, ULONG size);
 int get_dir(char *remote_parent, char *local_parent, char *name, char *localname);
 ULONG HandleTransferIDCMP(void);
-void SetTransferSize(const long size);
+//void SetTransferSize(const long size);
 
 /* pref_gui.c */
 int OpenPrefsWindow(void);
@@ -558,7 +561,9 @@ void AddCacheEntry(struct List *dirlist, char *name);
 struct List *LookupCache(char *name);
 
 /* locale.c */
+#ifndef _MENUCLASS_
 void SetupLocaleStrings(void);
+#endif
 
 /* AGuide.c */
 int HandleAmigaGuide(void);
@@ -568,7 +573,7 @@ int SendAGMessage(LONG ContextNumber);
 struct List *ReadRecentList(void);
 struct List *sort_ADT(struct List *list, int type);
 
-/* Menu.c */
+/* Menu.c/MenuClass.c */
 int BuildMenu(void);
 void UpdateMenus(void);
 #ifdef _MENUCLASS_
@@ -582,10 +587,12 @@ void InitSpeedBarList(void);
 void FreeSpeedBarList(void);
 int HandleSpeedBar(int button);
 void UpdateSpeedBar(int state);
-extern struct Window *TransferWindow;
-void strmfp(char *file, char *path, char *node,int size);
 
+/* data.c */
+void strmfp(char *file, char *path, char *node, int size);
 int stcgfn(char *node, char *name, int size);
 int getfa(CONST_STRPTR name);
 __attribute__((linearvarargs)) int showRequester(struct Window *window, STRPTR icon, STRPTR Title, STRPTR Gadget, STRPTR Body, ...);
 __attribute__((linearvarargs)) int showStringRequester(struct Window *window, BOOL inivsible, STRPTR icon, STRPTR Title, STRPTR Gadget, STRPTR buffer, uint32 maxChars, STRPTR Body, ...);
+STRPTR DupStr(CONST_STRPTR str, int32 length);
+VOID FreeString(STRPTR *string);

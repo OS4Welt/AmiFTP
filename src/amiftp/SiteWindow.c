@@ -4,7 +4,8 @@
 
 #include "AmiFTP.h"
 #include "gui.h"
-#include <intuition/sghooks.h>
+//#include <intuition/sghooks.h>
+
 
 extern void PrintSiteList(void);
 BOOL AddToSiteList=FALSE;
@@ -17,15 +18,16 @@ Object *EditSiteWin_Object;
 struct Window *OpenEditSiteWindow(struct SiteNode *sn);
 void CloseEditSiteWindow(struct SiteNode *sn);
 int LocPath_clicked(void);
-int SL_Up(void);
-int SL_Down(void);
-int SL_Top(void);
-int SL_Bottom(void);
+void SL_Up(void);
+void SL_Down(void);
+void SL_Top(void);
+void SL_Bottom(void);
 int NewGroup(void);
+void swapEntries(struct Node *n, struct Node *pos_n);
 
 enum {
     ESG_SiteName=0, ESG_SiteAddress, ESG_Port, ESG_RemDir, ESG_LocalDir,//ESG_LocString, ESG_LocGad,
-    ESG_Anonymous, ESG_LoginName, ESG_Password, ESG_LSType, ESG_HotList,
+    ESG_Anonymous, ESG_LoginPsw , ESG_LoginName, ESG_Password, ESG_LSType, ESG_HotList,
     ESG_Proxy, ESG_OK, ESG_Cancel, ESG_ADT,
     NumGadgets_ESG
 };
@@ -73,25 +75,25 @@ int NewClicked(void);
 
 //static ULONG lsecs,lmics;
 
-static char buf1[100],buf2[100],buf3[100],buf4[100],buf5[100],buf6[100];
+static char buf1[50],buf2[100],buf3[100],buf4[200],buf5[40],buf6[90];
 
 int OpenEditWindow(struct SiteNode *sn)
 {
-	ULONG wait, esignal,ssignal, mainsignal,done=FALSE;
+	ULONG wait, esignal,ssignal, /*mainsignal,*/ done=FALSE;
 
 	if (!OpenEditSiteWindow(sn)) return 0;
 
 	GetAttr(WINDOW_SigMask, EditSiteWin_Object, &esignal);
 	GetAttr(WINDOW_SigMask, SiteListWin_Object, &ssignal);
-	GetAttr(WINDOW_SigMask, MainWin_Object, &mainsignal);
+	//GetAttr(WINDOW_SigMask, MainWin_Object, &mainsignal);
 
 	while (!done) {
-		wait=Wait(esignal|ssignal|mainsignal|AG_Signal|SIGBREAKF_CTRL_C);
+		wait=Wait(esignal|ssignal/*|mainsignal*/|AG_Signal|SIGBREAKF_CTRL_C);
 		if (wait & SIGBREAKF_CTRL_C) done=TRUE;
 		if (wait & AG_Signal ) HandleAmigaGuide();
 		if (wait & esignal   ) done=HandleEditSiteIDCMP();
 		if (wait & ssignal   ) HandleSiteListIDCMP();
-		if (wait & mainsignal) HandleMainWindowIDCMP(FALSE);
+		//if (wait & mainsignal) HandleMainWindowIDCMP(FALSE);
 	}
 
 	CloseEditSiteWindow(sn);
@@ -122,15 +124,20 @@ ULONG HandleEditSiteIDCMP(void)
 					{
 						ULONG attr;
 
-						GetAttr(GA_Selected,ESG_List[ESG_Anonymous], &attr);
+						GetAttr(GA_Selected, ESG_List[ESG_Anonymous], &attr);
 
-						if (SetGadgetAttrs((struct Gadget*)ESG_List[ESG_LoginName], EditSiteWindow, NULL,
-						                   GA_Disabled, attr, TAG_DONE))
-							RefreshGList((struct Gadget*)ESG_List[ESG_LoginName], EditSiteWindow, NULL, 1);
+						SetGadgetAttrs((struct Gadget*)ESG_List[ESG_LoginName], EditSiteWindow, NULL,
+						               GA_Disabled,attr, TAG_DONE);
+						/*if (SetGadgetAttrs((struct Gadget*)ESG_List[ESG_LoginName], EditSiteWindow, NULL,
+						                   GA_Disabled,attr, TAG_DONE))
+							RefreshGList((struct Gadget*)ESG_List[ESG_LoginName], EditSiteWindow, NULL, 1);*/
 
-						if (SetGadgetAttrs((struct Gadget*)ESG_List[ESG_Password], EditSiteWindow, NULL,
-						                   GA_Disabled, attr, TAG_DONE))
-							RefreshGList((struct Gadget*)ESG_List[ESG_Password], EditSiteWindow, NULL, 1);
+						SetGadgetAttrs((struct Gadget*)ESG_List[ESG_Password], EditSiteWindow, NULL,
+						               GA_Disabled,attr, TAG_DONE);
+						/*if (SetGadgetAttrs((struct Gadget*)ESG_List[ESG_Password], EditSiteWindow, NULL,
+						                   GA_Disabled,attr, TAG_DONE))
+							RefreshGList((struct Gadget*)ESG_List[ESG_Password], EditSiteWindow, NULL, 1);*/
+							RefreshGList((struct Gadget*)ESG_List[ESG_LoginPsw], EditSiteWindow, NULL, -1);
 					}
 					break;
 					case ESG_LocalDir:
@@ -155,7 +162,7 @@ ULONG HandleEditSiteIDCMP(void)
 struct Window *OpenEditSiteWindow(struct SiteNode *sn)
 {
     //struct LayoutLimits limits;
-    Object *l1,*l2, *l3, *l4, *l5, *l6;
+    Object *l1, /**l2,*/ *l3, *l4, *l5, *l6;
 
     if (EditSiteWindow)
       return EditSiteWindow;
@@ -165,8 +172,9 @@ struct Window *OpenEditSiteWindow(struct SiteNode *sn)
       return NULL;
 
     AddToSiteList=FALSE;
+
     if (sn->sn_Node.ln_Name)
-      strcpy(buf1, sn->sn_Node.ln_Name);
+      strncpy(buf1, sn->sn_Node.ln_Name, sizeof(buf1));
     else
       buf1[0]=0;
     if (sn->sn_SiteAddress)
@@ -194,225 +202,229 @@ struct Window *OpenEditSiteWindow(struct SiteNode *sn)
     }
 
 
-    EditSiteLayout=LayoutObject,
+    EditSiteLayout=NewObject(LayoutClass, NULL,//LayoutObject,
+                     //LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                      GA_DrawInfo, DrawInfo,
                      GA_TextAttr, AmiFTPAttrF,
                      LAYOUT_DeferLayout, TRUE,
-                     LAYOUT_SpaceOuter, FALSE,
+                     LAYOUT_SpaceOuter,  FALSE,
                      LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
 
-                     LAYOUT_AddChild, l3=VLayoutObject,
-                       LAYOUT_SpaceOuter, TRUE,
+                     LAYOUT_AddChild, l3=NewObject(LayoutClass, NULL,//VLayoutObject,
+                       LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                       LAYOUT_SpaceOuter,  TRUE,
 
 //LAYOUT_AddChild, VLayoutObject,
-                     StartMember, ESG_List[ESG_SiteName]=StringObject,
-                       GA_ID, ESG_SiteName,
-                       GA_RelVerify, TRUE,
-                       GA_TabCycle, TRUE,
-                       STRINGA_Buffer, buf1,
-                       STRINGA_MaxChars, 50,
-                       StringEnd,
+                       LAYOUT_AddChild, ESG_List[ESG_SiteName]=NewObject(StringClass, NULL,//StringObject,
+                         GA_ID,        ESG_SiteName,
+                         GA_RelVerify, TRUE,
+                         GA_TabCycle,  TRUE,
+                         STRINGA_Buffer,   buf1,
+                         STRINGA_MaxChars, sizeof(buf1),//50,
+                       TAG_DONE),
                        Label(GetAmiFTPString(SCW_Name)),
 
-                     StartMember, ESG_List[ESG_SiteAddress]=StringObject,
-                       GA_ID, ESG_SiteAddress,
-                       GA_RelVerify, TRUE,
-                       GA_TabCycle, TRUE,
-                       STRINGA_Buffer, buf2,
-                       STRINGA_MaxChars, 100,
-                       STRINGA_MinVisible, 10,
-                       StringEnd,
+                       LAYOUT_AddChild, ESG_List[ESG_SiteAddress]=NewObject(StringClass, NULL,//StringObject,
+                         GA_ID,        ESG_SiteAddress,
+                         GA_RelVerify, TRUE,
+                         GA_TabCycle,  TRUE,
+                         STRINGA_Buffer,     buf2,
+                         STRINGA_MaxChars,   sizeof(buf2),//100,
+                         STRINGA_MinVisible, 10,
+                       TAG_DONE),
                        Label(GetAmiFTPString(SCW_Site)),
 
-                     StartMember, ESG_List[ESG_Port]=IntegerObject,
-                       GA_ID, ESG_Port,
-                       GA_RelVerify, TRUE,
-                       GA_TabCycle, TRUE,
-                       INTEGER_Number, sn->sn_Port,
-                       //INTEGER_Arrows, FALSE,
-                       INTEGER_MaxChars, 5,
-                       INTEGER_Minimum, 0,
-                       INTEGER_Maximum, 65535,
-                       IntegerEnd,
+                       LAYOUT_AddChild, ESG_List[ESG_Port]=NewObject(IntegerClass, NULL,//IntegerObject,
+                         GA_ID,        ESG_Port,
+                         GA_RelVerify, TRUE,
+                         GA_TabCycle,  TRUE,
+                         INTEGER_Number,   sn->sn_Port,
+                         //INTEGER_Arrows,   FALSE,
+                         INTEGER_MaxChars, 5,
+                         INTEGER_Minimum,  0,
+                         INTEGER_Maximum,  65535,
+                       TAG_DONE),
                        //CHILD_NominalSize, TRUE,
                        //CHILD_WeightedWidth, 0,
                        Label(GetAmiFTPString(SCW_Port)),
 //EndGroup,
 
-                     StartMember, ESG_List[ESG_RemDir]=StringObject,
-                       GA_ID, ESG_RemDir,
-                       GA_RelVerify, TRUE,
-                       GA_TabCycle, TRUE,
-                       STRINGA_Buffer, buf3,
-                       STRINGA_MaxChars, 100,
-                       StringEnd,
+                       LAYOUT_AddChild, ESG_List[ESG_RemDir]=NewObject(StringClass, NULL,//StringObject,
+                         GA_ID,        ESG_RemDir,
+                         GA_RelVerify, TRUE,
+                         GA_TabCycle,  TRUE,
+                         STRINGA_Buffer,   buf3,
+                         STRINGA_MaxChars, sizeof(buf3),//100,
+                       TAG_DONE),
                        Label(GetAmiFTPString(SCW_RemDir)),
 
 //                     LAYOUT_AddChild, l1=HLayoutObject, Spacing(FALSE),
 
-                     StartMember, ESG_List[ESG_LocalDir]= GetFileObject,
-                       GA_ID, MG_DLGetFile,
-                       GETFILE_DrawersOnly, TRUE,
-                       GETFILE_TitleText, GetAmiFTPString(Str_SelectDLPath),
-                       GA_RelVerify, TRUE,
-                       GETFILE_Drawer, buf4,
-                       GETFILE_ReadOnly, TRUE,
-	                   End,
-	                   CHILD_WeightedHeight, 0,
-	                   Label(GetAmiFTPString(SCW_LocDir)),
-                         /*
-                       StartMember, ESG_List[ESG_LocString]=StringObject,
+                       LAYOUT_AddChild, l1=ESG_List[ESG_LocalDir]= NewObject(GetFileClass, NULL,//GetFileObject,
+                         GA_ID,        MG_DLGetFile,
+                         GA_RelVerify, TRUE,
+                         GETFILE_DrawersOnly, TRUE,
+                         GETFILE_TitleText,   GetAmiFTPString(Str_SelectDLPath),
+                         GETFILE_Drawer,      buf4,
+                         GETFILE_ReadOnly,    TRUE,
+	                      TAG_DONE),
+	                      CHILD_WeightedHeight, 0,
+	                      Label(GetAmiFTPString(SCW_LocDir)),
+/*
+                       LAYOUT_AddChild, ESG_List[ESG_LocString]=StringObject,
                          GA_ID, ESG_LocString,
                          GA_RelVerify, TRUE,
                          GA_TabCycle, TRUE,
                          STRINGA_Buffer, buf4,
                          STRINGA_MaxChars, 50,
-                         StringEnd,
+                       TAG_DONE),
 
-                       StartMember, ESG_List[ESG_LocGad]=ButtonObject,
+                       LAYOUT_AddChild, ESG_List[ESG_LocGad]=ButtonObject,
                          BUTTON_AutoButton, BAG_POPDRAWER,
                          GA_ID, ESG_LocGad,
                          GA_RelVerify, TRUE,
-                         ButtonEnd,
+                         TAG_DONE),
                          CHILD_WeightedWidth, 0,
-                         CHILD_WeightedHeight, 0, */
-//                       EndGroup,    
-//                       Label(GetAmiFTPString(SCW_LocDir)),
-
-                     StartMember, ESG_List[ESG_Anonymous]=CheckBoxObject,
-                       GA_ID, ESG_Anonymous,
-                       GA_RelVerify, TRUE,
-                       GA_Text, GetAmiFTPString(SCW_Anonymous),
-                       GA_Selected, sn->sn_Anonymous,
-                       CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                       CheckBoxEnd,
-
-                     LAYOUT_AddChild,l2=VLayoutObject,
-
-                       StartMember, ESG_List[ESG_LoginName]=StringObject,
-                         GA_ID, ESG_LoginName,
+                         CHILD_WeightedHeight, 0,
+                       TAG_DONE),    
+                       Label(GetAmiFTPString(SCW_LocDir)),
+*/
+                       LAYOUT_AddChild, ESG_List[ESG_Anonymous]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
+                         GA_ID,        ESG_Anonymous,
                          GA_RelVerify, TRUE,
-                         GA_Disabled, sn->sn_Anonymous,
-                         GA_TabCycle, TRUE,
-                         STRINGA_Buffer, buf5,
-                         STRINGA_MaxChars, 20,
-                         StringEnd,
-                         Label(GetAmiFTPString(SCW_LoginName)),
+                         GA_Text,      GetAmiFTPString(SCW_Anonymous),
+                         GA_Selected,  sn->sn_Anonymous,
+                         CHECKBOX_TextPlace, PLACETEXT_LEFT,
+                       TAG_DONE),
 
-                       StartMember, ESG_List[ESG_Password]=StringObject,
-                         GA_ID, ESG_Password,
-                         GA_RelVerify, TRUE,
-                         GA_Disabled, sn->sn_Anonymous,
-                         GA_TabCycle, TRUE,
-                         STRINGA_Buffer, buf6,
-                         STRINGA_MaxChars, 90,
-                         STRINGA_HookType, SHK_PASSWORD,
-                       //  STRINGA_EditHook, (ULONG)&EditHook,
-                         StringEnd,
+                       LAYOUT_AddChild,ESG_List[ESG_LoginPsw]=NewObject(LayoutClass, NULL,//VLayoutObject,
+                         LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+
+                         LAYOUT_AddChild, ESG_List[ESG_LoginName]=NewObject(StringClass, NULL,//StringObject,
+                           GA_ID,        ESG_LoginName,
+                           GA_RelVerify, TRUE,
+                           GA_Disabled,  sn->sn_Anonymous,
+                           GA_TabCycle,  TRUE,
+                           STRINGA_Buffer,   buf5,
+                           STRINGA_MaxChars, sizeof(buf5),//20,
+                           TAG_DONE),
+                           Label(GetAmiFTPString(SCW_LoginName)),
+
+                         LAYOUT_AddChild, ESG_List[ESG_Password]=NewObject(StringClass, NULL,//StringObject,
+                           GA_ID,        ESG_Password,
+                           GA_RelVerify, TRUE,
+                           GA_Disabled,  sn->sn_Anonymous,
+                           GA_TabCycle,  TRUE,
+                           STRINGA_Buffer,   buf6,
+                           STRINGA_MaxChars, sizeof(buf6),//90,
+                           STRINGA_HookType, SHK_PASSWORD,
+                           //STRINGA_EditHook, (ULONG)&EditHook,
+                         TAG_DONE),
                          Label(GetAmiFTPString(SCW_Password)),
-                       EndGroup,
+                       TAG_DONE),
                        CHILD_WeightedHeight, 0,
-                       EndGroup,
+                       TAG_DONE),
 
-                       LAYOUT_AddChild, l4=VLayoutObject, LAYOUT_SpaceOuter, TRUE, LAYOUT_HorizAlignment, LALIGN_RIGHT,
-                       StartMember, ESG_List[ESG_LSType]=ChooserObject,
-                         CHOOSER_Labels, objlist,
-                         CHOOSER_AutoFit, TRUE,
-                         CHOOSER_PopUp, TRUE,
-                         CHOOSER_Active, sn->sn_VMSDIR,
-                         GA_ID, ESG_LSType,
-                         GA_RelVerify, TRUE,
-                         ChooserEnd,
+                       LAYOUT_AddChild, l4=NewObject(LayoutClass, NULL,//VLayoutObject,
+                         LAYOUT_Orientation,    LAYOUT_ORIENT_VERT,
+                         LAYOUT_SpaceOuter,     TRUE,
+                         LAYOUT_HorizAlignment, LALIGN_RIGHT,
+                         LAYOUT_AddChild, ESG_List[ESG_LSType]=NewObject(ChooserClass, NULL,//ChooserObject,
+                           GA_ID,        ESG_LSType,
+                           GA_RelVerify, TRUE,
+                           CHOOSER_Labels,  objlist,
+                           //CHOOSER_AutoFit, TRUE,
+                           CHOOSER_PopUp,   TRUE,
+                           CHOOSER_Active,  sn->sn_VMSDIR,
+                         TAG_DONE),
                          CHILD_WeightedWidth, 0,
                          Label(GetAmiFTPString(SCW_OS)),
 
-                       LAYOUT_AddChild, l5=HLayoutObject, Spacing(FALSE),
-                       StartMember, ESG_List[ESG_Proxy]=CheckBoxObject,
-                         GA_ID, ESG_Proxy,
-                         GA_RelVerify, TRUE,
-                         GA_Text, GetAmiFTPString(SCW_Proxy),
-                         GA_Selected, sn->sn_Proxy,
-                         CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                         CheckBoxEnd,
-                       LAYOUT_AddChild, l6=VLayoutObject, 
-                       StartMember, ESG_List[ESG_HotList]=CheckBoxObject,
-                         GA_ID, ESG_HotList,
-                         GA_RelVerify, TRUE,
-                         GA_Text, GetAmiFTPString(SCW_HotList),
-                         GA_Selected, sn->sn_HotList,
-                         CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                         CheckBoxEnd,
-                       StartMember, ESG_List[ESG_ADT]=CheckBoxObject,
-                         GA_ID, ESG_ADT,
-                         GA_RelVerify, TRUE,
-                         GA_Text, GetAmiFTPString(SCW_AminetMode),
-                         GA_Selected, sn->sn_ADT,
-                         CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                         CheckBoxEnd,
-                      EndGroup,EndGroup,
-                      CHILD_WeightedHeight, 0,
-                      CHILD_WeightedWidth, 0,
-                      EndGroup,
-                      CHILD_WeightedHeight, 0,
+                         LAYOUT_AddChild, l5=NewObject(LayoutClass, NULL,//HLayoutObject,
+                           //LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                           LAYOUT_InnerSpacing, FALSE,//Spacing(FALSE),
+                           LAYOUT_AddChild, ESG_List[ESG_Proxy]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
+                             GA_ID,        ESG_Proxy,
+                             GA_RelVerify, TRUE,
+                             GA_Text,      GetAmiFTPString(SCW_Proxy),
+                             GA_Selected,  sn->sn_Proxy,
+                             CHECKBOX_TextPlace, PLACETEXT_LEFT,
+                           TAG_DONE),
+                           LAYOUT_AddChild, l6=NewObject(LayoutClass, NULL,//VLayoutObject,
+                             LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                             LAYOUT_AddChild, ESG_List[ESG_HotList]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
+                               GA_ID,        ESG_HotList,
+                               GA_RelVerify, TRUE,
+                               GA_Text,      GetAmiFTPString(SCW_HotList),
+                               GA_Selected,  sn->sn_HotList,
+                               CHECKBOX_TextPlace, PLACETEXT_LEFT,
+                             TAG_DONE),
+                             LAYOUT_AddChild, ESG_List[ESG_ADT]=NewObject(CheckBoxClass, NULL,//CheckBoxObject,
+                               GA_ID,        ESG_ADT,
+                               GA_RelVerify, TRUE,
+                               GA_Text,      GetAmiFTPString(SCW_AminetMode),
+                               GA_Selected,  sn->sn_ADT,
+                               CHECKBOX_TextPlace, PLACETEXT_LEFT,
+                             TAG_DONE),
+                           TAG_DONE),TAG_DONE),
+                           CHILD_WeightedHeight, 0,
+                           CHILD_WeightedWidth, 0,
+                       TAG_DONE),
+                       CHILD_WeightedHeight, 0,
 
                        /*LAYOUT_AddImage, BevelObject,
                          BEVEL_Style, BVS_SBAR_VERT,
                        BevelEnd,*/
 
-                     StartHGroup,EvenSized,
-                       LAYOUT_SpaceOuter, TRUE,
-                       LAYOUT_BevelStyle, BVS_SBAR_VERT,
+                       LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartHGroup,
+                         //LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                         LAYOUT_EvenSize,   TRUE,//EvenSized,
+                         LAYOUT_SpaceOuter, TRUE,
+                         LAYOUT_BevelStyle, BVS_SBAR_VERT,
 
-                       StartMember, ESG_List[ESG_OK]=ButtonObject,
-                         GA_Text, GetAmiFTPString(SCW_OK),
-                         GA_ID, ESG_OK,
-                         GA_RelVerify, TRUE,
-                         ButtonEnd,
+                         LAYOUT_AddChild, ESG_List[ESG_OK]=NewObject(ButtonClass, NULL,//ButtonObject,
+                           GA_ID,        ESG_OK,
+                           GA_RelVerify, TRUE,
+                           GA_Text,      GetAmiFTPString(SCW_OK),
+                         TAG_DONE),
                          //CHILD_NominalSize, TRUE,
                          CHILD_WeightedWidth, 0,
 
-                       StartMember, ESG_List[ESG_Cancel]=ButtonObject,
-                         GA_Text, GetAmiFTPString(SCW_Cancel),
-                         GA_ID, ESG_Cancel,
-                         GA_RelVerify, TRUE,
-                         ButtonEnd,
+                         LAYOUT_AddChild, ESG_List[ESG_Cancel]=NewObject(ButtonClass, NULL,//ButtonObject,
+                           GA_ID,        ESG_Cancel,
+                           GA_RelVerify, TRUE,
+                           GA_Text,      GetAmiFTPString(SCW_Cancel),
+                         TAG_DONE),
                          //CHILD_NominalSize, TRUE,
                          CHILD_WeightedWidth, 0,
-                       EndGroup,
+                       TAG_DONE),
                        CHILD_WeightedHeight, 0,
                        //CHILD_WeightMinimum, TRUE,
-                   LayoutEnd;
+                   TAG_DONE);
 
     if (!EditSiteLayout)
       return NULL;
 
     if (sn->sn_MenuType==SLN_PARENT) {
-	SetAttrs(l4,
-		 LAYOUT_RemoveChild, ESG_List[ESG_LSType],
-		 TAG_DONE);
-	SetAttrs(l5,
-		 LAYOUT_RemoveChild, ESG_List[ESG_Proxy],
-		 TAG_DONE);
-	SetAttrs(l6,
-		 LAYOUT_RemoveChild, ESG_List[ESG_ADT],
-		 TAG_DONE);
-
+	SetAttrs(l4, LAYOUT_RemoveChild, ESG_List[ESG_LSType], TAG_DONE);
+	SetAttrs(l5, LAYOUT_RemoveChild, ESG_List[ESG_Proxy], TAG_DONE);
+	SetAttrs(l6, LAYOUT_RemoveChild, ESG_List[ESG_ADT], TAG_DONE);
 	SetAttrs(l3,
-		 LAYOUT_RemoveChild, ESG_List[ESG_SiteAddress],
-		 LAYOUT_RemoveChild, ESG_List[ESG_Port],
-		 LAYOUT_RemoveChild, ESG_List[ESG_RemDir],
-		 LAYOUT_RemoveChild, l1,
-		 LAYOUT_RemoveChild, l2,
-		 LAYOUT_RemoveChild, ESG_List[ESG_Anonymous],
-		 TAG_DONE);
+	         LAYOUT_RemoveChild, ESG_List[ESG_SiteAddress],
+	         LAYOUT_RemoveChild, ESG_List[ESG_Port],
+	         LAYOUT_RemoveChild, ESG_List[ESG_RemDir],
+	         LAYOUT_RemoveChild, l1,
+	         LAYOUT_RemoveChild, ESG_List[ESG_LoginPsw],//l2
+	         LAYOUT_RemoveChild, ESG_List[ESG_Anonymous],
+	        TAG_DONE);
     }
 
     //LayoutLimits((struct Gadget *)EditSiteLayout, &limits, PropFont, Screen);
     //limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
     //limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
 
-    EditSiteWin_Object = WindowObject,
-                          WA_Title,        GetAmiFTPString(SCW_SiteConfigurationWindow),
+    EditSiteWin_Object = NewObject(WindowClass, NULL,//WindowObject,
+                          WA_Title,        sn->sn_MenuType==SLN_PARENT? GetAmiFTPString(SCW_GroupConfigurationWindow) : GetAmiFTPString(SCW_SiteConfigurationWindow),
                           WA_PubScreen,    Screen,
                           WA_DepthGadget,  TRUE,
                           WA_DragBar,      TRUE,
@@ -422,14 +434,14 @@ struct Window *OpenEditSiteWindow(struct SiteNode *sn)
                           WA_SizeGadget,   TRUE,
                           //WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
                           //WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
+                          WA_InnerWidth, PropFont->tf_XSize*30,
                           WA_IDCMP, IDCMP_RAWKEY,
                           WINDOW_Position,  WPOS_CENTERWINDOW,
                           WINDOW_RefWindow, SiteListWindow,
-                          //WINDOW_ParentGroup, EditSiteLayout,
                           WINDOW_Layout, EditSiteLayout,
                           WINDOW_InterpretUserData, WGUD_FUNC,
                           WINDOW_LockHeight, TRUE,
-                        EndWindow;
+                        TAG_DONE);
 
     if (!EditSiteWin_Object)
       return NULL;
@@ -446,137 +458,107 @@ struct Window *OpenEditSiteWindow(struct SiteNode *sn)
 
 void CloseEditSiteWindow(struct SiteNode *sn)
 {
-    ULONG attr;
+	if (EditSiteWin_Object) {
+		if (AddToSiteList) {
+			ULONG attr;
 
-    if (EditSiteWin_Object) {
-	if (AddToSiteList) {
-	    if (sn->sn_Node.ln_Name) {
-		free(sn->sn_Node.ln_Name);
-		sn->sn_Node.ln_Name=NULL;
-	    }
-	    if (strlen(buf1))
-	      sn->sn_Node.ln_Name=strdup(buf1);
+DBUG("1)'%s' (%s)\n",buf1,sn->sn_Node.ln_Name);
+			if (sn->sn_Node.ln_Name) {
+					free(sn->sn_Node.ln_Name);
+					sn->sn_Node.ln_Name=NULL;
+DBUG("free(sn->sn_Node.ln_Name)\n",NULL);
+			}
+			if (strlen(buf1)) sn->sn_Node.ln_Name=strdup(buf1);
+//			if(sn->sn_Node.ln_Name) { FreeString(&sn->sn_Node.ln_Name); }
+//			sn->sn_Node.ln_Name = DupStr(buf1, -1);
+DBUG("2)'%s' (%s)\n",buf1,sn->sn_Node.ln_Name);
 
-	    if (sn->sn_MenuType!=SLN_PARENT) {
-		if (sn->sn_SiteAddress) {
-		    free(sn->sn_SiteAddress);
-		    sn->sn_SiteAddress=NULL;
+			if (sn->sn_MenuType!=SLN_PARENT) {
+				if (sn->sn_SiteAddress) {
+					free(sn->sn_SiteAddress);
+					sn->sn_SiteAddress=NULL;
+				}
+				if (strlen(buf2)) sn->sn_SiteAddress=strdup(buf2);
+
+				if (sn->sn_RemoteDir) {
+					free(sn->sn_RemoteDir);
+					sn->sn_RemoteDir=NULL;
+				}
+				if (strlen(buf3)) sn->sn_RemoteDir=strdup(buf3);
+
+				if (sn->sn_LocalDir) {
+					free(sn->sn_LocalDir);
+					sn->sn_LocalDir=NULL;
+				}
+				if (strlen(buf4)) sn->sn_LocalDir=strdup(buf4);
+
+				if (sn->sn_LoginName) {
+					free(sn->sn_LoginName);
+					sn->sn_LoginName=NULL;
+				}
+				if (strlen(buf5)) sn->sn_LoginName=strdup(buf5);
+
+				if (sn->sn_Password) {
+					free(sn->sn_Password);
+					sn->sn_Password=NULL;
+				}
+				if (strlen(buf6)) sn->sn_Password = strdup(buf6);
+
+				GetAttr(GA_Selected, ESG_List[ESG_Anonymous], &attr);
+				sn->sn_Anonymous=attr;
+
+				GetAttr(INTEGER_Number, ESG_List[ESG_Port], &attr);
+				sn->sn_Port=attr;
+
+				GetAttr(GA_Selected, ESG_List[ESG_Proxy], &attr);
+				sn->sn_Proxy=attr;
+
+				GetAttr(GA_Selected, ESG_List[ESG_ADT], &attr);
+				sn->sn_ADT=attr;
+
+				GetAttr(CHOOSER_Active, ESG_List[ESG_LSType], &attr);
+				sn->sn_VMSDIR=attr;
+			}
+
+			GetAttr(GA_Selected, ESG_List[ESG_HotList], &attr);
+			if (sn->sn_HotList!=attr) HotListChanged=TRUE;
+
+			sn->sn_HotList=attr;
 		}
-		if (strlen(buf2))
-		  sn->sn_SiteAddress=strdup(buf2);
 
-		if (sn->sn_RemoteDir) {
-		    free(sn->sn_RemoteDir);
-		    sn->sn_RemoteDir=NULL;
-		}
-		if (strlen(buf3))
-		  sn->sn_RemoteDir=strdup(buf3);
-
-		if (sn->sn_LocalDir) {
-		    free(sn->sn_LocalDir);
-		    sn->sn_LocalDir=NULL;
-		}
-		if (strlen(buf4))
-		  sn->sn_LocalDir=strdup(buf4);
-
-		if (sn->sn_LoginName) {
-		    free(sn->sn_LoginName);
-		    sn->sn_LoginName=NULL;
-		}
-		if (strlen(buf5))
-		  sn->sn_LoginName=strdup(buf5);
-
-		if (sn->sn_Password) {
-		    free(sn->sn_Password);
-		    sn->sn_Password=NULL;
-		}
-		if (strlen(buf6))
-			sn->sn_Password = strdup(buf6);
-		
-		GetAttr(GA_Selected, ESG_List[ESG_Anonymous], &attr);
-		sn->sn_Anonymous=attr;
-
-		GetAttr(INTEGER_Number, ESG_List[ESG_Port], &attr);
-		sn->sn_Port=attr;
-
-		GetAttr(GA_Selected, ESG_List[ESG_Proxy], &attr);
-		sn->sn_Proxy=attr;
-
-		GetAttr(GA_Selected, ESG_List[ESG_ADT], &attr);
-		sn->sn_ADT=attr;
-
-		GetAttr(CHOOSER_Active, ESG_List[ESG_LSType], &attr);
-		sn->sn_VMSDIR=attr;
-	    }
-	    GetAttr(GA_Selected, ESG_List[ESG_HotList], &attr);
-	    if (sn->sn_HotList!=attr)
-	      HotListChanged=TRUE;
-	    sn->sn_HotList=attr;
+		DisposeObject(EditSiteWin_Object);
+		EditSiteWindow=NULL;
+		EditSiteWin_Object=NULL;
+		EditSiteLayout=NULL;
 	}
-	DisposeObject(EditSiteWin_Object);
-	EditSiteWindow=NULL;
-	EditSiteWin_Object=NULL;
-	EditSiteLayout=NULL;
-    }
-    FreeChooserLabels(objlist);
-    objlist=NULL;
+
+	FreeChooserLabels(objlist);
+	objlist=NULL;
 }
 
 int LocPath_clicked(void)
 {
-    struct gfileRequest pathList = {GFILE_REQUEST, EditSiteWindow};
-    uint32 result = IDoMethodA(ESG_List[ESG_LocalDir], (struct _Msg *)&pathList);
-
+	struct gfileRequest pathList = {GFILE_REQUEST, EditSiteWindow};
+	uint32 result = IDoMethodA(ESG_List[ESG_LocalDir], (struct _Msg *)&pathList);
 	if (result)
-    {
-        char *strBuffer = NULL;
-        GetAttr(GETFILE_Drawer, ESG_List[ESG_LocalDir], (ULONG*)&strBuffer);
-        if (strBuffer)
-        {
-            if (strlen(strBuffer)>0)
-            {
-                strncpy(buf4, strBuffer, sizeof(buf4)-1);
-                }
-             else
-             {
-                strncpy(buf4, "Ram:", sizeof(buf4)-1);
-                SetAttrs(MG_List[MG_DLGetFile], GETFILE_FullFile, "Ram:", TAG_DONE);
-                }
-            }
-        }
-	return 1;
+	{
+		char *strBuffer = NULL;
 
-    /*
-    struct FileRequester *DirRequester;
-    static ULONG tags[]={
-	ASLFR_Window, 0UL,
-	ASLFR_PrivateIDCMP, TRUE,
-	ASLFR_SleepWindow, TRUE,
-	ASLFR_InitialDrawer, 0UL,
-	ASLFR_DrawersOnly, TRUE,
-	ASLFR_RejectIcons, TRUE,
-	ASLFR_TitleText, 0UL,
-	ASLFR_InitialLeftEdge, 0UL,
-	ASLFR_InitialTopEdge, 0UL,
-	TAG_END
-    };
-    tags[1]=(unsigned long)EditSiteWindow;
-    tags[7]=(unsigned long)buf4;
-    tags[13]=(unsigned long)GetAmiFTPString(Str_SelectDLPath);
-    tags[15]=MainWindow->LeftEdge;
-    tags[17]=MainWindow->TopEdge;
+		GetAttr(GETFILE_Drawer, ESG_List[ESG_LocalDir], (ULONG*)&strBuffer);
+		if (strBuffer)
+		{
+			if (Strlen(strBuffer) > 0)
+			{
+				Strlcpy(buf4, strBuffer, sizeof(buf4));//-1);
+			}
+			else
+			{
+				Strlcpy(buf4, "RAM:", sizeof(buf4));//-1);
+				SetAttrs(MG_List[MG_DLGetFile], GETFILE_FullFile,"RAM:", TAG_DONE);
+			}
+		}
+	}
 
-    DirRequester=AllocAslRequest(ASL_FileRequest, NULL);
-    if (!DirRequester)
-      return 1;
-    if (AslRequest(DirRequester,(struct TagItem *)tags)) {
-	if (SetGadgetAttrs((struct Gadget*)ESG_List[ESG_LocString], EditSiteWindow, NULL,
-				    STRINGA_TextVal, DirRequester->fr_Drawer,
-				    TAG_END))
-	    RefreshGList((struct Gadget*)ESG_List[ESG_LocString], EditSiteWindow, NULL, 1);
-    }
-    FreeAslRequest(DirRequester);
-                */
 	return 1;
 }
 
@@ -588,7 +570,7 @@ static WORD width=0,height=0;
 
 struct SiteNode *OpenSiteListWindow(const BOOL Connect)
 {
-	ULONG signal,wait,mainsignal,done=FALSE;
+	ULONG signal,wait,/*mainsignal,*/done=FALSE;
 
 	retnode=NULL;
 	ConnectMode=Connect;
@@ -598,17 +580,17 @@ struct SiteNode *OpenSiteListWindow(const BOOL Connect)
 	HotListChanged=FALSE;
 
 	GetAttr(WINDOW_SigMask, SiteListWin_Object, &signal);
-	GetAttr(WINDOW_SigMask, MainWin_Object, &mainsignal);
+	//GetAttr(WINDOW_SigMask, MainWin_Object, &mainsignal);
 
 	lsel=-1;
 
 	while (done==0) {
 		wait=Wait(signal|AG_Signal|SIGBREAKF_CTRL_C);
 
-		if (SIGBREAKF_CTRL_C ) done=TRUE;
+		if (SIGBREAKF_CTRL_C) done=TRUE;
 		if (wait & AG_Signal ) HandleAmigaGuide();
 		if (wait & signal    ) done=HandleSiteListIDCMP();
-		if (wait & mainsignal) HandleMainWindowIDCMP(FALSE);
+		//if (wait & mainsignal) HandleMainWindowIDCMP(FALSE);
 	}
 
 	CloseSiteListWindow();
@@ -652,19 +634,18 @@ ULONG HandleSiteListIDCMP(void)
 			     LISTBROWSER_Selected, &attr,
 			     LISTBROWSER_SelectedNode, &selnode,
 			     TAG_DONE);
-		    if (attr>0) { /* Kolla pÃ¥ attr==-1, annars blir det en hit */
+		    if (attr>0) { // Kolla på attr==-1, annars blir det en hit  ¿:-/
 			struct SiteNode *sn;
 			struct Node *node;
 			ULONG i;
 
 			if ( (node=GetPred(selnode)) ) {
 			    ULONG flags;
-			    GetListBrowserNodeAttrs(node, LBNA_Flags, &flags, TAG_DONE);
+			    GetListBrowserNodeAttrs(node, LBNA_Flags,&flags, TAG_DONE);
 			    while (flags&LBFLG_HIDDEN) {
 				node=GetPred(node);
 				if (node)
-				  GetListBrowserNodeAttrs(node, LBNA_Flags, &flags,
-							  TAG_DONE);
+				  GetListBrowserNodeAttrs(node, LBNA_Flags,&flags, TAG_DONE);
 				else
 				  flags=0UL;
 			    }
@@ -681,8 +662,7 @@ ULONG HandleSiteListIDCMP(void)
 				       LISTBROWSER_MakeVisible, i,
 				       TAG_DONE);
 
-			GetListBrowserNodeAttrs(selnode, LBNA_UserData, &sn,
-						TAG_DONE);
+			GetListBrowserNodeAttrs(selnode, LBNA_UserData,&sn, TAG_DONE);
 
 			UpdateSLGGadgets(TRUE, sn->sn_MenuType);
 		    }
@@ -691,8 +671,7 @@ ULONG HandleSiteListIDCMP(void)
 			struct Node *selnode;
 
 			selnode=GetHead(&SiteList);
-			GetListBrowserNodeAttrs(selnode, LBNA_UserData, &sn,
-						TAG_DONE);
+			GetListBrowserNodeAttrs(selnode, LBNA_UserData,&sn, TAG_DONE);
 			SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 				       LISTBROWSER_Selected, 0,
 				       LISTBROWSER_MakeVisible, 0,
@@ -716,15 +695,11 @@ ULONG HandleSiteListIDCMP(void)
 		    if (selnode) {
 			if ( (node=GetSucc(selnode)) ) {
 			    ULONG flags;
-			    GetListBrowserNodeAttrs(node,
-						    LBNA_Flags, &flags,
-						    TAG_DONE);
+			    GetListBrowserNodeAttrs(node, LBNA_Flags,&flags, TAG_DONE);
 			    while (flags&LBFLG_HIDDEN) {
 				node=GetSucc(node);
 				if (node)
-				  GetListBrowserNodeAttrs(node,
-							  LBNA_Flags, &flags,
-							  TAG_DONE);
+				  GetListBrowserNodeAttrs(node, LBNA_Flags,&flags, TAG_DONE);
 				else
 				  flags=0UL;
 			    }
@@ -739,9 +714,7 @@ ULONG HandleSiteListIDCMP(void)
 				   LISTBROWSER_Selected, i,
 				   LISTBROWSER_MakeVisible, i,
 				   TAG_DONE);
-		    GetListBrowserNodeAttrs(selnode,
-					    LBNA_UserData, &sn,
-					    TAG_DONE);
+		    GetListBrowserNodeAttrs(selnode, LBNA_UserData,&sn, TAG_DONE);
 		    UpdateSLGGadgets(TRUE, sn->sn_MenuType);
 		}
 	    }
@@ -750,11 +723,9 @@ ULONG HandleSiteListIDCMP(void)
 	    else if (code==68) {
 		struct Node *node;
 
-		GetAttrs(SLG_List[SLG_SiteList], LISTBROWSER_SelectedNode, &node,
-			 TAG_DONE);
+		GetAttrs(SLG_List[SLG_SiteList], LISTBROWSER_SelectedNode,&node, TAG_DONE);
 		if (node) {
-		    GetListBrowserNodeAttrs(node, LBNA_UserData, &retnode,
-					    TAG_DONE);
+		    GetListBrowserNodeAttrs(node, LBNA_UserData,&retnode, TAG_DONE);
 		    if (!retnode->sn_BarLabel && retnode->sn_MenuType!=SLN_PARENT)
 		      done=TRUE;
 		    else {
@@ -772,14 +743,11 @@ ULONG HandleSiteListIDCMP(void)
 		{
 		    ULONG action;
 		    struct Node *node;
-		    
-		    GetAttrs(SLG_List[SLG_SiteList], LISTBROWSER_RelEvent, &action,
-			     TAG_DONE);
+
+		    GetAttrs(SLG_List[SLG_SiteList], LISTBROWSER_RelEvent,&action, TAG_DONE);
 		    if (action&LBRE_DOUBLECLICK && lsel==code) {
-			GetAttrs(SLG_List[SLG_SiteList],
-				 LISTBROWSER_SelectedNode, &node, TAG_DONE);
-			GetListBrowserNodeAttrs(node, LBNA_UserData, &retnode,
-						TAG_DONE);
+			GetAttrs(SLG_List[SLG_SiteList], LISTBROWSER_SelectedNode,&node, TAG_DONE);
+			GetListBrowserNodeAttrs(node, LBNA_UserData,&retnode, TAG_DONE);
 			if (!retnode->sn_BarLabel) {
 			    if (ConnectMode) {
 				if (retnode->sn_MenuType!=SLN_PARENT)
@@ -795,15 +763,11 @@ ULONG HandleSiteListIDCMP(void)
 			} else retnode=NULL;
 		    }
 		    else if (action&LBRE_NORMAL) {
-			GetAttrs(SLG_List[SLG_SiteList],
-				 LISTBROWSER_SelectedNode, &node,
-				 TAG_DONE);
+			GetAttrs(SLG_List[SLG_SiteList], LISTBROWSER_SelectedNode,&node, TAG_DONE);
 			if (node) {
 			    struct SiteNode *sn;
-			    GetListBrowserNodeAttrs(node,
-						    LBNA_UserData, &sn,
-						    TAG_DONE);
-			    UpdateSLGGadgets(TRUE,sn->sn_BarLabel?SLN_BARLABEL:sn->sn_MenuType);
+			    GetListBrowserNodeAttrs(node, LBNA_UserData,&sn, TAG_DONE);
+			    UpdateSLGGadgets(TRUE, sn->sn_BarLabel? SLN_BARLABEL : sn->sn_MenuType);
 			}
 			else
 			  UpdateSLGGadgets(FALSE, 0);
@@ -843,13 +807,14 @@ ULONG HandleSiteListIDCMP(void)
 		    sn->sn_HotList=1;
 		    sn->sn_MenuType=SLN_REGULAR;
 		    sn->sn_Node.ln_Name=strdup("===============");
-		    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],  SiteListWindow, NULL,
-				   LISTBROWSER_Labels, ~0,
-				   TAG_DONE);
+//		    sn->sn_Node.ln_Name=DupStr("===============",15);
+
+		    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
+		                    LISTBROWSER_Labels,~0, TAG_DONE);
 		    lbn=AddLBNTail(&SiteList, sn);
-		    for (i=0,lb=GetHead(&SiteList);lb;i++,lb=GetSucc(lb))
-		      if (lb==lbn)
-			break;
+		    for (i=0,lb=GetHead(&SiteList); lb; i++,lb=GetSucc(lb)) {
+		      if (lb==lbn) break;
+		    }
 		    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
 				   LISTBROWSER_Labels, &SiteList,
 				   LISTBROWSER_Selected, i,
@@ -863,11 +828,8 @@ ULONG HandleSiteListIDCMP(void)
 	      case SLG_Connect:
 		{
 		    struct Node *node;
-		    GetAttr(LISTBROWSER_SelectedNode,
-			    SLG_List[SLG_SiteList], (ULONG *)&node);
-		    GetListBrowserNodeAttrs(node,
-					    LBNA_UserData, &retnode,
-					    TAG_DONE);
+		    GetAttr(LISTBROWSER_SelectedNode, SLG_List[SLG_SiteList], (ULONG *)&node);
+		    GetListBrowserNodeAttrs(node, LBNA_UserData,&retnode, TAG_DONE);
 		    if (retnode->sn_MenuType!=SLN_PARENT && !retnode->sn_BarLabel)
 		      done=TRUE;
 		    else {
@@ -890,156 +852,167 @@ ULONG HandleSiteListIDCMP(void)
 
 struct Window *OpenSiteWindow(const BOOL Connect)
 {
-    Object *l;
-    struct LayoutLimits limits;
+    //Object *l;
+    //struct LayoutLimits limits;
     Object *l1;
 
     if (SiteListWindow)
       return SiteListWindow;
 
-    SiteListLayout = LayoutObject,
+    SiteListLayout = NewObject(LayoutClass, NULL,//LayoutObject,
                        GA_DrawInfo, DrawInfo,
                        GA_TextAttr, AmiFTPAttrF,
                        LAYOUT_DeferLayout, FALSE,
                        LAYOUT_SpaceOuter, TRUE,
                        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                        LAYOUT_HorizAlignment, LALIGN_CENTRE,
+                       LAYOUT_Label, GetAmiFTPString(SLW_SiteList),
 
-                       StartImage, l=LabelObject,
+                       /*LAYOUT_AddImage, l=NewObject(LabelClass, NULL,//LabelObject,
                          LABEL_Justification, LABEL_CENTRE,
                          LABEL_Text, GetAmiFTPString(SLW_SiteList),
-                         LabelEnd,
+                         TAG_DONE),
                          CHILD_MinWidth, ((struct Image*)l)->Width,
                          CHILD_MinHeight, ((struct Image*)l)->Height,
                          CHILD_WeightedWidth, 0,
-                         CHILD_WeightedHeight, 0,
+                         CHILD_WeightedHeight, 0,*/
 
-                       StartHGroup, // 1
-                         StartVGroup, // 2
+                       LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartHGroup, // 1
+                         LAYOUT_AddChild,NewObject(LayoutClass, NULL,//StartVGroup, // 2
+                         LAYOUT_Orientation,LAYOUT_ORIENT_VERT,
 
-                         StartVGroup,LAYOUT_BackFill,LAYERS_BACKFILL,
-                           StartMember, SLG_List[SLG_SiteList]=ListBrowserObject,
-                           GA_ID, SLG_SiteList,
+                         LAYOUT_AddChild,NewObject(LayoutClass, NULL,//StartVGroup,
+                         LAYOUT_Orientation,LAYOUT_ORIENT_VERT,
+                         //LAYOUT_BackFill,LAYERS_BACKFILL,
+                           LAYOUT_AddChild, SLG_List[SLG_SiteList]=NewObject(ListBrowserClass, NULL,//ListBrowserObject,
+                           GA_ID,        SLG_SiteList,
                            GA_RelVerify, TRUE,
-                           LISTBROWSER_Labels, (ULONG)&SiteList,
+                           LISTBROWSER_Labels,       (ULONG)&SiteList,
                            LISTBROWSER_ShowSelected, TRUE,
-			   LISTBROWSER_Hierarchical, TRUE,
-                           ListBrowserEnd,
-                           CHILD_MinWidth, PropFont->tf_XSize*20,
-                           CHILD_MinHeight, PropFont->tf_YSize*9,
-                          EndGroup, // Classact bugfix
-                         StartVGroup, EvenSized, // 3
+                           LISTBROWSER_MinVisible,   9,
+                           LISTBROWSER_Hierarchical, TRUE,
+                           TAG_DONE),
+//                           CHILD_MinWidth, PropFont->tf_XSize*30,
+                           //CHILD_MinHeight, PropFont->tf_YSize*9,
+                          TAG_DONE), // Classact bugfix
+                         LAYOUT_AddChild,NewObject(LayoutClass, NULL,////StartVGroup,
+                         LAYOUT_Orientation,LAYOUT_ORIENT_VERT,
+                         LAYOUT_EvenSize, TRUE,//EvenSized, // 3
 
-                           StartHGroup, EvenSized, // 4
+                           LAYOUT_AddChild,NewObject(LayoutClass, NULL,//StartHGroup,
+                           LAYOUT_EvenSize, TRUE,//EvenSized, // 4
 
-                             StartMember, SLG_List[SLG_New]=ButtonObject,
-                               GA_ID, SLG_New,
+                             LAYOUT_AddChild, SLG_List[SLG_New]=NewObject(ButtonClass, NULL,//ButtonObject,
+                               GA_ID,        SLG_New,
                                GA_RelVerify, TRUE,
-                               GA_Text, GetAmiFTPString(SLW_New),
+                               GA_Text,      GetAmiFTPString(SLW_New),
 //                               GA_UserData, (ULONG)NewClicked,
-                               ButtonEnd,
+                               TAG_DONE),
 
-			     StartMember, SLG_List[SLG_AddGroup]=ButtonObject,
-			      GA_Text, GetAmiFTPString(SLW_NewGroup),
-			      GA_ID, SLG_AddGroup,
+			     LAYOUT_AddChild, SLG_List[SLG_AddGroup]=NewObject(ButtonClass, NULL,//ButtonObject,
+			      GA_ID,        SLG_AddGroup,
 			      GA_RelVerify, TRUE,
-			     ButtonEnd,
+			      GA_Text,      GetAmiFTPString(SLW_NewGroup),
+			     TAG_DONE),
 
-                             StartMember, SLG_List[SLG_Edit]=ButtonObject,
-                               GA_ID, SLG_Edit,
+                             LAYOUT_AddChild, SLG_List[SLG_Edit]=NewObject(ButtonClass, NULL,//ButtonObject,
+                               GA_ID,        SLG_Edit,
                                GA_RelVerify, TRUE,
-                               GA_Text, GetAmiFTPString(SLW_Edit),
-//                               GA_UserData, (ULONG)EditClicked,
-			       GA_Disabled, TRUE,
-                               ButtonEnd,
+                               GA_Text,      GetAmiFTPString(SLW_Edit),
+                               GA_Disabled,  TRUE,
+                               //GA_UserData, (ULONG)EditClicked,
+                               TAG_DONE),
 
-                             StartMember, SLG_List[SLG_Remove]=ButtonObject,
-                               GA_ID, SLG_Remove,
+                             LAYOUT_AddChild, SLG_List[SLG_Remove]=NewObject(ButtonClass, NULL,//ButtonObject,
+                               GA_ID,        SLG_Remove,
                                GA_RelVerify, TRUE,
-                               GA_Text, GetAmiFTPString(SLW_Remove),
+                               GA_Text,      GetAmiFTPString(SLW_Remove),
+                               GA_Disabled,  TRUE,
                                GA_UserData, (ULONG)RemoveClicked,
-			       GA_Disabled, TRUE,
-                               ButtonEnd,
-			       CHILD_NominalSize, TRUE,
-                             EndGroup, /* End of New/edit/remove-group */ // -4
+                               TAG_DONE),
+			       //CHILD_NominalSize, TRUE,
+                             TAG_DONE), /* End of New/edit/remove-group */ // -4
 
-                           LAYOUT_AddChild, l1=HLayoutObject, EvenSized, // 5
+                           LAYOUT_AddChild, l1=NewObject(LayoutClass, NULL,//HLayoutObject,
+                           LAYOUT_EvenSize, TRUE,//EvenSized, // 5
 
-                             StartMember, SLG_List[SLG_Connect]=ButtonObject,
+                             LAYOUT_AddChild, SLG_List[SLG_Connect]=NewObject(ButtonClass, NULL,//ButtonObject,
                                GA_ID, SLG_Connect,
                                GA_RelVerify, TRUE,
                                GA_Text, GetAmiFTPString(SLW_Connect),
 			       GA_Disabled, TRUE,
-                               ButtonEnd,
+                               TAG_DONE),
 
-                             StartMember, SLG_List[SLG_Cancel]=ButtonObject,
+                             LAYOUT_AddChild, SLG_List[SLG_Cancel]=NewObject(ButtonClass, NULL,//ButtonObject,
                                GA_ID, SLG_Cancel,
                                GA_RelVerify, TRUE,
-                               GA_Text, Connect?GetAmiFTPString(SLW_Cancel):"OK",
-                               ButtonEnd,
+                               GA_Text, Connect? GetAmiFTPString(SLW_Cancel) : GetAmiFTPString(SLW_OK),
+                               TAG_DONE),
 			       CHILD_NominalSize, TRUE,
-                             EndGroup, /* End of connect/disconnect-group */ //-5
+                             TAG_DONE), /* End of connect/disconnect-group */ //-5
                              CHILD_WeightMinimum, TRUE,
-                           EndGroup, /* End of two row button-group */ //-3
+                           TAG_DONE), /* End of two row button-group */ //-3
                            CHILD_WeightedHeight, 0,
-                         EndGroup, /* End of listlist/button group */ //-2
+                         TAG_DONE), /* End of listlist/button group */ //-2
 
-                           StartVGroup, EvenSized,
-                             StartMember, SLG_List[SLG_Top]=ButtonObject,
+                           LAYOUT_AddChild,NewObject(LayoutClass, NULL,//StartVGroup,
+                           LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                           LAYOUT_EvenSize, TRUE,//EvenSized,
+                             LAYOUT_AddChild, SLG_List[SLG_Top]=NewObject(ButtonClass, NULL,//ButtonObject,
                               GA_Text, GetAmiFTPString(SLW_Top),
                               GA_ID, SLG_Top,
                               GA_RelVerify, TRUE,
 			      GA_Disabled, TRUE,
-                             ButtonEnd,
+                             TAG_DONE),
 
-                             StartMember, SLG_List[SLG_Up]=ButtonObject,
+                             LAYOUT_AddChild, SLG_List[SLG_Up]=NewObject(ButtonClass, NULL,//ButtonObject,
                               GA_Text, GetAmiFTPString(SLW_Up),
                               GA_ID, SLG_Up,
                               GA_RelVerify, TRUE,
 			      GA_Disabled, TRUE,
-                             ButtonEnd,
+                             TAG_DONE),
 
-                             StartMember, SLG_List[SLG_Down]=ButtonObject,
+                             LAYOUT_AddChild, SLG_List[SLG_Down]=NewObject(ButtonClass, NULL,//ButtonObject,
                               GA_Text, GetAmiFTPString(SLW_Down),
                               GA_ID, SLG_Down,
                               GA_RelVerify, TRUE,
 			      GA_Disabled, TRUE,
-                             ButtonEnd,
+                             TAG_DONE),
 
-                             StartMember, SLG_List[SLG_Bottom]=ButtonObject,
+                             LAYOUT_AddChild, SLG_List[SLG_Bottom]=NewObject(ButtonClass, NULL,//ButtonObject,
                               GA_Text, GetAmiFTPString(SLW_Bottom),
                               GA_ID, SLG_Bottom,
                               GA_RelVerify, TRUE,
 			      GA_Disabled, TRUE,
-                             ButtonEnd,
+                             TAG_DONE),
 
-                             StartMember, SLG_List[SLG_BarLabel]=ButtonObject,
+                             LAYOUT_AddChild, SLG_List[SLG_BarLabel]=NewObject(ButtonClass, NULL,//ButtonObject,
                               GA_Text, GetAmiFTPString(SLW_AddBar),
                               GA_ID, SLG_BarLabel,
                               GA_RelVerify, TRUE,
-                             ButtonEnd,
+                             TAG_DONE),
 			     CHILD_NominalSize, TRUE,
 
-                           EndGroup, /* End of Button-group */
+                           TAG_DONE), /* End of Button-group */
                            CHILD_WeightedWidth, 0,
                            CHILD_WeightedHeight, 0,
-			   EndGroup,
-		       LayoutEnd; /* End of Layoutobject */
+			   TAG_DONE),
+		       TAG_DONE); /* End of Layoutobject */
 
     if (!SiteListLayout)
       return NULL;
 
     if (!Connect) {
-	SetAttrs(l1, LAYOUT_RemoveChild, SLG_List[SLG_Connect], TAG_DONE);	
+	SetAttrs(l1, LAYOUT_RemoveChild,SLG_List[SLG_Connect], TAG_DONE);	
 	SLG_List[SLG_Connect]=NULL;
 	SLG_List[SLG_Cancel]=NULL;
     }
-    
-    LayoutLimits((struct Gadget *)SiteListLayout, &limits, PropFont, Screen);
-    limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
-    limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
 
-    SiteListWin_Object = WindowObject,
+    /*LayoutLimits((struct Gadget *)SiteListLayout, &limits, PropFont, Screen);
+    limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
+    limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;*/
+
+    SiteListWin_Object = NewObject(WindowClass, NULL,//WindowObject,
                            WA_Title,        GetAmiFTPString(SLW_SiteListWindow),
                            WA_PubScreen,    Screen,
                            WA_SizeGadget,   TRUE,
@@ -1051,15 +1024,14 @@ struct Window *OpenSiteWindow(const BOOL Connect)
                            WA_SmartRefresh, TRUE,
                            //WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
                            //WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
-                           WA_InnerHeight, height?height:limits.MinHeight,
-                           WA_InnerWidth, width?width:limits.MinWidth,
+//                           WA_InnerHeight, height? height: limits.MinHeight,
+//                           WA_InnerWidth, width? width: limits.MinWidth,
                            WA_IDCMP, IDCMP_RAWKEY,
                            WINDOW_Position,  WPOS_CENTERWINDOW,
                            WINDOW_RefWindow, MainWindow,
-                           //WINDOW_ParentGroup, SiteListLayout,
-                           WINDOW_Layout, SiteListLayout,
-      	                   WINDOW_InterpretUserData, WGUD_FUNC,
-                         EndWindow;
+                           WINDOW_Layout,    SiteListLayout,
+                           WINDOW_GadgetUserData, WGUD_FUNC,
+                         TAG_DONE);
 
     if (!SiteListWin_Object) {
 	DisposeObject(SiteListLayout);
@@ -1094,24 +1066,28 @@ int NewGroup(void)
 {
 	struct SiteNode *sn;
 
-	sn=(struct SiteNode *)AllocVecTags(sizeof (struct SiteNode), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
+	sn=(struct SiteNode *)AllocVecTags(sizeof (struct SiteNode), AVT_Type,MEMF_SHARED, AVT_ClearWithValue,0, TAG_DONE);
 	if (sn) {
 		struct Node *lb,*lbn;
 		ULONG i;
 
 		sn->sn_Node.ln_Name=strdup(GetAmiFTPString(SLW_Newstring));
+//		sn->sn_Node.ln_Name=DupStr(GetAmiFTPString(SLW_Newstring),-1);
 		sn->sn_MenuType=SLN_PARENT;
 		sn->sn_HotList=TRUE;
 
 		LockWindow(SiteListWin_Object);
+		//APTR lw = SleepWindow(SiteListWindow);
 		OpenEditWindow(sn);
 		UnlockWindow(SiteListWin_Object);
+		//WakeWindow(SiteListWindow,lw);
+
 		if (AddToSiteList) {
 			SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
-			               LISTBROWSER_Labels, ~0, TAG_DONE);
+			               LISTBROWSER_Labels,~0, TAG_DONE);
 
 			lbn=AddLBNTail(&SiteList, sn);
-			for (i=0,lb=GetHead(&SiteList);lb;i++,lb=GetSucc(lb))
+			for (i=0,lb=GetHead(&SiteList); lb; i++,lb=GetSucc(lb))
 				if (lb==lbn) break;
 
 			SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
@@ -1131,458 +1107,176 @@ int NewGroup(void)
 	return 1;
 }
 
-int SL_Up(void)
+void SL_Up(void)
 {
-    ULONG thisgen, hidden, haschildren,nodegen;
-    ULONG i;
-    struct Node *node,*prevnode;
-    struct SiteNode *sn;
-    struct List childlist;
+	ULONG prevgen=SLN_REGULAR, hidden, /*haschildren,*/ nodegen;
+	struct Node *node, *prevnode;
+	struct SiteNode *sn;
+DBUG("SL_Up2():\n",NULL);
+	GetAttrs(SLG_List[SLG_SiteList], LISTBROWSER_SelectedNode,&node, TAG_DONE);
+	if(node == NULL) { return; }
 
-    GetAttrs(SLG_List[SLG_SiteList],
-	     LISTBROWSER_SelectedNode, &node,
-	     TAG_DONE);
-    if (node) {
-	if (node==GetHead(&SiteList))
-	  return 1;
-	if ( (prevnode=GetPred(node)) ) {
-	    GetListBrowserNodeAttrs(node, LBNA_Flags, &haschildren,
-				    LBNA_Generation, &nodegen,
-				    LBNA_UserData, &sn,
-				    TAG_DONE);
-	    haschildren=haschildren&LBFLG_HASCHILDREN;
-	    if (haschildren) {
-		struct Node *child,*nchild;
-		ULONG chldgen;
+	GetListBrowserNodeAttrs(node, //LBNA_Flags,&haschildren,
+	                        LBNA_Generation,&nodegen, LBNA_UserData,&sn, TAG_DONE);
+DBUG("  LBNA_Generation=0x%08lx\n",nodegen);
 
-		NewList(&childlist);
-		if ( (child=GetSucc(node)) ) {
-		    GetListBrowserNodeAttrs(child, LBNA_Generation, &chldgen,
-					    TAG_DONE);
-		    if (chldgen==2) {
-			nchild=GetSucc(child);
-			Remove(child);
-			AddTail(&childlist, child);
-			while (nchild) {
-			    child=nchild;
-			    nchild=GetSucc(child);
-			    GetListBrowserNodeAttrs(child, 
-						    LBNA_Generation, &chldgen,
-						    TAG_DONE);
-			    if (chldgen==2) {
-				Remove(child);
-				AddTail(&childlist, child);
-			    }
-			    else nchild=NULL;
-			}
-		    }
-		}
-		GetListBrowserNodeAttrs(prevnode, LBNA_Generation, &thisgen,
-					TAG_DONE);
-		while (thisgen == 2 && prevnode) {
-		    prevnode=GetPred(prevnode);
-		    if (prevnode) {
-			GetListBrowserNodeAttrs(prevnode,LBNA_Generation,&thisgen,TAG_DONE);
-		    }
-		}
-		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,
-			       LISTBROWSER_Labels,~0,
-			       TAG_DONE);
-		Remove(node);
-		Insert(&SiteList,node,prevnode?GetPred(prevnode):NULL);
-		if (GetHead(&childlist)!=NULL) {
-		    nchild=node;
-		    while ( (child=RemHead(&childlist)) ) {
-			Insert(&SiteList,child,nchild);
-			nchild=child;
-		    }
-		}
+	// CASE: don't allow move SLN_PARENT
+	if(nodegen == SLN_PARENT) { return; }
 
-		for (i=0,child=GetHead(&SiteList);child;child=GetSucc(child),i++)
-		  if (child==node) break;
+	// CASE: we are on top -> do nothing
+	if( (prevnode=GetPred(node)) == NULL ) { return; }
 
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,
-				   LISTBROWSER_Labels,&SiteList,
-				   LISTBROWSER_Selected,i,
-				   LISTBROWSER_MakeVisible,i,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,1);
-	    }
-	    else {
-		GetListBrowserNodeAttrs(prevnode,LBNA_Flags,&hidden,LBNA_Generation,&thisgen,TAG_DONE);
+//	if( (prevnode=GetPred(node)) ) {
+	GetListBrowserNodeAttrs(prevnode, LBNA_Flags,&hidden, LBNA_Generation,&prevgen, TAG_DONE);
+//	}
 
-		if (hidden&LBFLG_HIDDEN) {
-		    while (hidden && prevnode) {
-			prevnode=GetPred(prevnode);
-			if (prevnode) {
-			    GetListBrowserNodeAttrs(prevnode,LBNA_Flags,&hidden,TAG_DONE);
-			    GetListBrowserNodeAttrs(node,LBNA_Generation,&thisgen,TAG_DONE);
-			    hidden=hidden&LBFLG_HIDDEN;
-			}
-		    }
-		    prevnode=GetPred(prevnode);
-		    thisgen=1;
-		}
-		else if (hidden&LBFLG_HASCHILDREN) {
-		    if (hidden&LBFLG_SHOWCHILDREN) {
-			if (nodegen==2) {
-			    thisgen=1;
-			    prevnode=GetPred(prevnode);
-			}
-			else {
-			    thisgen=2;
-			}
-		    }
-		    else {
-			prevnode=GetPred(prevnode);
-			thisgen=1;
-		    }
-		}
-		else {
-		    if (nodegen == 1 && thisgen == 2) {
-			thisgen=2;
-		    }
-		    else if (nodegen==2 && thisgen == 2)
-		      prevnode=GetPred(prevnode);
-		    else if (nodegen==1 && thisgen ==1)
-		      prevnode=GetPred(prevnode);
-		}
-
-		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,
-			       LISTBROWSER_Labels,~0,
-			       TAG_DONE);
-		SetListBrowserNodeAttrs(node,LBNA_Generation,thisgen,TAG_DONE);
-		sn->sn_MenuType=thisgen==1?SLN_REGULAR:SLN_CHILD;
-		Remove(node);
-		Insert(&SiteList,node,prevnode);
-
-		for (i=0,prevnode=GetHead(&SiteList);prevnode;prevnode=GetSucc(prevnode),i++)
-		  if (prevnode==node) break;
-		
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,
-				   LISTBROWSER_Labels,&SiteList,
-				   LISTBROWSER_Selected,i,
-				   LISTBROWSER_MakeVisible,i,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,1);
-	    }
-	}
-	HotListChanged=TRUE;
-	ConfigChanged=TRUE;
-    }
-    return 1;
-}
-
-int SL_Down(void)
-{
-    struct Node *node,*succnode;
-    ULONG i;
-    struct List childlist;
-    ULONG haschildren,hschld,thisgen,nodegen;
-    struct SiteNode *sn=NULL;
-
-    GetAttrs(SLG_List[SLG_SiteList],
-	     LISTBROWSER_SelectedNode,&node,
-	     TAG_DONE);
-    if (node) {
-	if ( (succnode=GetSucc(node)) ) {
-	    GetListBrowserNodeAttrs(node,LBNA_Flags,&haschildren,LBNA_Generation,&nodegen,LBNA_UserData,&sn,TAG_DONE);
-	    haschildren=haschildren&LBFLG_HASCHILDREN;
-	    if (haschildren) {
-		struct Node *child,*nchild;
-		ULONG chldgen;
-
-		NewList(&childlist);
-		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList],SiteListWindow,NULL,
-			       LISTBROWSER_Labels,~0,
-			       TAG_DONE);
-		
-		/* First we need to check if this parent has any children and if so
-		   remove them from the list */
-		if ( (child=GetSucc(node)) ) {
-		    GetListBrowserNodeAttrs(child,LBNA_Generation,&chldgen,TAG_DONE);
-		    if (chldgen==2) {
-			nchild=GetSucc(child);
-			Remove(child);
-			AddTail(&childlist,child);
-			while ( (child=nchild) ) {
-			    nchild=GetSucc(child);
-			    GetListBrowserNodeAttrs(child,LBNA_Generation,&chldgen,TAG_DONE);
-			    if (chldgen==2) {
-				Remove(child);
-				AddTail(&childlist,child);
-			    }
-			    else {
-				nchild=NULL;
-			    }
-			}
-		    }
-		}
-
-		/* Since we haven't removed the parent we can check which node is
-		   the successor. We need to check if it is a parent and has children
-		   too. The output from this part should be the succnode that we
-		   should insert the node we are moving. */
-		succnode=GetSucc(node);
-		if (succnode) {
-		    GetListBrowserNodeAttrs(succnode,LBNA_Flags,&hschld,TAG_DONE);
-		    if (hschld&LBFLG_HASCHILDREN) {
-			child=GetSucc(succnode);
-			if (child) {
-			    GetListBrowserNodeAttrs(child,LBNA_Generation,&thisgen,TAG_DONE);
-			    while (thisgen==2 && child) {
-				child=GetSucc(child);
-				if (child) {
-				    GetListBrowserNodeAttrs(child,LBNA_Generation,&thisgen,TAG_DONE);
-				}
-			    }
-			    if (child)
-			      succnode=GetPred(child);
-			    else
-			      succnode=GetTail(&SiteList);
-			}
-			Remove(node);
-			Insert(&SiteList, node, succnode);
-		    }
-		    else {
-			Remove(node);
-			Insert(&SiteList, node, succnode);
-		    }
-		}
-
-		if (GetHead(&childlist)!=NULL) {
-		    nchild=node;
-		    while ( (child=RemHead(&childlist)) ) {
-			Insert(&SiteList, child, nchild);
-			nchild=child;
-		    }
-		}
-
-		for (i=0,child=GetHead(&SiteList);child;child=GetSucc(child),i++)
-		  if (child==node) break;
-
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
-				   LISTBROWSER_Labels, &SiteList,
-				   LISTBROWSER_Selected, i,
-				   LISTBROWSER_MakeVisible, i,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
-
-	    }
-	    else {
-		GetListBrowserNodeAttrs(succnode, LBNA_Flags, &hschld,
-					LBNA_Generation, &thisgen, TAG_DONE);
-
-		if (hschld&LBFLG_HASCHILDREN) {
-		    if (nodegen==2) {
-			thisgen=1;
-			succnode=GetPred(node);
-		    }
-		    else if (!(hschld&LBFLG_SHOWCHILDREN)) {
-			if (GetSucc(succnode)) {
-			    struct Node *child;
-			    char *text;
-
-			    child=GetSucc(succnode);
-			    GetListBrowserNodeAttrs(child,
-						    LBNA_Generation, &thisgen,
-						    LBNCA_Text, &text, TAG_DONE);
-			    if (thisgen!=1) {
-				succnode=child;
-				while (thisgen==2 && succnode) {
-				    succnode=GetSucc(succnode);
-				    if (succnode) {
-					GetListBrowserNodeAttrs(succnode,
-								LBNA_Generation, &thisgen,
-								TAG_DONE);
-				    }
-				}
-				if (succnode)
-				  succnode=GetPred(succnode);
-				else
-				  succnode=GetTail(&SiteList);
-			    }
-			}
-			thisgen=1;
-		    }
-		    else
-		      thisgen=2;
-		}
-		else {
-		    if (nodegen==2 && thisgen==1) {
-			thisgen=1;
-			succnode=GetPred(node);
-		    }
-		}
+	// CASE: previous is SLN_CHILD -> change to "child"
+	if(prevgen==SLN_CHILD  &&  nodegen==SLN_REGULAR) {
+		sn->sn_MenuType = SLN_CHILD;
+		SetListBrowserNodeAttrs(node, LBNA_Generation,SLN_CHILD, TAG_DONE);
 		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
-			       LISTBROWSER_Labels, ~0,
-			       TAG_DONE);
-
-		Remove(node);
-		SetListBrowserNodeAttrs(node, LBNA_Generation, thisgen, TAG_DONE);
-		sn->sn_MenuType=thisgen==1?SLN_REGULAR:SLN_CHILD;
-		if (succnode)
-		  Insert(&SiteList, node, succnode);
-		else
-		  AddTail(&SiteList, node);
-		
-		for (i=0,succnode=GetHead(&SiteList);succnode;succnode=GetSucc(succnode),i++)
-		  if (succnode==node) break;
-
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
-				   LISTBROWSER_Labels, &SiteList,
-				   LISTBROWSER_Selected, i,
-				   LISTBROWSER_MakeVisible, i,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
-	    }
+		               LISTBROWSER_Labels,&SiteList);
+		return;
 	}
-	HotListChanged=TRUE;
-	ConfigChanged=TRUE;
-    }
-    return 1;
+
+	// CASE: node is first child -> change to "regular" & swap
+	if(nodegen==SLN_CHILD  &&  prevgen!=SLN_CHILD) {
+		sn->sn_MenuType = SLN_REGULAR;
+		SetListBrowserNodeAttrs(node, LBNA_Generation,SLN_REGULAR, TAG_DONE);
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
+		               LISTBROWSER_Labels,&SiteList);
+		swapEntries( node, GetPred(prevnode) ); // GetPred(prevnode) -> Insert AFTER a given node
+		return;
+	}
+
+	// CASE: previous is SLN_PARENT -> change to "regular"
+	if(prevgen == SLN_PARENT) {
+		sn->sn_MenuType = SLN_REGULAR;
+		if( !(hidden&LBFLG_SHOWCHILDREN) ) { // SLN_PARENT is hidden -> expand it
+			DoGadgetMethod((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
+			               LBM_SHOWCHILDREN, NULL, prevnode, 1);
+		}
+	}
+
+	swapEntries( node, GetPred(prevnode) ); // GetPred(prevnode) -> Insert AFTER a given node
 }
 
-int SL_Top(void)
+void SL_Down(void)
 {
-    struct Node *node,*child,*nchild;
-    struct List childlist;
-    ULONG haschildren,thisgen;
+	ULONG nextgen=SLN_REGULAR, hidden, /*haschildren,*/ nodegen;
+	struct Node *node, *nextnode = NULL;
+	struct SiteNode *sn;
+DBUG("SL_Down2():\n",NULL);
+	GetAttrs(SLG_List[SLG_SiteList], LISTBROWSER_SelectedNode,&node, TAG_DONE);
+	if(node == NULL) { return; }
 
-    GetAttrs(SLG_List[SLG_SiteList],
-	     LISTBROWSER_SelectedNode, &node, TAG_DONE);
-    if (!node)
-      return 1;
+	GetListBrowserNodeAttrs(node, //LBNA_Flags,&haschildren,
+	                        LBNA_Generation,&nodegen, LBNA_UserData,&sn, TAG_DONE);
+DBUG("  LBNA_Generation=0x%08lx\n",nodegen);
+//DBUG("  LBNA_Flags=0x%08lx (LBNA_Generation=0x%08lx)\n",haschildren,nodegen);
 
-    if (GetHead(&SiteList)==node)
-      return 1;
+	// CASE: don't allow move SLN_PARENT
+	if(nodegen == SLN_PARENT) { return; }
 
-    GetListBrowserNodeAttrs(node, LBNA_Flags, &haschildren, 
-			    LBNA_Generation, &thisgen,TAG_DONE);
-    if (thisgen!=1)
-      return 1;
+	if( (nextnode=GetSucc(node)) ) {
+		GetListBrowserNodeAttrs(nextnode, LBNA_Flags,&hidden, LBNA_Generation,&nextgen, TAG_DONE);
+	}
+DBUG("nextgen=0x%08lx\n",nextgen);
 
-    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
-		   LISTBROWSER_Labels, ~0,
-		   TAG_DONE);
-    NewList(&childlist);
-    if (haschildren&LBFLG_HASCHILDREN) {
-	if ( (child=GetSucc(node)) ) {
-	    GetListBrowserNodeAttrs(child, LBNA_Generation, &thisgen, TAG_DONE);
-	    if (thisgen==2) {
-		nchild=GetSucc(child);
-		Remove(child);
-		AddTail(&childlist, child);
-		while ( (child=nchild) ) {
-		    nchild=GetSucc(child);
-		    GetListBrowserNodeAttrs(child, LBNA_Generation, &thisgen,
-					    TAG_DONE);
-		    if (thisgen==2) {
-			Remove(child);
-			AddTail(&childlist, child);
-		    }
-		    else {
-			nchild=NULL;
-		    }
+	// CASE: node is last child -> change to "regular"
+	if(nodegen==SLN_CHILD  &&  nextgen!=SLN_CHILD) {
+		sn->sn_MenuType = SLN_REGULAR;
+		SetListBrowserNodeAttrs(node, LBNA_Generation,SLN_REGULAR, TAG_DONE);
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
+		               LISTBROWSER_Labels,&SiteList);
+		return;
+	}
+
+	// CASE: we are at bottom -> do nothing
+	if(nextnode == NULL) { return; }
+
+	// CASE: next node is SLN_PARENT -> change to "child"
+	if(nextgen == SLN_PARENT) {
+		sn->sn_MenuType = SLN_CHILD;
+		if( !(hidden&LBFLG_SHOWCHILDREN) ) { // SLN_PARENT is hidden -> expand it
+			DoGadgetMethod((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
+			               LBM_SHOWCHILDREN, NULL, nextnode, 1);
 		}
-	    }
 	}
-	Remove(node);
-	AddHead(&SiteList, node);
-	if (GetHead(&childlist)!=NULL) {
-	    nchild=node;
-	    while ( (child=RemHead(&childlist)) ) {
-		Insert(&SiteList, child, nchild);
-		nchild=child;
-	    }
-	}
-    }
-    else {
-	Remove(node);
-	AddHead(&SiteList, node);
-    }
-    if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
-		       LISTBROWSER_Labels, &SiteList,
-		       LISTBROWSER_Selected, 0,
-		       LISTBROWSER_MakeVisible, 0,
-		       TAG_DONE))
-      RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
-    HotListChanged=TRUE;
-    ConfigChanged=TRUE;
-    return 1;
+
+	swapEntries(node, nextnode);
 }
 
-int SL_Bottom(void)
+void SL_Top(void)
 {
-    struct Node *node,*child,*nchild;
-    struct List childlist;
-    ULONG haschildren,thisgen;
+	ULONG thisgen;
+	struct Node *thisnod;
+	struct SiteNode *sn;
+DBUG("SL_Top():\n",NULL);
+	GetAttrs(SLG_List[SLG_SiteList], LISTBROWSER_SelectedNode,&thisnod, TAG_DONE);
+	if(thisnod == NULL) { return; }
 
-    GetAttrs(SLG_List[SLG_SiteList],
-	     LISTBROWSER_SelectedNode, &node, TAG_DONE);
-    if (!node)
-      return 1;
+	GetListBrowserNodeAttrs(thisnod, LBNA_Generation,&thisgen, LBNA_UserData,&sn, TAG_DONE);
+DBUG("  LBNA_Generation=0x%08lx\n",thisgen);
 
-    if (GetTail(&SiteList)==node)
-      return 1;
+	// CASE: don't allow move SLN_PARENT
+	if(thisgen == SLN_PARENT) { return; }
 
-    GetListBrowserNodeAttrs(node, LBNA_Flags, &haschildren,
-			    LBNA_Generation, &thisgen, TAG_DONE);
-    if (thisgen!=1)
-      return 1;
+	// CASE: we are on top -> do nothing
+	if(GetPred(thisnod) == NULL) { return; }
 
-    SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
-		   LISTBROWSER_Labels, ~0,
-		   TAG_DONE);
-    NewList(&childlist);
-    if (haschildren&LBFLG_HASCHILDREN) {
-	if ( (child=GetSucc(node)) ) {
-	    GetListBrowserNodeAttrs(child, LBNA_Generation, &thisgen, TAG_DONE);
-	    if (thisgen==2) {
-		nchild=GetSucc(child);
-		Remove(child);
-		AddTail(&childlist, child);
-		while ( (child=nchild) ) {
-		    nchild=GetSucc(child);
-		    GetListBrowserNodeAttrs(child, LBNA_Generation, &thisgen,
-					    TAG_DONE);
-		    if (thisgen==2) {
-			Remove(child);
-			AddTail(&childlist, child);
-		    }
-		    else {
-			nchild=NULL;
-		    }
-		}
-	    }
+	// CASE: node is child -> change to "regular"
+	if(thisgen == SLN_CHILD) {
+		sn->sn_MenuType = SLN_REGULAR;
+		SetListBrowserNodeAttrs(thisnod, LBNA_Generation,SLN_REGULAR, TAG_DONE);
 	}
-	Remove(node);
-	AddTail(&SiteList, node);
-	if (GetHead(&childlist)!=NULL) {
-	    nchild=node;
-	    while ( (child=RemHead(&childlist)) ) {
-		Insert(&SiteList, child, nchild);
-		nchild=child;
-	    }
+
+	Remove(thisnod);
+	AddHead(&SiteList, thisnod);
+
+	// Select top position of "moved" node
+	SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
+	               LISTBROWSER_Labels,&SiteList, LISTBROWSER_SelectedNode,thisnod,
+	               LISTBROWSER_MakeNodeVisible,thisnod, TAG_DONE);
+
+	HotListChanged = TRUE;
+	ConfigChanged  = TRUE;
+}
+
+void SL_Bottom(void)
+{
+	ULONG thisgen;
+	struct Node *thisnod;
+	struct SiteNode *sn;
+DBUG("SL_Bottom():\n",NULL);
+	GetAttrs(SLG_List[SLG_SiteList], LISTBROWSER_SelectedNode,&thisnod, TAG_DONE);
+	if(thisnod == NULL) { return; }
+
+	GetListBrowserNodeAttrs(thisnod, LBNA_Generation,&thisgen, LBNA_UserData,&sn, TAG_DONE);
+DBUG("  LBNA_Generation=0x%08lx\n",thisgen);
+
+	// CASE: don't allow move SLN_PARENT
+	if(thisgen == SLN_PARENT) { return; }
+
+	// CASE: we are at bottom -> do nothing
+	if(GetSucc(thisnod) == NULL) { return; }
+
+	// CASE: node is child -> change to "regular"
+	if(thisgen == SLN_CHILD) {
+		sn->sn_MenuType = SLN_REGULAR;
+		SetListBrowserNodeAttrs(thisnod, LBNA_Generation,SLN_REGULAR, TAG_DONE);
 	}
-    }
-    else {
-	Remove(node);
-	AddTail(&SiteList, node);
-    }
 
-    for (thisgen=0,child=GetHead(&SiteList);child;child=GetSucc(child),thisgen++)
-      if (child==node) break;
+	Remove(thisnod);
+	AddTail(&SiteList, thisnod);
 
-    if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
-		       LISTBROWSER_Labels, &SiteList,
-		       LISTBROWSER_Selected, thisgen,
-		       LISTBROWSER_MakeVisible, thisgen,
-		       TAG_DONE))
-      RefreshGList((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL, 1);
-    HotListChanged=TRUE;
-    ConfigChanged=TRUE;
-    return 1;
+	// Select top position of "moved" node
+	SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
+	               LISTBROWSER_Labels,&SiteList, LISTBROWSER_SelectedNode,thisnod,
+	               LISTBROWSER_MakeNodeVisible,thisnod, TAG_DONE);
+
+	HotListChanged = TRUE;
+	ConfigChanged  = TRUE;
 }
 
 int NewClicked(void)
@@ -1592,24 +1286,27 @@ int NewClicked(void)
 
     //geta4();
 
-	sn=(struct SiteNode *)AllocVecTags(sizeof (struct SiteNode), AVT_Type, MEMF_SHARED, AVT_ClearWithValue, 0, TAG_DONE);
+	sn=(struct SiteNode *)AllocVecTags(sizeof (struct SiteNode), AVT_Type,MEMF_SHARED, AVT_ClearWithValue,0, TAG_DONE);
 	if (sn) {
-		sn->sn_Node.ln_Name=strdup(GetAmiFTPString(SLW_Newstring));
-		sn->sn_Port=21;
-		sn->sn_Proxy=MainPrefs.mp_DefaultProxy;
-		sn->sn_Anonymous=1;
-		sn->sn_MenuType=SLN_REGULAR;
+		sn->sn_Node.ln_Name = strdup(GetAmiFTPString(SLW_Newstring));
+//		sn->sn_Node.ln_Name = DupStr(GetAmiFTPString(SLW_Newstring),-1);
+		sn->sn_Port         = 21;
+		sn->sn_Proxy        = MainPrefs.mp_DefaultProxy;
+		sn->sn_Anonymous    = 1;
+		sn->sn_MenuType     = SLN_REGULAR;
 
 		LockWindow(SiteListWin_Object);
+		//APTR lw = SleepWindow(SiteListWindow);
 		OpenEditWindow(sn);
 		UnlockWindow(SiteListWin_Object);
+		//WakeWindow(SiteListWindow,lw);
 
 		if (AddToSiteList) {
 			long i;
 			struct Node *lb;
 
 			SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
-			               LISTBROWSER_Labels, ~0, TAG_DONE);
+			               LISTBROWSER_Labels,~0, TAG_DONE);
 
 			lbn=AddLBNTail(&SiteList,sn);
 			for (i=0,lb=GetHead(&SiteList);lb;i++,lb=GetSucc(lb))
@@ -1642,26 +1339,28 @@ int EditClicked(void)
 
 	GetAttr(LISTBROWSER_SelectedNode, SLG_List[SLG_SiteList], (ULONG *)&lbn);
 	if (lbn) {
-		GetListBrowserNodeAttrs(lbn, LBNA_UserData, &sn, TAG_DONE);
+		GetListBrowserNodeAttrs(lbn, LBNA_UserData,&sn, TAG_DONE);
 		if (sn) {
 			if (!sn->sn_BarLabel) {
 				/* fix this: (sn) should be a copy of sn */
 				LockWindow(SiteListWin_Object);
+				//APTR lw = SleepWindow(SiteListWindow);
 				OpenEditWindow(sn);
 
 				if (AddToSiteList) {
 					LBEditNode(SLG_List[SLG_SiteList], SiteListWindow, NULL, lbn,
 					           LBNA_Column, 0,
-					           LBNCA_Text, sn->sn_Node.ln_Name,
+					             LBNCA_CopyText, TRUE,
+					             LBNCA_Text,     sn->sn_Node.ln_Name,
 					          TAG_DONE);
 					if (!sn->sn_HotList) {
 						struct Node *lbnode=GetSucc(lbn);
 						if (lbnode) {
-							GetListBrowserNodeAttrs(lbnode, LBNA_UserData, &sn, TAG_DONE);
+							GetListBrowserNodeAttrs(lbnode, LBNA_UserData,&sn, TAG_DONE);
 							while (sn->sn_MenuType==SLN_CHILD) {
 								sn->sn_HotList=FALSE;
 								if ( (lbnode=GetSucc(lbnode)) ) {
-									GetListBrowserNodeAttrs(lbnode, LBNA_UserData, &sn, TAG_DONE);
+									GetListBrowserNodeAttrs(lbnode, LBNA_UserData,&sn, TAG_DONE);
 								}
 								else break;
 							}
@@ -1673,6 +1372,7 @@ int EditClicked(void)
 				}
 
 				UnlockWindow(SiteListWin_Object);
+				//WakeWindow(SiteListWindow,lw);
 			}
 		}
 	}
@@ -1696,7 +1396,7 @@ int RemoveClicked(void)
 		if (result==0) return 0;
 
 		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
-		               LISTBROWSER_Labels, ~0, TAG_DONE);
+		               LISTBROWSER_Labels,~0, TAG_DONE);
 		lbns=GetSucc(lbn);
 		Remove(lbn);
 		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
@@ -1711,14 +1411,13 @@ int RemoveClicked(void)
 			if (sn->sn_MenuType==SLN_PARENT) {
 				FreeSiteNode(sn);
 				if (lbns) {
-					GetListBrowserNodeAttrs(lbns, LBNA_UserData, &sn, TAG_DONE);
+					GetListBrowserNodeAttrs(lbns, LBNA_UserData,&sn, TAG_DONE);
 					while (sn->sn_MenuType==SLN_CHILD) {
 						sn->sn_MenuType=SLN_REGULAR;
-						SetListBrowserNodeAttrs(lbns, LBNA_Generation, 1, TAG_DONE);
+						//SetListBrowserNodeAttrs(lbns, LBNA_Generation,1, TAG_DONE);
+						SetListBrowserNodeAttrs(lbns, LBNA_Generation,SLN_REGULAR, TAG_DONE);
 						lbns=GetSucc(lbns);
-						if (lbns) {
-							GetListBrowserNodeAttrs(lbns, LBNA_UserData, &sn, TAG_DONE);
-						}
+						if (lbns) { GetListBrowserNodeAttrs(lbns, LBNA_UserData,&sn, TAG_DONE); }
 						else break;
 					}
 				}
@@ -1735,118 +1434,106 @@ int RemoveClicked(void)
 	return 1;
 }
 
-#define DisableGadget(gadget, disable) if (SetGadgetAttrs(gadget, SiteListWindow, NULL, GA_Disabled, disable, TAG_DONE) && SiteListWindow) RefreshGList(gadget, SiteListWindow, NULL, 1);
+//#define DisableGadget(gadget,disable) if(SetGadgetAttrs(gadget,SiteListWindow,NULL,GA_Disabled,disable,TAG_DONE) && SiteListWindow) RefreshGList(gadget,SiteListWindow,NULL,1);
 void UpdateSLGGadgets(const ULONG selected, const int type)
 {
-    ULONG attr=(((struct Gadget *)SLG_List[SLG_Edit])->Flags & GFLG_DISABLED);
-
-    if (!selected) {
-	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,
-			   GA_Disabled, TRUE,
-			   TAG_DONE))
-	  RefreshGList((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,1);
-	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,
-			   GA_Disabled, TRUE,
-			   TAG_DONE))
-	  RefreshGList((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,1);
-	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,
-			   GA_Disabled, TRUE,
-			   TAG_DONE))
-	  RefreshGList((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,1);
-	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,
-			   GA_Disabled, TRUE,
-			   TAG_DONE))
-	  RefreshGList((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,1);
-	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,
-			   GA_Disabled, TRUE,
-			   TAG_DONE))
-	  RefreshGList((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,1);
-	if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,
-			   GA_Disabled, TRUE,
-			   TAG_DONE))
-	  RefreshGList((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,1);
-	if (SLG_List[SLG_Connect]) {
-	    if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,
-			       GA_Disabled, TRUE,
-			       TAG_DONE))
-	      RefreshGList((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,1);
-	}
-    }
-    else {
-	if (type==SLN_PARENT) {
-	    attr=(((struct Gadget *)SLG_List[SLG_Edit])->Flags & GFLG_DISABLED);
-	    if (attr) {
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,1);
-	    }
-	    if (SLG_List[SLG_Connect]) {
-		attr=(((struct Gadget *)SLG_List[SLG_Connect])->Flags & GFLG_DISABLED);
-		if (!attr)
-		  if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,
-				     GA_Disabled, TRUE,
-				     TAG_DONE))
-		    RefreshGList((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,1);
-	    }
+	ULONG attr;//=(((struct Gadget *)SLG_List[SLG_Edit])->Flags & GFLG_DISABLED);
+DBUG("UpdateSLGGadgets() 0x%08lx %ld\n",selected,type);
+	if (!selected) {
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,
+		               GA_Disabled,TRUE, TAG_DONE);
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,
+		               GA_Disabled,TRUE, TAG_DONE);
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,
+		               GA_Disabled,TRUE, TAG_DONE);
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,
+		               GA_Disabled,TRUE, TAG_DONE);
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,
+		               GA_Disabled,TRUE, TAG_DONE);
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,
+		               GA_Disabled,TRUE, TAG_DONE);
+		if (SLG_List[SLG_Connect]) {
+			SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,
+			               GA_Disabled,TRUE, TAG_DONE);
+		}
 	}
 	else {
-	    attr=(((struct Gadget *)SLG_List[SLG_Edit])->Flags & GFLG_DISABLED);
-	    if (attr) {
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,1);
-		if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,
-				   GA_Disabled, FALSE,
-				   TAG_DONE))
-		  RefreshGList((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,1);
-	    }
-	    if (SLG_List[SLG_Connect]) {
-		attr=(((struct Gadget *)SLG_List[SLG_Connect])->Flags & GFLG_DISABLED);
-		if (attr)
-		  if (SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,
-				     GA_Disabled, FALSE,
-				     TAG_DONE))
-		    RefreshGList((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,1);
-	    }
+		SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,
+		               GA_Disabled,type==SLN_BARLABEL? TRUE:FALSE, TAG_DONE);
+
+		if (type==SLN_PARENT) {
+			//attr=(((struct Gadget *)SLG_List[SLG_Edit])->Flags & GFLG_DISABLED);
+//DBUG("attr=0x%08lx\n",attr);
+//			if (attr) {
+				/*SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,
+				               GA_Disabled,FALSE, TAG_DONE);*/
+				SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,
+				               GA_Disabled,FALSE, TAG_DONE);
+				SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,
+				               GA_Disabled,TRUE, TAG_DONE);
+				SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,
+				               GA_Disabled,TRUE, TAG_DONE);
+				SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,
+				               GA_Disabled,TRUE, TAG_DONE);
+				SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,
+				               GA_Disabled,TRUE, TAG_DONE);
+//			}
+			if (SLG_List[SLG_Connect]) {
+				attr=(((struct Gadget *)SLG_List[SLG_Connect])->Flags & GFLG_DISABLED);
+				if (!attr) {
+					SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,
+					               GA_Disabled,TRUE, TAG_DONE);
+				}
+			}
+		}
+		else {
+			//attr=(((struct Gadget *)SLG_List[SLG_Edit])->Flags & GFLG_DISABLED);
+//			if (attr) {
+				/*SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Edit], SiteListWindow, NULL,
+				               GA_Disabled,FALSE, TAG_DONE);*/
+				SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Remove], SiteListWindow, NULL,
+				               GA_Disabled,FALSE, TAG_DONE);
+				SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Top], SiteListWindow, NULL,
+				               GA_Disabled,FALSE, TAG_DONE);
+				SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Up], SiteListWindow, NULL,
+				               GA_Disabled,FALSE, TAG_DONE);
+				SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Down], SiteListWindow, NULL,
+				               GA_Disabled,FALSE, TAG_DONE);
+				SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Bottom], SiteListWindow, NULL,
+				               GA_Disabled,FALSE, TAG_DONE);
+//			}
+			if (SLG_List[SLG_Connect]) {
+				attr=(((struct Gadget *)SLG_List[SLG_Connect])->Flags & GFLG_DISABLED);
+				if (attr) {
+					SetGadgetAttrs((struct Gadget*)SLG_List[SLG_Connect], SiteListWindow, NULL,
+				                GA_Disabled,FALSE, TAG_DONE);
+				}
+			}
+		}
 	}
-    }
 }
-#undef DisableGadget
+//#undef DisableGadget
+
+
+void swapEntries(struct Node *n, struct Node *pos_n)
+{
+	struct SiteNode *sn;
+DBUG("swapEntry()\n",NULL);
+	GetListBrowserNodeAttrs(n, LBNA_UserData,&sn, TAG_DONE);
+
+	// Update node's LBNA_Generation
+DBUG("  sn->sn_MenuType=0x%08lx\n",sn->sn_MenuType);
+	SetListBrowserNodeAttrs(n, LBNA_Generation,sn->sn_MenuType, TAG_DONE);
+
+	// Swap entries
+	Remove(n);
+	Insert(&SiteList, n, pos_n);
+
+	// Select updated position of "moved" node
+	SetGadgetAttrs((struct Gadget*)SLG_List[SLG_SiteList], SiteListWindow, NULL,
+	               LISTBROWSER_Labels,&SiteList, LISTBROWSER_SelectedNode,n,
+	               LISTBROWSER_MakeNodeVisible,n, TAG_DONE);
+
+	HotListChanged = TRUE;
+	ConfigChanged  = TRUE;
+}

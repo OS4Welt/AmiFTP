@@ -22,10 +22,11 @@ MENUCLASS = -D_MENUCLASS_
 EXE    = AmiFTP
 OBJDIR = o/
 CFLAGS = -Wall -Werror=implicit-function-declaration -D__USE_INLINE__ -gstabs -D__AMIGADATE__=\"$(AMIGADATE)\" $(MENUCLASS) $(DEBUG)
-LFLAGS = -lauto
+#LFLAGS = -lauto
+LFLAGS = 
 CC = ppc-amigaos-gcc
 STRIP = ppc-amigaos-strip
-CATCOMP = FlexCat
+CATCOMP = APPDIR:FlexCat
 
 # target 'all' (default target)
 all : $(EXE)
@@ -36,7 +37,7 @@ $(OBJDIR)ADT.o : ADT.c AmiFTP.h gui.h AmiFTP_Cat.h
 $(OBJDIR)aguide.o : aguide.c AmiFTP.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)aguide.o aguide.c
 
-$(OBJDIR)AmiFTP.o : AmiFTP.c AmiFTP.h gui.h icons/AmiFTPbrsh.c AmiFTP_Cat.h
+$(OBJDIR)AmiFTP.o : AmiFTP.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)AmiFTP.o AmiFTP.c
 
 $(OBJDIR)AmiFTP_Cat.o : AmiFTP_Cat.c AmiFTP_Cat.h
@@ -69,7 +70,7 @@ $(OBJDIR)ftp.o : ftp.c AmiFTP.h gui.h AmiFTP_Cat.h
 $(OBJDIR)locale.o : locale.c AmiFTP.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)locale.o locale.c
 
-$(OBJDIR)main.o : main.c AmiFTP.h gui.h
+$(OBJDIR)main.o : main.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)main.o main.c
 
 $(OBJDIR)MainWindow.o : MainWindow.c AmiFTP.h gui.h AmiFTP_Cat.h
@@ -105,22 +106,22 @@ $(OBJDIR)bsdsocket.o : ../tcphook/bsdsocket.c
 $(OBJDIR)tcp.o : ../tcphook/tcp.c
 	$(CC) $(CFLAGS) -c -o $(OBJDIR)tcp.o ../tcphook/tcp.c
 
-$(OBJDIR)version.o : version.c
-	$(CC) $(CFLAGS) -c -o $(OBJDIR)version.o version.c
+#$(OBJDIR)version.o : version.c
+#	$(CC) $(CFLAGS) -c -o $(OBJDIR)version.o version.c
 
 $(OBJDIR)MenuClass.o : MenuClass.c AmiFTP.h gui.h AmiFTP_Cat.h
 	$(CC) $(CFLAGS) -c -o $@ MenuClass.c
 
 
 #OBJS = $(OBJDIR)version.o $(OBJDIR)bsdsocket.o $(OBJDIR)tcp.o $(OBJDIR)ADT.o $(OBJDIR)aguide.o $(OBJDIR)AmiFTP.o $(OBJDIR)AmiFTP_Cat.o $(OBJDIR)cache.o $(OBJDIR)change_dir.o $(OBJDIR)config.o $(OBJDIR)ConnectWindow.o $(OBJDIR)data.o $(OBJDIR)dirlist.o $(OBJDIR)dofuncs.o $(OBJDIR)ftp.o $(OBJDIR)locale.o $(OBJDIR)main.o $(OBJDIR)MainWindow.o $(OBJDIR)Menu.o $(OBJDIR)misc.o $(OBJDIR)PrefsWindow.o $(OBJDIR)readdir.o $(OBJDIR)rexx.o $(OBJDIR)SiteWindow.o $(OBJDIR)SpeedBar.o $(OBJDIR)TransferWindow.o
-OBJS = $(OBJDIR)bsdsocket.o $(OBJDIR)tcp.o $(OBJDIR)ADT.o \
+OBJS = $(OBJDIR)main.o $(OBJDIR)bsdsocket.o $(OBJDIR)tcp.o $(OBJDIR)ADT.o \
 $(OBJDIR)aguide.o $(OBJDIR)AmiFTP.o $(OBJDIR)AmiFTP_Cat.o $(OBJDIR)cache.o \
 $(OBJDIR)change_dir.o $(OBJDIR)config.o $(OBJDIR)ConnectWindow.o $(OBJDIR)data.o \
-$(OBJDIR)dirlist.o $(OBJDIR)dofuncs.o $(OBJDIR)ftp.o $(OBJDIR)main.o \
-$(OBJDIR)MainWindow.o $(OBJDIR)misc.o $(OBJDIR)PrefsWindow.o $(OBJDIR)readdir.o \
-$(OBJDIR)rexx.o $(OBJDIR)SiteWindow.o $(OBJDIR)SpeedBar.o $(OBJDIR)TransferWindow.o
+$(OBJDIR)dirlist.o $(OBJDIR)dofuncs.o $(OBJDIR)ftp.o $(OBJDIR)MainWindow.o \
+$(OBJDIR)misc.o $(OBJDIR)PrefsWindow.o $(OBJDIR)readdir.o $(OBJDIR)rexx.o \
+$(OBJDIR)SiteWindow.o $(OBJDIR)SpeedBar.o $(OBJDIR)TransferWindow.o
 
-ifeq ( $(MENUCLASS), )
+ifeq ($(MENUCLASS), )
 	OBJS += $(OBJDIR)Menu.o $(OBJDIR)locale.o
 else
 	OBJS += $(OBJDIR)MenuClass.o

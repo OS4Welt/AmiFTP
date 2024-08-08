@@ -9,6 +9,7 @@
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
+#include <workbench/icon.h>
 #ifdef _MENUCLASS_
 	#include <intuition/menuclass.h> // menuclass
 #endif
@@ -19,25 +20,25 @@
 #include <string.h>
 #include <math.h>
 
-#include <proto/window.h>
+//#include <proto/window.h>
 #include <classes/window.h>
 
 #include <proto/layout.h>
 #include <gadgets/layout.h>
 
-#include <proto/button.h>
+//#include <proto/button.h>
 #include <gadgets/button.h>
 
-#include <proto/getfile.h>
+//#include <proto/getfile.h>
 #include <gadgets/getfile.h>
 
-#include <proto/getfont.h>
+//#include <proto/getfont.h>
 #include <gadgets/getfont.h>
 
-#include <proto/string.h>
+//#include <proto/string.h>
 #include <gadgets/string.h>
 
-#include <proto/arexx.h>
+//#include <proto/arexx.h>
 #include <classes/arexx.h>
 
 #include <proto/clicktab.h>
@@ -46,13 +47,13 @@
 #include <proto/speedbar.h>
 #include <gadgets/speedbar.h>
 
-#include <proto/checkbox.h>
+//#include <proto/checkbox.h>
 #include <gadgets/checkbox.h>
 
-#include <proto/fuelgauge.h>
+//#include <proto/fuelgauge.h>
 #include <gadgets/fuelgauge.h>
 
-#include <proto/integer.h>
+//#include <proto/integer.h>
 #include <gadgets/integer.h>
 
 #include <proto/chooser.h>
@@ -61,22 +62,36 @@
 #include <proto/listbrowser.h>
 #include <gadgets/listbrowser.h>
 
-#include <proto/penmap.h>
+//#include <proto/penmap.h>
 #include <images/penmap.h>
 
-#include <proto/bitmap.h>
+//#include <proto/bitmap.h>
 #include <images/bitmap.h>
 
-#include <proto/bevel.h>
+//#include <proto/bevel.h>
 #include <images/bevel.h>
 
-#include <proto/label.h>
+//#include <proto/label.h>
 #include <images/label.h>
 
-#include <proto/requester.h>
+//#include <proto/requester.h>
 #include <classes/requester.h>
 
-#include <reaction/reaction_macros.h>
+//#include <reaction/reaction_macros.h>
+#define Label(text)  \
+	CHILD_Label, NewObject(LabelClass, NULL, LABEL_Text,text, TAG_DONE)
+// the class pointer
+extern Class *ClickTabClass, *ListBrowserClass, *ButtonClass, *LabelClass, *StringClass,
+      *GetFileClass, *GetFontClass, *SpeedBarClass, *IntegerClass, *ARexxClass,
+      *FuelGaugeClass, *CheckBoxClass, *ChooserClass, *BitMapClass, *LayoutClass,
+      *WindowClass, *RequesterClass;
+// some interfaces needed
+extern struct ListBrowserIFace *IListBrowser;
+extern struct ClickTabIFace *IClickTab;
+extern struct LayoutIFace *ILayout;
+extern struct ChooserIFace *IChooser;
+extern struct SpeedBarIFace *ISpeedBar;
+
 
 #include <libraries/gadtools.h>
 

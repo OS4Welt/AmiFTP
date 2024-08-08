@@ -9,7 +9,7 @@
 #define ISDIR(x) (x)&0x4000
 
 struct dirlist *new_direntry(char *remoteName, char *name,char *date,char *owner,
-			     char *group,mode_t mode,int64 size)
+                             char *group,mode_t mode,int64 size)
 {
     struct dirlist *tmp;
 
@@ -52,6 +52,7 @@ struct dirlist *new_direntry(char *remoteName, char *name,char *date,char *owner
 	    return NULL;
 	}
     }
+
 /* Fix: Add tmp->lname=linkname(name); plus null-terminate tmp->name before the ->
     if (S_ISLNK(mode))
       lname=linkname(name);
@@ -63,7 +64,7 @@ struct dirlist *new_direntry(char *remoteName, char *name,char *date,char *owner
 
     strcpy(tmp->name, name);
     strcpy(tmp->remoteName, remoteName);
-    
+
     if (date)
       strcpy(tmp->date, date);
     if (owner)
@@ -76,25 +77,26 @@ struct dirlist *new_direntry(char *remoteName, char *name,char *date,char *owner
 //    tmp->file = S_ISREG(mode);
     tmp->size = size;
 
-    STRPTR tmpString = (STRPTR) ASPrintf("%lld",size);
+    tmp->stringSize = (STRPTR)ASPrintf("%llD",size); // "automagically" (aka locale) adds groups separator
+    /*STRPTR tmpString = (STRPTR)ASPrintf("%lld",size);
     int c = strlen(tmpString);
-    
-	if (c>seperatorSize)
+
+	if (c>separatorSize)
     {
         int i = 0;
-    	int sepCounter=seperatorSize;
+    	int sepCounter=separatorSize;
 
-        c = (c-1)/seperatorSize + c;
+        c = (c-1)/separatorSize + c;
         tmp->stringSize = (STRPTR) AllocVecTags(c*sizeof(char)+1, AVT_ClearWithValue, 0, TAG_DONE);
         c--;
-        
+
         for (i = strlen(tmpString)-1; i >= 0; i-- )
         {
         	sepCounter--;
             tmp->stringSize[c--] = tmpString[i];
             if (sepCounter==0 && c>0)
             {
-                tmp->stringSize[c--] = decimalSeperator;
+                tmp->stringSize[c--] = groupSeparator;// WAS decimalSperator;
                 sepCounter=seperatorSize;
             }
         }
@@ -104,8 +106,8 @@ struct dirlist *new_direntry(char *remoteName, char *name,char *date,char *owner
     else
     {
         tmp->stringSize = tmpString;
-    }
-    
+    }*/
+
     //
     /*
     if (size >= 1000000000000)
@@ -127,30 +129,31 @@ struct dirlist *new_direntry(char *remoteName, char *name,char *date,char *owner
     */
     return tmp;
 }
+
 char donk[]="donk";
 extern int filePen;
 extern int drawerPen;
 BOOL add_direntry(struct List *filelist, char *name, char *date,
-		  char *owner, char *group, mode_t mode, int64 size,
-		  int sort_mode, int sort_direction)
+                  char *owner, char *group, mode_t mode, int64 size,
+                  int sort_mode, int sort_direction)
 {
     struct dirlist *tmp;
     struct dirlist *oldprev=NULL;
     ULONG flags;
-
+DBUG("add_direntry()\n",NULL);
 	if (size == 0 && strlen(name) == 255) return TRUE;
 
     if ((!MainPrefs.mp_Showdotfiles) && name[0]=='.')
       flags=LBFLG_CUSTOMPENS|LBFLG_HIDDEN;
     else
       flags=LBFLG_CUSTOMPENS;
-
+#ifndef __amigaos4__
     if (non_unix)
       sort_mode = SORTBYNAME;
     switch (sort_mode) {
       default:
 //	Printf("Unknown sort mode in add_dirname.\n");
-	/* Fall through */
+	// Fall through
       case SORTBYNAME:
 	if (sort_direction == ASCENDING)
 	  oldprev = sortupbyname(filelist, name, ISDIR(mode));
@@ -163,43 +166,45 @@ BOOL add_direntry(struct List *filelist, char *name, char *date,
 	else
 	  oldprev = sortdownbydate(filelist, date);
 	break;
-#if 0
+ #if 0
       case SORTBYSIZE:
 	if (sort_direction == ASCENDING)
 	  oldprev = sortupbysize(filelist, size);
 	else
 	  oldprev = sortdownbysize(filelist, size);
 	break;
-#endif
+ #endif
     }
-                                                                     
+#endif
     tmp = new_direntry(name, name, date, owner, group, mode, size);
     if (tmp) {
-	struct Node *tmp2=AllocListBrowserNode(6,
-					       LBNA_Column,0,
+	struct Node *tmp2=AllocListBrowserNode(TOT_COLS,
 					       LBNA_Flags,flags,
-					       LBNCA_Text,tmp->name,
-					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
-					       LBNA_Column,1,
-					       LBNCA_Text,tmp->stringSize,
-					       LBNCA_Justification,LCJ_RIGHT,
-					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
-					       LBNA_Column,2,
-					       LBNCA_Text,tmp->mode&0x4000?"(dir)":S_ISLNK(tmp->mode)?"(link)":"",
-					       LBNCA_Justification,LCJ_RIGHT,
-					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
-					       LBNA_Column,3,
-					       LBNCA_Text,tmp->date,
-					       LBNCA_Justification,LCJ_RIGHT,
-					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
-					       LBNA_Column,4,
-					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
-					       LBNCA_Justification,LCJ_RIGHT,	
-					       LBNCA_Text,tmp->owner,
-					       LBNA_Column,5,
-					       LBNCA_Justification,LCJ_RIGHT,
-					       LBNCA_FGPen,tmp->mode&0x4000?drawerPen:filePen,
-					       LBNCA_Text,tmp->group,
+					       LBNA_Priority,tmp->mode&0x4000? -10 : S_ISLNK(tmp->mode)? 0:10, // sort by name 1st dirs then files
+					       LBNA_UserData,(uint32)tmp, // store node for compare_func()
+					       LBNA_Column,COL_NAME,
+					        LBNCA_Text,tmp->name,
+					        LBNCA_FGPen,tmp->mode&0x4000? drawerPen : filePen,
+					       LBNA_Column,COL_SIZE,
+					        LBNCA_Text,tmp->stringSize,
+					        LBNCA_Justification,LCJ_RIGHT,
+					        LBNCA_FGPen,tmp->mode&0x4000? drawerPen : filePen,
+					       LBNA_Column,COL_TYPE,
+					        LBNCA_Text,tmp->mode&0x4000? "(dir)" : S_ISLNK(tmp->mode)?"(link)":"",
+					        LBNCA_Justification,LCJ_CENTRE,//RIGHT,
+					        LBNCA_FGPen,tmp->mode&0x4000?drawerPen : filePen,
+					       LBNA_Column,COL_DATE,
+					        LBNCA_Text,tmp->date,
+					        LBNCA_Justification,LCJ_RIGHT,
+					        LBNCA_FGPen,tmp->mode&0x4000? drawerPen : filePen,
+					       LBNA_Column,COL_OWN,
+					        LBNCA_FGPen,tmp->mode&0x4000? drawerPen : filePen,
+					        LBNCA_Justification,LCJ_RIGHT,
+					        LBNCA_Text,tmp->owner,
+					       LBNA_Column,COL_GRP,
+					        LBNCA_Justification,LCJ_RIGHT,
+					        LBNCA_FGPen,tmp->mode&0x4000? drawerPen : filePen,
+					        LBNCA_Text,tmp->group,
 					       TAG_DONE);
 	if (tmp2) {
 	    tmp2->ln_Name=(void *)tmp;
@@ -211,52 +216,53 @@ BOOL add_direntry(struct List *filelist, char *name, char *date,
 }
 
 void add_direntry_struct(struct List *filelist,
-	struct dirlist *dlist, int sort_mode, int sort_direction)
+                         struct dirlist *dlist, int sort_mode, int sort_direction)
 {
     struct Node *tmp,*tmp2;
     ULONG flags;
-
+DBUG("add_direntry_struct()\n",NULL);
     if ((!MainPrefs.mp_Showdotfiles) && dlist->name[0]=='.')
       flags=LBFLG_CUSTOMPENS|LBFLG_HIDDEN;
     else
       flags=LBFLG_CUSTOMPENS;
-
-    tmp2=AllocListBrowserNode(6,
-			      LBNA_Column,0,
+    tmp2=AllocListBrowserNode(TOT_COLS,
 			      LBNA_Flags,flags,
-			      LBNCA_Text,dlist->name,
-			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
-			      LBNA_Column,1,
-			      LBNCA_Text,dlist->stringSize,
-			      LBNCA_Justification,LCJ_RIGHT,
-			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
-			      LBNA_Column,2,
-			      LBNCA_Text,dlist->mode&0x4000?"(dir)":S_ISLNK(dlist->mode)?"(link)":"",
-			      LBNCA_Justification,LCJ_RIGHT,
-			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
-			      LBNA_Column,3,
-			      LBNCA_Text,dlist->date,
-			      LBNCA_Justification,LCJ_RIGHT,
-			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
-			      LBNA_Column,4,
-			      LBNCA_Text,dlist->owner,
-			      LBNCA_Justification,LCJ_RIGHT,
-			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
-			      LBNA_Column,5,
-			      LBNCA_Text,dlist->group,
-			      LBNCA_Justification,LCJ_LEFT,
-			      LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
+			      LBNA_Priority,dlist->mode&0x4000? -10 : S_ISLNK(dlist->mode)? 0:10, // sort by name 1st dirs then files
+			      LBNA_UserData,(uint32)dlist, // store node for compare_func()
+			      LBNA_Column,COL_NAME,
+			       LBNCA_Text,dlist->name,
+			       LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
+			      LBNA_Column,COL_SIZE,
+			       LBNCA_Text,dlist->stringSize,
+			       LBNCA_Justification,LCJ_RIGHT,
+			       LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
+			      LBNA_Column,COL_TYPE,
+			       LBNCA_Text,dlist->mode&0x4000?"(dir)":S_ISLNK(dlist->mode)?"(link)":"",
+			       LBNCA_Justification,LCJ_CENTRE,//RIGHT,
+			       LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
+			      LBNA_Column,COL_DATE,
+			       LBNCA_Text,dlist->date,
+			       LBNCA_Justification,LCJ_RIGHT,
+			       LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
+			      LBNA_Column,COL_OWN,
+			       LBNCA_Text,dlist->owner,
+			       LBNCA_Justification,LCJ_RIGHT,
+			       LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
+			      LBNA_Column,COL_GRP,
+			       LBNCA_Text,dlist->group,
+			       LBNCA_Justification,LCJ_LEFT,
+			       LBNCA_FGPen,dlist->mode&0x4000?drawerPen:filePen,
 			      TAG_DONE);
     if (!tmp2)
       return;
 
     tmp2->ln_Name=(void *)dlist;
-
+#ifndef __amigaos4__
     if (non_unix)
       sort_mode = SORTBYNAME;
     switch (sort_mode) {
       default:
-	/* Fall through */
+	// Fall through
       case SORTBYNAME:
 	if (sort_direction == ASCENDING)
 	  tmp = (struct Node *)sortupbyname(filelist, dlist->name,ISDIR(dlist->mode));
@@ -278,6 +284,7 @@ void add_direntry_struct(struct List *filelist,
 	break;
 #endif
     }
+#endif
     Insert(filelist,tmp2,tmp);
 }
 
@@ -302,8 +309,11 @@ void free_dirlist(struct List *filelist)
 {
     struct Node *node;
     struct dirlist *tmp;
-    while (node=RemHead(filelist)) {
+DBUG("free_dirlist(0x%08lx)\n",filelist);
+    while ( (node=RemHead(filelist)) ) {
+//DBUG("  node=0x%08lx\n",node);
 	tmp=(void *)node->ln_Name;
+//DBUG("  tmp=0x%08lx\n",tmp);
 	if (tmp) {
 	    if (tmp->name)
 	      free(tmp->name);
@@ -313,15 +323,24 @@ void free_dirlist(struct List *filelist)
 	      free(tmp->owner);
 	    if (tmp->group)
 	      free(tmp->group);
-         if (tmp->stringSize)
-    		FreeVec(tmp->stringSize);
+	    if (tmp->stringSize)
+	      FreeVec(tmp->stringSize);
 	    free(tmp);
+tmp = NULL;
 	}
+//Remove(node);
+//DBUG("  1\n",NULL);
 	FreeListBrowserNode(node);
+node = NULL;
     }
+//DBUG("  2\n",NULL);
+FreeListBrowserList(filelist);
+//DBUG("  3\n",NULL);
     NewList(filelist);
+//DBUG("  4\n",NULL);
 }
 
+#ifndef __amigaos4__
 /* alphabetical order */
 struct dirlist *sortupbyname(struct List *filelist,char *name, int dir)
 {
@@ -347,12 +366,12 @@ struct dirlist *sortupbyname(struct List *filelist,char *name, int dir)
     else {
 
     return (struct dirlist *)GetTail(filelist);
-        /*
-	if (!EmptyList(filelist))
-	  return (struct dirlist *)GetTail(filelist);
-	else
-	  return NULL;
-      */
+
+//	if (!EmptyList(filelist))
+//	  return (struct dirlist *)GetTail(filelist);
+//	else
+//	  return NULL;
+
     }
 }
 
@@ -379,12 +398,12 @@ struct dirlist *sortdownbyname(struct List *filelist,char *name,int dir)
       return (struct dirlist *)GetPred((struct Node *)tmp2);
     else {
         return (struct dirlist *)GetTail(filelist);
-        /*
-	if (!EmptyList(filelist))
-	  return (struct dirlist *)GetTail(filelist);
-	else
-	  return NULL;
-      */
+
+//	if (!EmptyList(filelist))
+//	  return (struct dirlist *)GetTail(filelist);
+//	else
+//	  return NULL;
+
     }
 }
 
@@ -404,12 +423,12 @@ struct dirlist *sortupbydate(struct List *filelist,char *date)
       return (struct dirlist *)GetPred((struct Node *)tmp2);
     else {
         return (struct dirlist *)GetTail(filelist);
-        /*
-	if (!EmptyList(filelist))
-	  return (struct dirlist *)GetTail(filelist);
-	else
-	  return NULL;
-      */
+
+//	if (!EmptyList(filelist))
+//	  return (struct dirlist *)GetTail(filelist);
+//	else
+//	  return NULL;
+
     }
 }
 
@@ -421,24 +440,24 @@ struct dirlist *sortdownbydate(struct List *filelist, char *date)
     for (tmp2 = GetHead(filelist); tmp2 != NULL; tmp2 = GetSucc(tmp2)) {
 	tmp=(void *)tmp2->ln_Name;
 	if (!isearlier(date, tmp->date))
-	  break;		/* need to go before next entry. */
+	  break;		// need to go before next entry.
     }
     if (tmp2)
       return (struct dirlist *)GetPred((struct Node *)tmp2);
     else {
         return (struct dirlist *)GetTail(filelist);
-        /*
-	if (!EmptyList(filelist))
-	  return (struct dirlist *)GetTail(filelist);
-	else
-	  return NULL;
-      */
+
+//	if (!EmptyList(filelist))
+//	  return (struct dirlist *)GetTail(filelist);
+//	else
+//	  return NULL;
+
     }
 }
-#if 0
-/* Not used at the moment */
-/* smallest to largest */
 
+ #if 0
+// Not used at the moment
+// smallest to largest
 struct dirlist *sortupbysize(struct List *filelist,int64 size)
 {
     struct dirlist *tmp;
@@ -476,6 +495,7 @@ struct dirlist *sortdownbysize(struct List *filelist,int64 size)
 	  return NULL;
     }
 }
+ #endif
 #endif
 
 int cummonthdays[] = {
@@ -516,11 +536,11 @@ long	datetotime(char *date)
 	       cummonthdays[tm.tm_mon]) * 1440;
 }
 
+#ifndef __amigaos4__
 int isearlier(char *date1, char *date2)
 {
     long	time1;
     long	time2;
-
 
     time1 = datetotime(date1);
     time2 = datetotime(date2);
@@ -530,8 +550,7 @@ int isearlier(char *date1, char *date2)
     return 0;
 }
 
-struct List *sort_filelist(struct List *old_filelist, int sort_mode,
-			   int sort_direction)
+struct List *sort_filelist(struct List *old_filelist, int sort_mode, int sort_direction)
 {
     struct Node *tmp,*next;
     struct List *new_filelist;
@@ -554,6 +573,7 @@ struct List *sort_filelist(struct List *old_filelist, int sort_mode,
     free(old_filelist);
     return new_filelist;
 }
+#endif
 
 char *abbrev_month[] = {
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",

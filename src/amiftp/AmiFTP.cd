@@ -720,6 +720,10 @@ Copyright ©1995-1998 by Magnus Lilja
 Str_AboutStr_info02 (//)
 ©2020 by Frank Menzel for Amiga OS4 community
 ;
+;writte whatever you want here or leave as it is
+Str_AboutStr_info03 (//100)
+\0
+;
 ; used in AMINET/ADT mode
 MW_COL_DESC (//)
 Description

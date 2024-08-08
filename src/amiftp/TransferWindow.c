@@ -31,6 +31,8 @@ enum {
 Object *TG_List[NumGadgets_TG];
 ULONG fuelargs[]={0,0};
 static int OverwriteAll=0;
+/*static*/ ULONG FileSize=0;
+
 
 int DownloadFile(struct List *flist, const char *localname, const int binary, const int move)
 {
@@ -51,7 +53,7 @@ int DownloadFile(struct List *flist, const char *localname, const int binary, co
       if (!OpenTransferWindow()) return TRANS_GUI;
 
     int i = 0;
-    for (node=GetHead(flist);node != NULL; node=GetSucc(node), i++) {
+    for (node=GetHead(flist); node!=NULL; node=GetSucc(node), i++) {
 	ULONG sel=0;
 	GetListBrowserNodeAttrs(node, LBNA_Selected, &sel, TAG_DONE);
 	if (sel) {
@@ -82,7 +84,7 @@ int DownloadFile(struct List *flist, const char *localname, const int binary, co
 	      case S_IFREG:
 		memset(localfile,0,sizeof(localfile));
 		if (!localname) {
-		    stcgfn(tmp,curr->name, 1024);
+		    stcgfn(tmp,curr->name, sizeof(tmp));
 		    strmfp(localfile,CurrentState.CurrentDLDir,tmp, MAXPATHLEN);
 		}
 		else {
@@ -112,7 +114,7 @@ int DownloadFile(struct List *flist, const char *localname, const int binary, co
 			char *readme=NameToReadme(curr->name, curr->readmelength);
 			char lname[64];
 			sprintf(aname, "%s/%s", curr->owner, readme);
-			strmfp(lname, CurrentState.CurrentDLDir, readme, 64);
+			strmfp(lname, CurrentState.CurrentDLDir, readme, sizeof(lname));//64);
 			result=get_file(aname, lname, curr->readmelen);
 		    }
 		}
@@ -156,8 +158,7 @@ int DownloadFile(struct List *flist, const char *localname, const int binary, co
 					index(localname, ':'))
 				      strcpy(localfile, localname);
 				    else
-				      strmfp(localfile, CurrentState.CurrentDLDir,
-					     (char*)localname, MAXPATHLEN);
+				      strmfp(localfile, CurrentState.CurrentDLDir, (char*)localname, MAXPATHLEN);
 				}
 			    }
 			}
@@ -174,16 +175,14 @@ int DownloadFile(struct List *flist, const char *localname, const int binary, co
 			      LBEditNode(MG_List[MG_ListView], MainWindow, NULL,
 					 node, LBNA_Selected, FALSE, TAG_DONE);
 			    else
-			      SetListBrowserNodeAttrs(node, LBNA_Selected, FALSE,
-						      TAG_DONE);
+			      SetListBrowserNodeAttrs(node, LBNA_Selected,FALSE, TAG_DONE);
 			}
 			else if (result==TRSF_OK) {
 			    if (flist==FileList)
 			      LBEditNode(MG_List[MG_ListView], MainWindow, NULL,
 					 node, LBNA_Selected, FALSE, TAG_DONE);
 			    else
-			      SetListBrowserNodeAttrs(node, LBNA_Selected, FALSE,
-						      TAG_DONE);
+			      SetListBrowserNodeAttrs(node, LBNA_Selected,FALSE, TAG_DONE);
 			}
 			else if (result==TRSF_ABORTED)
 			  goto out;
@@ -215,15 +214,14 @@ int DownloadFile(struct List *flist, const char *localname, const int binary, co
 	}
 	if (TransferWindow)
 	  CloseTransferWindow();
-	return result==TRSF_OK?TRANS_OK:TRANS_ABORTED;
+	return result==TRSF_OK? TRANS_OK : TRANS_ABORTED;
     }
 
     if (TransferWin_Object) {
 	GetAttr(WINDOW_SigMask, TransferWin_Object, &signal);
 
 	SetGadgetAttrs((struct Gadget*)TG_List[TG_Abort], TransferWindow,NULL,
-		       GA_Disabled, TRUE,
-		       TAG_DONE);
+	               GA_Disabled,TRUE, TAG_DONE);
 	RefreshGList((struct Gadget*)TG_List[TG_Abort], TransferWindow, NULL,1);
 
 	if (!SilentMode) {
@@ -277,155 +275,166 @@ ULONG HandleTransferIDCMP(void)
 struct Window *OpenTransferWindow(void)
 {
 	Object *g1, *g2;
-    //struct LayoutLimits limits;
-//    extern struct RastPort *ARPort;
-//    LONG len=TextLength(ARPort,"8",1); // max char width
-	fuelargs[0]=fuelargs[1]=0;//&fargs;
+	int eta[]={0,0,0};
+
+	fuelargs[0]=fuelargs[1]=0;
 
 	if (TransferWindow) return TransferWindow;
 
-	TransferLayout=LayoutObject,
+	TransferLayout=NewObject(LayoutClass, NULL,//LayoutObject,
 		GA_DrawInfo, DrawInfo,
 		GA_TextAttr, AmiFTPAttrF,
-		LAYOUT_DeferLayout, TRUE,
-		LAYOUT_SpaceOuter, TRUE,
-		LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+		LAYOUT_DeferLayout,    TRUE,
+		LAYOUT_SpaceOuter,     TRUE,
+		LAYOUT_Orientation,    LAYOUT_ORIENT_VERT,
 		LAYOUT_HorizAlignment, LALIGN_CENTRE,
 
-		StartHGroup,
-			StartVGroup,
+		LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartHGroup,
+			LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartVGroup,
+			LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
 
-				StartVGroup,
-					LAYOUT_BevelStyle, BVS_GROUP,
-					LAYOUT_SpaceOuter, TRUE,
-					LOffset(2), ROffset(2), TOffset(1), BOffset(1),
+				LAYOUT_AddChild,NewObject(LayoutClass, NULL,//StartVGroup,
+					LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+					LAYOUT_BevelStyle,  BVS_GROUP,
+					LAYOUT_SpaceOuter,  TRUE,
+					//LOffset(2), ROffset(2), TOffset(1), BOffset(1),
+					LAYOUT_LeftSpacing,5, LAYOUT_RightSpacing,5,
+					LAYOUT_TopSpacing,5, LAYOUT_BottomSpacing,5,
 
-					StartMember, TG_List[TG_RemoteFile]=ButtonObject,
-						GA_ID, TG_RemoteFile,
-						GA_RelVerify, TRUE,
-						GA_ReadOnly, TRUE,
+					LAYOUT_AddChild, TG_List[TG_RemoteFile]=NewObject(StringClass, NULL,//ButtonClass, NULL,//ButtonObject,
+						//GA_ID,         TG_RemoteFile,
+						//GA_RelVerify,  TRUE,
+						GA_ReadOnly,   TRUE,
 						GA_Underscore, 0,
-						GA_Text, " ",
-						BUTTON_Justification, BCJ_LEFT,
-					ButtonEnd,
+						//GA_Text,       " ",
+						//BUTTON_Justification, BCJ_LEFT,
+						STRINGA_TextVal,       NULL,
+						STRINGA_DisablePopup,  TRUE,
+						//STRINGA_Justification, GACT_STRINGLEFT,
+					TAG_DONE),
 					//CHILD_MinWidth, PropFont->tf_XSize*35,
 					Label(GetAmiFTPString(TW_RemoteFile)),
 
-					StartMember, TG_List[TG_LocalFile]=ButtonObject,
-						GA_ID, TG_LocalFile,
-						GA_RelVerify, TRUE,
-						GA_ReadOnly, TRUE,
+					LAYOUT_AddChild, TG_List[TG_LocalFile]=NewObject(ButtonClass, NULL,//ButtonObject,
+						//GA_ID, TG_LocalFile,
+						//GA_RelVerify,  TRUE,
+						GA_ReadOnly,   TRUE,
 						GA_Underscore, 0,
-						GA_Text, " ",
+						GA_Text,       " ",
 						BUTTON_Justification, BCJ_LEFT,
-					ButtonEnd,
+					TAG_DONE),
 					//CHILD_MinWidth, PropFont->tf_XSize*35,
 					Label(GetAmiFTPString(TW_LocalFile)),
-				EndGroup,
+				TAG_DONE),
 
-				StartVGroup, EvenSized,
-					LAYOUT_BevelStyle, BVS_GROUP,
-					LAYOUT_SpaceOuter, TRUE,
+				LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartVGroup,
+					LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+					LAYOUT_EvenSize,    TRUE,//EvenSized,
+					LAYOUT_BevelStyle,  BVS_GROUP,
+					LAYOUT_SpaceOuter,  TRUE,
+					//LOffset(2), ROffset(2), TOffset(1), BOffset(1),
+					LAYOUT_LeftSpacing,5, LAYOUT_RightSpacing,5,
+					LAYOUT_TopSpacing,5, LAYOUT_BottomSpacing,5,
 
-					StartMember, g1=LayoutObject, LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ, EvenSized,
-					StartMember, TG_List[TG_ETA]=ButtonObject,
-						GA_ID, TG_ETA,
-						GA_RelVerify, TRUE,
-						GA_ReadOnly, TRUE,
-						GA_Text, "00:00:00",
-						BUTTON_Justification, BCJ_RIGHT,
-						//BUTTON_DomainString, "88:88:88",
-					ButtonEnd,
-					CHILD_WeightedWidth, 0,
-					//CHILD_MinWidth, len*9,
-					Label(GetAmiFTPString(TW_TimeLeft)),
+					LAYOUT_AddChild, g1=NewObject(LayoutClass, NULL,//LayoutObject,
+						LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+						LAYOUT_EvenSize,    TRUE,//EvenSized,
+						LAYOUT_AddChild, TG_List[TG_ETA]=NewObject(ButtonClass, NULL,//ButtonObject,
+							//GA_RelVerify, TRUE,
+							GA_ReadOnly,  TRUE,
+							GA_Text,      "%02ld:%02ld:%02ld",
+							BUTTON_VarArgs,       &eta,
+							BUTTON_Justification, BCJ_CENTER,//RIGHT,
+							BUTTON_DomainString,  "8888888888",
+						TAG_DONE),
+//						CHILD_WeightedWidth, 0,
+						//CHILD_MinWidth, len*9,
+						Label(GetAmiFTPString(TW_TimeLeft)),
 
-					StartMember, TG_List[TG_CPS]=ButtonObject,
-						GA_ID, TG_CPS,
-						GA_RelVerify, TRUE,
-						GA_ReadOnly, TRUE,
-						GA_Text, " ",
-						BUTTON_Justification, BCJ_RIGHT,
-						BUTTON_DomainString, "8888888888",
-					ButtonEnd,
-					CHILD_WeightedWidth, 0,
-					//CHILD_MinWidth, len*10,
-					Label(GetAmiFTPString(TW_Cps)),
-				EndGroup,
+						LAYOUT_AddChild, TG_List[TG_CPS]=NewObject(StringClass, NULL,//ButtonClass, NULL,//ButtonObject,
+							//GA_RelVerify, TRUE,
+							GA_ReadOnly,  TRUE,
+//							BUTTON_Integer,       0,
+//							BUTTON_Justification, BCJ_LEFT,//RIGHT,
+							//BUTTON_DomainString, "8888888888",
+							STRINGA_LongVal,      0,
+							STRINGA_DisablePopup, TRUE,
+							//STRINGA_Justification, GACT_STRINGLEFT,
+						TAG_DONE),
+//						CHILD_WeightedWidth, 0,
+						//CHILD_MinWidth, len*10,
+						Label(GetAmiFTPString(TW_Cps)),
+					TAG_DONE),
+					//CHILD_WeightedWidth, 0,
+
+					LAYOUT_AddChild, g2=NewObject(LayoutClass, NULL,//LayoutObject,
+						LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+						LAYOUT_AddChild, TG_List[TG_Gauge]=NewObject(FuelGaugeClass, NULL,//FuelGaugeObject,
+							GA_Text, "%lU / %lU",
+							FUELGAUGE_Orientation,   FUELGAUGE_HORIZONTAL,
+							FUELGAUGE_Justification, FGJ_CENTER,
+							FUELGAUGE_Percent,       FALSE,
+							FUELGAUGE_Min,           0,
+							FUELGAUGE_Max,           100,
+							FUELGAUGE_Level,         0,
+							FUELGAUGE_Ticks,         0,
+							FUELGAUGE_VarArgs,       &fuelargs,
+						TAG_DONE),
+						//CHILD_MinHeight, len*3,
+						//CHILD_MinWidth, len*18,
+//						CHILD_WeightedHeight, 0,
+						Label(GetAmiFTPString(TW_DataTransferred)),
+					TAG_DONE),
+
+				TAG_DONE),
 				//CHILD_WeightedWidth, 0,
 
-				StartMember, g2=LayoutObject, LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
-				StartMember, TG_List[TG_Gauge]=FuelGaugeObject,
-					FUELGAUGE_Orientation, FUELGAUGE_HORIZONTAL,
-					FUELGAUGE_Justification, FGJ_CENTER,
-					FUELGAUGE_Percent, FALSE,
-					FUELGAUGE_Min, 0,
-					FUELGAUGE_Max, 100,
-					FUELGAUGE_Level, 0,
-					FUELGAUGE_Ticks, 0,
-					GA_Text, "%ld/%ld",
-					FUELGAUGE_VarArgs, &fuelargs,
-				FuelGaugeEnd,
-				//CHILD_MinHeight, len*3,
-				//CHILD_MinWidth, len*18,
-				CHILD_WeightedHeight, 0,
-				Label(GetAmiFTPString(TW_DataTransferred)),
-				EndGroup,
+			TAG_DONE),
+		TAG_DONE),
 
-			EndGroup,
-			CHILD_WeightedWidth, 0,
-
-			EndGroup,
-		EndGroup,
-
-		StartMember, TG_List[TG_Abort]=ButtonObject,
-			GA_ID, TG_Abort,
+		LAYOUT_AddChild, TG_List[TG_Abort]=NewObject(ButtonClass, NULL,//ButtonObject,
+			GA_ID,        TG_Abort,
 			GA_RelVerify, TRUE,
-			GA_Text, GetAmiFTPString(TW_Abort),
-		ButtonEnd,
+			GA_Text,      GetAmiFTPString(TW_Abort),
+		TAG_DONE),
 		CHILD_WeightedWidth, 0,
 		//CHILD_NominalSize, TRUE,
 
-	LayoutEnd;
+	TAG_DONE);
 
-    if (!TransferLayout)
-      return NULL;
+	if (!TransferLayout) return NULL;
 
-    SetAttrs(g1, LAYOUT_AlignLabels, g2, TAG_DONE);
-    SetAttrs(g2, LAYOUT_AlignLabels, g1, TAG_DONE);
+	SetAttrs(g1, LAYOUT_AlignLabels, g2, TAG_DONE);
+	SetAttrs(g2, LAYOUT_AlignLabels, g1, TAG_DONE);
 
-    //LayoutLimits((struct Gadget *)TransferLayout,&limits,PropFont,Screen);
-    //limits.MinHeight+=Screen->WBorTop+Screen->WBorBottom;
-    //limits.MinWidth+=Screen->WBorLeft+Screen->WBorRight;
+	TransferWin_Object = NewObject(WindowClass, NULL,//WindowObject,
+	                          WA_Title,        GetAmiFTPString(TW_WinTitle),
+	                          WA_PubScreen,    Screen,
+	                          WA_DepthGadget,  TRUE,
+	                          WA_DragBar,      TRUE,
+	                          WA_CloseGadget,  TRUE,
+	                          WA_Activate,     TRUE,
+	                          WA_SmartRefresh, TRUE,
+	                          WA_SizeGadget,   TRUE,
+	                          //WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
+	                          //WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
+	                          WA_IDCMP, IDCMP_RAWKEY,
+	                          WINDOW_LockHeight, TRUE,
+	                          WINDOW_IconifyGadget, TRUE,
+	                          WINDOW_Position,  WPOS_CENTERWINDOW,
+	                          WINDOW_RefWindow, MainWindow,
+	                          WINDOW_Layout,    TransferLayout,
+	                        TAG_DONE);
 
-    TransferWin_Object = WindowObject,
-                          WA_Title,        GetAmiFTPString(TW_WinTitle),
-                          WA_PubScreen,    Screen,
-                          WA_DepthGadget,  TRUE,
-                          WA_DragBar,      TRUE,
-                          WA_CloseGadget,  TRUE,
-                          WA_Activate,     TRUE,
-                          WA_SmartRefresh, TRUE,
-                          //WA_Top, MainWindow->TopEdge+(MainWindow->Height-limits.MinHeight)/2,
-                          //WA_Left, MainWindow->LeftEdge+(MainWindow->Width-limits.MinWidth)/2,
-                          WINDOW_IconifyGadget, TRUE,
-                          WINDOW_Position,  WPOS_CENTERWINDOW,
-                          WINDOW_RefWindow, MainWindow,
-                          //WINDOW_ParentGroup, TransferLayout,
-                          WINDOW_Layout, TransferLayout,
-                          WA_IDCMP, IDCMP_RAWKEY,
-                        EndWindow;
+	if (!TransferWin_Object) return NULL;
 
-    if (!TransferWin_Object)
-      return NULL;
+	if ( (TransferWindow=(struct Window *)IDoMethod(TransferWin_Object, WM_OPEN)) ) {//CA_OpenWindow(TransferWin_Object)) {
+		return TransferWindow;
+	}
+	DisposeObject(TransferLayout);
+	TransferLayout=NULL;
 
-    if ( (TransferWindow=(struct Window *)IDoMethod(TransferWin_Object, WM_OPEN)) ) {//CA_OpenWindow(TransferWin_Object)) {
-	return TransferWindow;
-    }
-    DisposeObject(TransferLayout);
-    TransferLayout=NULL;
-
-    return NULL;
+	return NULL;
 }
 
 void CloseTransferWindow(void)
@@ -438,12 +447,12 @@ void CloseTransferWindow(void)
 	}
 }
 
-static long FileSize=0,last=0;
+//static long FileSize=0,last=0;
 
 int UploadFile(struct List *transferlist, const char *remote, const int binary)
 {
     ULONG wait,signal,mainsignal,done=FALSE;
-    char buf[20];
+    //char buf[20];
     int res;
     struct Node *node;
 
@@ -453,7 +462,8 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
       if (!OpenTransferWindow()) return TRANS_GUI;
 
     for (node=GetHead(transferlist);node!=NULL;node=GetSucc(node)) {
-	int size=0;
+	//int size=0;
+	ULONG size=0;
 	char *rem=0;
 	//BPTR lock;
 	//struct FileInfoBlock __aligned fib;
@@ -483,23 +493,25 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
         struct ExamineData *dat = ExamineObjectTags(EX_StringNameInput,entry->name,TAG_END);
     	if (dat)
     	{
-            size = dat->FileSize;
+            size = (ULONG)dat->FileSize;
             FreeDosObject(DOS_EXAMINEDATA,dat);
         }
 	}
 
 	if (TransferWindow) {
-		sprintf(buf,"%d",size);
+		//sprintf(buf,"%d",size);
 		SetGadgetAttrs((struct Gadget*)TG_List[TG_LocalFile], TransferWindow, NULL,
 		               GA_Text, entry->name,
 		              TAG_DONE);
 
 		SetGadgetAttrs((struct Gadget*)TG_List[TG_RemoteFile], TransferWindow, NULL,
-		               GA_Text,remote? (char *)remote : (char *)FilePart(entry->name),
+		               //GA_Text,remote? (char *)remote : (char *)FilePart(entry->name),
+		               STRINGA_TextVal,remote? (char *)remote : (char *)FilePart(entry->name),
 		              TAG_DONE);
 
 		SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
-		               GA_Text,"0",
+		               //BUTTON_Integer,0,
+		               STRINGA_LongVal,0,
 		              TAG_DONE);
 
 		fuelargs[0]=fuelargs[1]=0;
@@ -508,19 +520,14 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
 		              TAG_DONE);
 
 		FileSize=size;
-		last=0;
+		//last=0;
 	}
-
-//DebugPrintF("remote? '%s' : '%s'\n",remote,entry->name);
-//DebugPrintF("entry->remoteName: '%s'\n",entry->remoteName);
 
     if (remote==NULL) // goos ?aminet mode?
     {
-//DebugPrintF("1)'%s'\n",(char *)FilePart(entry->remoteName));
     res=sendrequest("STOR",entry->name,(char *)FilePart(entry->remoteName));
     }
     else {
-//DebugPrintF("2)'%s'\n",(char *)FilePart(entry->name));
 	res=sendrequest("STOR",entry->name,remote? (char *)remote : (char *)FilePart(entry->name));
 	if (rem) {
 	    free(rem);
@@ -549,8 +556,7 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
     GetAttr(WINDOW_SigMask, MainWin_Object, &mainsignal);
 
     SetGadgetAttrs((struct Gadget*)TG_List[TG_Abort], TransferWindow,NULL,
-		   GA_Disabled,TRUE,
-		   TAG_DONE);
+                   GA_Disabled,TRUE, TAG_DONE);
     RefreshGList((struct Gadget*)TG_List[TG_Abort],TransferWindow,NULL,1);
 
     if (!SilentMode) {
@@ -571,38 +577,33 @@ int UploadFile(struct List *transferlist, const char *remote, const int binary)
 void UpdateDLGads(const long bytes, const long restart_point, const time_t timee)
 {
 	if (TransferWin_Object) {
-		static char buf1[20],buf2[20],buf3[20];
-		int hours=0,mins=0,secs=0, cps=0;
+		int cps=0, eta[]={0,0,0}; //hh,mm,ss
 
 		if (timee) {
 			cps=(bytes-restart_point)/timee;
 			if (FileSize && cps) {
-				secs  = (FileSize-bytes)/cps;
-				hours = secs / 3600;
-				mins  = (secs-hours*3600)/60;
-				secs  = secs%60;
+				eta[2] = (FileSize-bytes)/cps;     // total seconds
+				eta[0] = eta[2] / 3600;            // hours
+				eta[1]  = (eta[2]-eta[0]*3600)/60; // mins
+				eta[2]  = eta[2]%60;               // secs
 			}
 		}
 
-		sprintf(buf1, "%ld", bytes);
-		sprintf(buf2, "%d", cps);
-		sprintf(buf3, "%02d:%02d:%02d", hours, mins, secs);
-		if (SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL, GA_Text,buf2, TAG_DONE)) {
-			RefreshGList((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL, 1);
-		}
-		if (SetGadgetAttrs((struct Gadget*)TG_List[TG_ETA], TransferWindow, NULL, GA_Text,buf3, TAG_DONE)) {
-			RefreshGList((struct Gadget*)TG_List[TG_ETA], TransferWindow, NULL, 1);
-		}
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
+		                //BUTTON_Integer,cps, TAG_DONE);
+		                STRINGA_LongVal,cps, TAG_DONE);
+		SetGadgetAttrs((struct Gadget*)TG_List[TG_ETA], TransferWindow, NULL,
+		               BUTTON_VarArgs,&eta, TAG_DONE);
 
-		fuelargs[0]=bytes;//FileSize?(bytes*100)/FileSize:0;
+		fuelargs[0]=(ULONG)bytes;//FileSize?(bytes*100)/FileSize:0;
 		fuelargs[1]=FileSize;
 		LONG percentage = 0;
 		if (FileSize>0) {
-			percentage = (LONG) ((double)bytes/(double)FileSize*100.0);
+			percentage = (LONG)((double)bytes/(double)FileSize*100.0);
 		}
 		SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
-		                FUELGAUGE_Level, percentage,//FileSize?(FileSize>10240?bytes/(FileSize/100):(bytes*100)/FileSize):0,
-		                FUELGAUGE_VarArgs, &fuelargs[0],
+		                FUELGAUGE_Level, percentage,
+		                FUELGAUGE_VarArgs, &fuelargs,
 		               TAG_DONE);
 	}
 }
@@ -632,14 +633,15 @@ BOOL CheckExists(char *lfile, ULONG size, ULONG *restartpoint)
     Examine(lock,&fib);
     UnLock(lock);
     */
-	int64 fileSize = 0;
+	//int64 fileSize = 0;
+	ULONG fileSize = 0;
 	struct ExamineData *data = ExamineObjectTags(EX_StringNameInput, lfile, TAG_END);
 	if (data) {
-		fileSize = data->FileSize;
+		fileSize = (ULONG)data->FileSize;
 		FreeDosObject(DOS_EXAMINEDATA, data);
 	}
 	else return FALSE;
-//DebugPrintF("fileSize=%lld\n",fileSize);
+
 	if (SilentMode || OverwriteAll) {
 		*restartpoint=0;
 		return FALSE;
@@ -651,7 +653,7 @@ BOOL CheckExists(char *lfile, ULONG size, ULONG *restartpoint)
 	Gadgetstring=malloc(strlen(GetAmiFTPString(TW_OverwriteAll))+
 	                    strlen(GetAmiFTPString(TW_Overwrite))+
 	                    strlen(GetAmiFTPString(TW_Resume))+
-	                    strlen(GetAmiFTPString(TW_CancelTransfer))+6);
+	                    strlen(GetAmiFTPString(TW_CancelTransfer)) + 6); //+6 -> '|' char
 	if (!Gadgetstring) {
 		return FALSE;
 	}
@@ -661,14 +663,15 @@ BOOL CheckExists(char *lfile, ULONG size, ULONG *restartpoint)
 		                     GetAmiFTPString(TW_Overwrite),
 		                     GetAmiFTPString(TW_OverwriteAll),
 		                     GetAmiFTPString(TW_CancelTransfer));
-        /*
+/*
 	ret=(BOOL)rtEZRequest(GetAmiFTPString(TW_FileExists), Gadgetstring, NULL,
 			      (struct TagItem *)tags, lfile, fib.fib_Size, size);
-                  */
-		ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), lfile, (ULONG)fileSize, size);
+*/
+		ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), lfile, fileSize, size);
+//		ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists64), "", lfile, fileSize, size);
 		free(Gadgetstring);
 		*restartpoint=0;
-
+DBUG("CheckExists() ret=%ld\n",ret);
 		if (ret==1) {
 			return FALSE;
 		}
@@ -683,13 +686,14 @@ BOOL CheckExists(char *lfile, ULONG size, ULONG *restartpoint)
 		                     GetAmiFTPString(TW_OverwriteAll),
 		                     GetAmiFTPString(TW_Resume),
 		                     GetAmiFTPString(TW_CancelTransfer));
-        /*
+/*
 	ret=(BOOL)rtEZRequest(GetAmiFTPString(TW_FileExists), Gadgetstring, NULL,
 			      (struct TagItem *)tags, lfile, fib.fib_Size, size);
-                  */
+*/
 		ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists), lfile, fileSize, size);
+//		ret = showRequester(MainWindow, (STRPTR)REQIMAGE_INFO, GetAmiFTPString(Str_AmiFTPRequest), Gadgetstring, GetAmiFTPString(TW_FileExists64), "", lfile, fileSize, size);
 		free(Gadgetstring);
-
+DBUG("CheckExists() ret=%ld\n",ret);
 		if (ret==1) {
 			return FALSE;
 		}
@@ -707,43 +711,46 @@ BOOL CheckExists(char *lfile, ULONG size, ULONG *restartpoint)
 }
 
 //static char tbufs[50];
-void SetTransferSize(const long size)
+/*void SetTransferSize(const long size)
 {
+//DBUG("SetTransferSize() %ld (%ld)\n",fuelargs[1],FileSize);
 	//sprintf(tbufs, "%ld", size);
-	FileSize=size;
-	fuelargs[0]=0;
-	fuelargs[1]=FileSize;
-
+//	FileSize=size;
+	fuelargs[0]=0; //fuelargs[1]=FileSize;
+//DBUG("%ld (%ld) [known problem]\n",fuelargs[1],FileSize);
 	if (TransferWindow) {
 		SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
 		               FUELGAUGE_VarArgs, &fuelargs,
 		              TAG_DONE);
-		RefreshGList((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL, 1);
+		//RefreshGList((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL, 1);
 	}
-}
+}*/
 
 int get_file(char *name, char *localname, ULONG size)
 {
 	int rval;
 	ULONG restartpoint=0;
 	//static char buf[20];
-
+DBUG("get_file(..,..,%ld) %ld\n",size,FileSize);
 	if (TransferWindow) {
 		//sprintf(buf,"%d",size);
 		FileSize=size;
-		last=0;
+		//last=0;
+
+if(size == 0) { DBUG("LIST_remote_file_to_get_its_size() '%s'\n",name); }
 
 		SetGadgetAttrs((struct Gadget*)TG_List[TG_LocalFile], TransferWindow, NULL,
-		               GA_Underscore,0, GA_Text,localname, TAG_DONE);
+		               GA_Text,localname, TAG_DONE);
 
 		SetGadgetAttrs((struct Gadget*)TG_List[TG_RemoteFile], TransferWindow, NULL,
-		               GA_Text,name, TAG_DONE);
+		               //GA_Text,name, TAG_DONE);
+		               STRINGA_TextVal,name, TAG_DONE);
 
 		SetGadgetAttrs((struct Gadget*)TG_List[TG_CPS], TransferWindow, NULL,
-		               GA_Text,"0", TAG_DONE);
+		               //BUTTON_Integer,0, TAG_DONE);
+		               STRINGA_LongVal,0, TAG_DONE);
 
-		fuelargs[0]=0;
-		fuelargs[1]=size;
+		fuelargs[0]=0; fuelargs[1]=size;
 		SetGadgetAttrs((struct Gadget*)TG_List[TG_Gauge], TransferWindow, NULL,
 		               FUELGAUGE_Level, 0,
 		               FUELGAUGE_VarArgs, &fuelargs,
@@ -751,7 +758,7 @@ int get_file(char *name, char *localname, ULONG size)
 	}
 
 	if (CheckExists(localname, size, &restartpoint))
-		return TRSF_OK;
+		return TRSF_ABORTED;//TRSF_OK;
 
 	rval = recvrequest("RETR", localname, name, "w", restartpoint);
 

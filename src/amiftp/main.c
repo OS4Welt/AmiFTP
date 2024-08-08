@@ -4,6 +4,61 @@
 
 #include "AmiFTP.h"
 #include "gui.h"
+#include "AmiFTP_rev.h"
+
+const char *version = VERSTAG;
+
+
+struct Library *IntuitionBase;
+struct Library *UtilityBase;
+struct Library *GfxBase;
+struct Library *DiskfontBase;
+struct Library *AslBase;
+struct Library *IFFParseBase;
+struct Library *IconBase;
+struct Library *RexxSysBase;
+struct Library *WorkbenchBase;
+struct Library *LocaleBase;
+struct Library *AmigaGuideBase;
+struct Device  *TimerBase;
+struct Library *ApplicationLib;
+//struct Library *SocketBase;
+
+struct IntuitionIFace   *IIntuition;
+struct UtilityIFace     *IUtility;
+struct GraphicsIFace    *IGraphics;
+struct DiskfontIFace    *IDiskfont;
+struct AslIFace         *IAsl;
+struct IFFParseIFace    *IIFFParse;
+struct IconIFace        *IIcon;
+struct RexxSysIFace     *IRexxSys;
+struct WorkbenchIFace   *IWorkbench;
+struct LocaleIFace      *ILocale;
+struct AmigaGuideIFace  *IAmigaGuide;
+struct TimerIFace       *ITimer;
+struct ApplicationIFace *IApplication;
+//struct SocketIFace      *ISocket;
+
+struct Library *ARexxBase = NULL;
+struct ARexxIFace *IARexx = NULL;
+struct Library *ClickTabBase = NULL, *ListBrowserBase = NULL, *LayoutBase = NULL,
+               *ChooserBase = NULL, *SpeedBarBase = NULL;
+// the class library base
+struct ClassLibrary *ButtonBase = NULL, *BitMapBase = NULL, *CheckBoxBase = NULL,
+                    *LabelBase = NULL, *WindowBase = NULL, *StringBase = NULL,
+                    *GetFileBase = NULL, *GetFontBase = NULL, *FuelGaugeBase = NULL,
+                    *IntegerBase = NULL, *RequesterBase = NULL;
+// the class pointer
+Class *ClickTabClass, *ListBrowserClass, *ButtonClass, *LabelClass, *StringClass,
+      *GetFileClass, *GetFontClass, *SpeedBarClass, *IntegerClass, *ARexxClass,
+      *FuelGaugeClass, *CheckBoxClass, *ChooserClass, *BitMapClass, *LayoutClass,
+      *WindowClass, *RequesterClass;
+// some interfaces needed
+struct ListBrowserIFace *IListBrowser = NULL;
+struct ClickTabIFace *IClickTab = NULL;
+struct LayoutIFace *ILayout = NULL;
+struct ChooserIFace *IChooser = NULL;
+struct SpeedBarIFace *ISpeedBar = NULL;
 
 
 extern struct TextAttr AmiFTPAttr, ListViewAttr;
@@ -13,14 +68,15 @@ BOOL InitRexx(void);
 void PrintSiteList(void);
 void GetToolTypes(struct WBStartup *msg);
 //void SetupLocaleStrings(void);
-void ConvertFontName(char *dest, int *size, char *source);
+//void ConvertFontName(char *dest, int *size, char *source);
 
 extern struct Screen *myScn;
 
 ULONG appID; // notification/application_lib
 
-char decimalSeperator = '.';
-uint8 seperatorSize = 3;
+char decimalSeparator = '.';
+//char groupSeparator = ',';
+//uint8 separatorSize = 3;
 
 long __stack = 20480;
 struct WBStartup *wBenchMsg;
@@ -47,8 +103,8 @@ void chkabort(void)
 	return;
 }
 
-char *ErrorOpenLib = "Couldn't open version %ld of %s.";
-char *ErrorNoPort = "Couldn't open messageport.";
+//char *ErrorOpenLib = "Couldn't open version %ld of %s.";
+//char *ErrorNoPort = "Couldn't open messageport.";
 
 __attribute__ ((linearvarargs))
 void PrintError(const STRPTR errmsg, ...)
@@ -62,9 +118,9 @@ void PrintError(const STRPTR errmsg, ...)
 
 	if (wBenchMsg && IntuitionBase)
 	{
-		req.es_Title = "AmiFTP Error";
+		req.es_Title = GetAmiFTPString(Str_AmiFTPError);//"AmiFTP Error";
 		req.es_TextFormat = errmsg;
-		req.es_GadgetFormat = "Ok";
+		req.es_GadgetFormat = GetAmiFTPString(Str_OK);//"Ok";
 		EasyRequestArgs(NULL, &req, NULL, args);
 	}
 	else
@@ -87,7 +143,7 @@ struct as225passwd {
 };
 
 
-extern struct ListBrowserIFace *IListBrowser;
+/*extern struct ListBrowserIFace *IListBrowser;
 extern struct LayoutIFace *ILayout;
 extern struct LabelIFace *ILabel;
 extern struct WindowIFace *IWindow;
@@ -100,7 +156,7 @@ extern struct ARexxIFace *IARexx;
 extern struct SpeedBarIFace *ISpeedBar;
 extern struct FuelGaugeIFace *IFuelGauge;
 extern struct IntegerIFace *IInteger;
-extern struct GadToolsIFace *IGadTools;
+extern struct GadToolsIFace *IGadTools;*/
 
 
 //extern struct ClassLibrary *TextEditorBase;
@@ -114,16 +170,24 @@ int main(int argc, char **argv)
 	struct servent *servent;
 	APTR oldwptr;
 
-	if (!IDOS || !IListBrowser || !ILayout || !ILabel || !IWindow || !IChooser || !IString || !IClickTab || !ICheckBox || !IBevel || !IARexx || !ISpeedBar
-		|| !IFuelGauge || !IInteger || !IGadTools)
-		return 10;
+	if (!argc) { wBenchMsg = (struct WBStartup *) argv; }
 
-	memset(&MainPrefs, 0, sizeof(MainPrefs));
-	memset(&CurrentState, 0, sizeof(CurrentState));
+	if(MyOpenLibs() == FALSE) { CleanUp(); return(10); }
+
+	/*if (!IDOS || !IListBrowser || !ILayout || !ILabel || !IWindow || !IChooser
+	    || !IString || !IClickTab || !ICheckBox || !IBevel || !IARexx || !ISpeedBar
+	    || !IFuelGauge || !IInteger || !IGadTools)
+		{ CleanUp(); return 10; }*/
+
+	//memset(&MainPrefs, 0, sizeof(MainPrefs));
+	//memset(&CurrentState, 0, sizeof(CurrentState));
+	ClearMem(&MainPrefs, sizeof(MainPrefs));
+	ClearMem(&CurrentState, sizeof(CurrentState));
+
 	ME = (struct Process *) FindTask(NULL);
 	oldwptr = ME->pr_WindowPtr;
 
-	MyOpenLibs();
+	//MyOpenLibs();
 	ag.ag_NAG.nag_BaseName   = "AmiFTP";
 	ag.ag_NAG.nag_Name       = "AmiFTP.guide";
 	ag.ag_NAG.nag_ClientPort = "AMIFTP_HELP";
@@ -137,10 +201,12 @@ int main(int argc, char **argv)
 	MainPrefs.mp_OpenOnDefaultScreen = TRUE;
 	MainPrefs.mp_ShowToolBar         = 1;//TRUE;
 
-	if (!argc)
+//	if (!argc)
+//	{
+//		//WB2CLI(_WBenchMsg, __stack, DOSBase);
+//		wBenchMsg = (struct WBStartup *) argv;
+	if(wBenchMsg)
 	{
-		//WB2CLI(_WBenchMsg, __stack, DOSBase);
-		wBenchMsg = (struct WBStartup *) argv;
 		GetToolTypes(wBenchMsg);
 	}
 	else
@@ -150,7 +216,8 @@ int main(int argc, char **argv)
 		{
 			PrintFault(IoErr(), NULL);
 			CleanUp();
-			exit(1);
+			//exit(1);
+			return(1);
 		}
 		cliargs = (void *) &opts[0];
 		if (cliargs->pubscreen)
@@ -177,7 +244,8 @@ int main(int argc, char **argv)
 	if (!InitRexx())
 	{
 		CleanUp();
-		exit(10);
+		//exit(10);
+		return(10);
 	}
 
 	if(IApplication) {
@@ -264,7 +332,8 @@ int main(int argc, char **argv)
 	if (SetSignal(0L, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
 	{
 		CleanUp();
-		exit(1);
+		//exit(1);
+		return(1);
 	}
 	InitCache();
 	{
@@ -327,7 +396,7 @@ int main(int argc, char **argv)
 		 */
 		if (ConfigName)
 		{						/* If ConfigName is set the user told us via tooltypes */
-			if (lock = Lock(ConfigName, ACCESS_READ))
+			if (lock = Lock(ConfigName, SHARED_LOCK))//ACCESS_READ))
 			{
 				UnLock(lock);
 				ReadConfigFile(ConfigName);
@@ -335,25 +404,25 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			if (lock = Lock(AMIFTPPREFS, ACCESS_READ))
+			if (lock = Lock(AMIFTPPREFS, SHARED_LOCK))//ACCESS_READ))
 			{
 				UnLock(lock);
 				ConfigName = strdup(AMIFTPPREFS);
 				ReadConfigFile(ConfigName);
 			}
-			else if (lock = Lock(PROGDIRPREFS, ACCESS_READ))
+			else if (lock = Lock(PROGDIRPREFS, SHARED_LOCK))//ACCESS_READ))
 			{
 				UnLock(lock);
 				ConfigName = strdup(PROGDIRPREFS);
 				ReadConfigFile(ConfigName);
 			}
-			else if (lock = Lock(ENVPREFS, ACCESS_READ))
+			else if (lock = Lock(ENVPREFS, SHARED_LOCK))//ACCESS_READ))
 			{
 				UnLock(lock);
 				ConfigName = strdup(ENVPREFS);
 				ReadConfigFile(ConfigName);
 			}
-			else if (dirname[0] && (lock = Lock(dirname, ACCESS_READ)))
+			else if (dirname[0] && (lock = Lock(dirname, SHARED_LOCK)))//ACCESS_READ)))
 			{
 				ConfigName = strdup(dirname);
 				UnLock(lock);
@@ -377,10 +446,9 @@ int main(int argc, char **argv)
 
 	if (cliargs && cliargs->pubscreen)
 	{
-		char *a = strdup(cliargs->pubscreen);
-		MainPrefs.mp_PubScreen = a;
+		//char *a = strdup(cliargs->pubscreen);
+		MainPrefs.mp_PubScreen = strdup(cliargs->pubscreen);//a;
 	}
-
 	ag.ag_NAG.nag_PubScreen = MainPrefs.mp_PubScreen;
 
 	ConfigChanged = FALSE;
@@ -409,96 +477,261 @@ int main(int argc, char **argv)
 	}
 
 	CleanUp();
+	return(0);
 }
 
-void MyOpenLibs()
+BOOL MyOpenLibs(void)
 {
-	//char *lib;
+//should open required libs here too
+	struct Locale *currentLocale = NULL;
 
+ LocaleBase = OpenLibrary("locale.library", 52);
+ if(!LocaleBase)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenLib),52,"locale.library");
+  return FALSE;
+ }
+ ILocale = (struct LocaleIFace *)GetInterface(LocaleBase, "main", 1, NULL);
+ if(!ILocale)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenIFace),"LocaleIFace");
+  return FALSE;
+ }
 
-//TextEditorBase = OpenClass("gadgets/texteditor.gadget", 52, &TextEditorClass);
+	if ( (currentLocale=OpenLocale(NULL)) )
+	{
+		if (currentLocale->loc_DecimalPoint  ) decimalSeparator = currentLocale->loc_DecimalPoint[0];
+		//if (currentLocale->loc_GroupSeparator) groupSeparator = currentLocale->loc_GroupSeparator[0];
+		//if (currentLocale->loc_Grouping      ) separatorSize = *currentLocale->loc_Grouping;
+
+		CloseLocale(currentLocale);
+	}
+DBUG("decimalSeperator: %c\n",decimalSeparator);
+	OpenAmiFTPCatalog(NULL, NULL);
+#ifndef _MENUCLASS_
+	SetupLocaleStrings();
+#endif
+
+ UtilityBase = OpenLibrary("utility.library", 52);
+ if(!UtilityBase)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenLib),52,"utility.library");
+  return FALSE;
+ }
+ IUtility = (struct UtilityIFace *)GetInterface(UtilityBase, "main", 1, NULL);
+ if(!IUtility) {
+  PrintError(GetAmiFTPString(Str_ErrorOpenIFace),"UtilityIFace");
+  return FALSE;
+ }
+
+ IntuitionBase = OpenLibrary("intuition.library", 52);
+ if(!IntuitionBase)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenLib),52,"intuition.library");
+  return FALSE;
+ }
+ IIntuition = (struct IntuitionIFace *)GetInterface(IntuitionBase, "main", 1, NULL);
+ if(!IIntuition)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenIFace),"IntuitionIFace");
+  return FALSE;
+ }
+
+ IconBase = OpenLibrary("icon.library", 52);
+ if(!IconBase)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenLib),52,"icon.library");
+  return FALSE;
+ }
+ IIcon = (struct IconIFace *)GetInterface(IconBase, "main", 1, NULL);
+ if(!IIcon)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenIFace),"IconIFace");
+  return FALSE;
+ }
+
+ AslBase = OpenLibrary("asl.library", 52);
+ if(!AslBase)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenLib),52,"asl.library");
+  return FALSE;
+ }
+ IAsl = (struct AslIFace *)GetInterface(AslBase, "main", 1, NULL);
+ if(!IAsl)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenIFace),"AslIFace");
+  return FALSE;
+ }
+
+ WorkbenchBase = OpenLibrary("workbench.library", 52);
+ if(!WorkbenchBase)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenLib),52,"workbench.library");
+  return FALSE;
+ }
+ IWorkbench = (struct WorkbenchIFace *)GetInterface(WorkbenchBase, "main", 1, NULL);
+ if(!IWorkbench)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenIFace),"WorkbenchIFace");
+  return FALSE;
+ }
+
+ IFFParseBase = OpenLibrary("iffparse.library", 52);
+ if(!IFFParseBase)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenLib),52,"iffparse.library");
+  return FALSE;
+ }
+ IIFFParse = (struct IFFParseIFace *)GetInterface(IFFParseBase, "main", 1, NULL);
+ if(!IIFFParse)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenIFace),"IFFParseIFace");
+  return FALSE;
+ }
+
+ DiskfontBase = OpenLibrary("diskfont.library", 52);
+ if(!DiskfontBase)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenLib),52,"diskfont.library");
+  return FALSE;
+ }
+ IDiskfont = (struct DiskfontIFace *)GetInterface(DiskfontBase, "main", 1, NULL);
+ if(!IDiskfont)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenIFace),"DiskfontIFace");
+  return FALSE;
+ }
+
+ GfxBase = OpenLibrary("graphics.library", 52);
+ if(!GfxBase)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenLib),52,"graphics.library");
+  return FALSE;
+ }
+ IGraphics = (struct GraphicsIFace *)GetInterface(GfxBase, "main", 1, NULL);
+ if(!IGraphics)
+ {
+  PrintError(GetAmiFTPString(Str_ErrorOpenIFace),"GraphicsIFace");
+  return FALSE;
+ }
+
 	ApplicationLib = OpenLibrary("application.library", 52);
 	if(ApplicationLib)
 		IApplication = (struct ApplicationIFace *)GetInterface(ApplicationLib, "application", 2, NULL);
 
-
-	//lib = "rexxsyslib.library";
 	RexxSysBase = OpenLibrary("rexxsyslib.library", 0L);
 	if (RexxSysBase)
 		IRexxSys = (struct RexxSysIFace *) GetInterfaceTags(RexxSysBase, "main", 1, TAG_END);
-
 	if (!RexxSysBase || !IRexxSys)
 	{
-		if (RexxSysBase)
-			CloseLibrary(RexxSysBase);
-		PrintError(ErrorOpenLib, 45, "rexxsyslib.library");//lib);
-		CleanUp();
-		exit(10);
+		//if (RexxSysBase) CloseLibrary(RexxSysBase);
+
+		PrintError(GetAmiFTPString(Str_ErrorOpenLib), 0, "rexxsyslib.library");
+		//CleanUp();
+		//exit(10);
+		return(FALSE);
 	}
 
 	AmigaGuideBase = OpenLibrary("amigaguide.library", 36);
 	if (AmigaGuideBase)
 		IAmigaGuide = (struct AmigaGuideIFace *) GetInterfaceTags(AmigaGuideBase, "main", 1, TAG_END);
-
 	if (!AmigaGuideBase || !IAmigaGuide)
 	{
-		if (AmigaGuideBase)
-			CloseLibrary(AmigaGuideBase);
-		PrintError(ErrorOpenLib, 0, "amigaguide.library");//lib);
-		CleanUp();
-		exit(10);
+		//if (AmigaGuideBase) CloseLibrary(AmigaGuideBase);
+
+		PrintError(GetAmiFTPString(Str_ErrorOpenLib), 36, "amigaguide.library");
+		//CleanUp();
+		//exit(10);
+		return(FALSE);
 	}
 
 	AppPort = (struct MsgPort *) AllocSysObjectTags(ASOT_PORT, TAG_DONE);
 	if (!AppPort)
 	{
-		PrintError(ErrorNoPort);
-		CleanUp();
-		exit(10);
+		PrintError(GetAmiFTPString(Str_ErrorNoPort));//ErrorNoPort);
+		//CleanUp();
+		//exit(10);
+		return(FALSE);
 	}
 
 	TimerPort = (struct MsgPort *) AllocSysObjectTags(ASOT_PORT, TAG_DONE);
 	if (!TimerPort)
 	{
-		PrintError(ErrorNoPort);
-		CleanUp();
-		exit(10);
+		PrintError(GetAmiFTPString(Str_ErrorNoPort));//ErrorNoPort);
+		//CleanUp();
+		//exit(10);
+		return(FALSE);
 	}
 
-	if (!(TimeRequest = (struct TimeRequest *) AllocSysObjectTags(ASOT_IOREQUEST, ASOIOR_Size, sizeof(struct TimeRequest),
+	if (!(TimeRequest = (struct TimeRequest *) AllocSysObjectTags(ASOT_IOREQUEST,
+	                                            ASOIOR_Size, sizeof(struct TimeRequest),
 	                                            ASOIOR_ReplyPort, TimerPort, TAG_END)))
 	{
-		PrintError("Couldn't allocate timerreq");
-		CleanUp();
-		exit(10);
+		PrintError(GetAmiFTPString(Str_ErrorTimerDevice));//"Couldn't allocate timerreq");
+		//CleanUp();
+		//exit(10);
+		return(FALSE);
 	}
 
 	if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest*)TimeRequest, 0))
 	{
-		PrintError("Couldn't open timer.device");
-		CleanUp();
-		exit(10);
+		PrintError(GetAmiFTPString(Str_ErrorTimerDevice));//"Couldn't open timer.device");
+		//CleanUp();
+		//exit(10);
+		return(FALSE);
 	}
 
 	TimerBase = TimeRequest->Request.io_Device;
 	ITimer = (struct TimerIFace *) GetInterface((struct Library *) TimerBase, (CONST_STRPTR) "main", 1, NULL);
 
-	struct Locale *currentLocale = OpenLocale(NULL);
+//should open required classes here too
+ //TextEditorBase = OpenClass("gadgets/texteditor.gadget", 52, &TextEditorClass);
+	RequesterBase = OpenClass("requester.class", 52, &RequesterClass);
+	GetFileBase   = OpenClass("gadget/getfile.gadget", 52, &GetFileClass);
+	GetFontBase   = OpenClass("gadget/getfont.gadget", 52, &GetFontClass);
+	StringBase    = OpenClass("gadgets/string.gadget", 52, &StringClass);
+	IntegerBase   = OpenClass("gadgets/integer.gadget", 52, &IntegerClass);
+	CheckBoxBase  = OpenClass("gadgets/checkbox.gadget", 52, &CheckBoxClass);
+	FuelGaugeBase = OpenClass("gadgets/fuelgauge.gadget", 52, &FuelGaugeClass);
+	ButtonBase    = OpenClass("gadgets/button.gadget", 52, &ButtonClass);
+	BitMapBase    = OpenClass("images/bitmap.image", 52, &BitMapClass);
+	LabelBase     = OpenClass("images/label.image", 52, &LabelClass);
+	WindowBase    = OpenClass("window.class", 52, &WindowClass);
+
+ //ARexxBase = OpenLibrary("arexx.class", 52);
+ ARexxBase = (struct Library *)OpenClass("arexx.class", 53, &ARexxClass);
+ IARexx    = (struct ARexxIFace *)GetInterface(ARexxBase, "main", 1, NULL);
+	ListBrowserBase = (struct Library *)OpenClass("gadgets/listbrowser.gadget", 52, &ListBrowserClass);
+	IListBrowser    = (struct ListBrowserIFace *)GetInterface( (struct Library *)ListBrowserBase, "main", 1, NULL );
+	ClickTabBase = (struct Library *)OpenClass("gadgets/clicktab.gadget", 52, &ClickTabClass);
+	IClickTab    = (struct ClickTabIFace *)GetInterface( (struct Library *)ClickTabBase, "main", 1, NULL );
+	LayoutBase = (struct Library *)OpenClass("gadgets/layout.gadget", 52, &LayoutClass);
+	ILayout    = (struct LayoutIFace *)GetInterface( (struct Library *)LayoutBase, "main", 1, NULL );
+	ChooserBase = (struct Library *)OpenClass("gadgets/chooser.gadget", 52, &ChooserClass);
+	IChooser    = (struct ChooserIFace *)GetInterface( (struct Library *)ChooserBase, "main", 1, NULL );
+	SpeedBarBase = (struct Library *)OpenClass("gadgets/speedbar.gadget", 52, &SpeedBarClass);
+	ISpeedBar    = (struct SpeedBarIFace *)GetInterface( (struct Library *)SpeedBarBase, "main", 1, NULL );
+
+	if(!IARexx || !IListBrowser || !IClickTab  || !ILayout || !IChooser
+	   || !ISpeedBar) return FALSE;
+	/*struct Locale *currentLocale = OpenLocale(NULL);
 	if (currentLocale)
 	{
 		if (currentLocale->loc_GroupSeparator)
 			decimalSeperator = currentLocale->loc_GroupSeparator[0];
 		if (currentLocale->loc_Grouping)
-			seperatorSize = *currentLocale->loc_Grouping;
+			separatorSize = *currentLocale->loc_Grouping;
 		CloseLocale(currentLocale);
 	}
 
 	OpenAmiFTPCatalog(NULL, NULL);
 
-	SetupLocaleStrings();
+	SetupLocaleStrings();*/
+
+	return(TRUE);
 }
 
-void CleanUp()
+void CleanUp(void)
 {
 	CloseTCP();
 
@@ -515,7 +748,34 @@ void CleanUp()
 	FREE(MainPrefs.mp_PubScreen);
 #undef FREE
 
-//CloseClass(TextEditorBase);
+//Close CLASSES
+ DropInterface( (struct Interface *)IARexx );
+ CloseLibrary(ARexxBase);
+	//CloseClass(TextEditorBase);
+	CloseClass(GetFileBase);
+	CloseClass(GetFontBase);
+	CloseClass(RequesterBase);
+	CloseClass(IntegerBase);
+	CloseClass(StringBase);
+	CloseClass(LabelBase);
+	CloseClass(BitMapBase);
+	CloseClass(ButtonBase);
+	CloseClass(FuelGaugeBase);
+	CloseClass(CheckBoxBase);
+	CloseClass(WindowBase);
+
+	DropInterface( (struct Interface *)ISpeedBar );
+	CloseClass( (struct ClassLibrary *)SpeedBarBase );
+	DropInterface( (struct Interface *)IChooser );
+	CloseClass( (struct ClassLibrary *)ChooserBase );
+	DropInterface( (struct Interface *)ILayout );
+	CloseClass( (struct ClassLibrary *)LayoutBase );
+	DropInterface( (struct Interface *)IClickTab );
+	CloseClass( (struct ClassLibrary *)ClickTabBase );
+	DropInterface( (struct Interface *)IListBrowser );
+	CloseClass( (struct ClassLibrary *)ListBrowserBase );
+
+//Close LIBS
 	if(IApplication)
 	{
 		UnregisterApplication(appID, TAG_DONE);
@@ -523,17 +783,10 @@ void CleanUp()
 		CloseLibrary(ApplicationLib);
 	}
 
-
-	if (ITimer)
-	{
-		DropInterface((struct Interface *) ITimer);
-		ITimer = NULL;
-	}
-
+	if(ITimer) { DropInterface((struct Interface *) ITimer); }
 	if (TimeRequest)
 	{
-		if (TimeRequest->Request.io_Device)
-			CloseDevice((struct IORequest*)TimeRequest);
+		if (TimeRequest->Request.io_Device) { CloseDevice((struct IORequest*)TimeRequest); }
 
 		FreeSysObject(ASOT_IOREQUEST, TimeRequest);
 		TimeRequest = NULL;
@@ -546,15 +799,15 @@ void CleanUp()
 
 	if (AmigaGuideBase)
 	{
-		if (ag.ag_AmigaGuide)
-			CloseAmigaGuide(ag.ag_AmigaGuide);
+		if (ag.ag_AmigaGuide) { CloseAmigaGuide(ag.ag_AmigaGuide); }
+
+		DropInterface((struct Interface *) IAmigaGuide);
 		CloseLibrary(AmigaGuideBase);
 	}
 
 	CloseAmiFTPCatalog();
 
-	if (ARexx_Object)
-		DisposeObject(ARexx_Object);
+	if (ARexx_Object) { DisposeObject(ARexx_Object); }
 
 	if (AppPort)
 	{
@@ -562,15 +815,28 @@ void CleanUp()
 		AppPort = NULL;
 	}
 
-	if (IRexxSys)
-		DropInterface((struct Interface *) IRexxSys);
-	if (RexxSysBase)
-		CloseLibrary((struct Library *) RexxSysBase);
+	if (argsptr) { FreeArgs(argsptr); }
 
-	if (argsptr)
-	{
-		FreeArgs(argsptr);
-	}
+	DropInterface( (struct Interface *)IRexxSys );
+	CloseLibrary(RexxSysBase);
+	DropInterface( (struct Interface *)ILocale );
+	CloseLibrary(LocaleBase);
+	DropInterface( (struct Interface *)IWorkbench );
+	CloseLibrary(WorkbenchBase);
+	DropInterface( (struct Interface *)IIcon );
+	CloseLibrary(IconBase);
+	DropInterface( (struct Interface *)IIFFParse );
+	CloseLibrary(IFFParseBase);
+	DropInterface( (struct Interface *)IAsl );
+	CloseLibrary(AslBase);
+	DropInterface( (struct Interface *)IDiskfont );
+	CloseLibrary(DiskfontBase);
+	DropInterface( (struct Interface *)IGraphics );
+	CloseLibrary(GfxBase);
+	DropInterface( (struct Interface *)IUtility );
+	CloseLibrary(UtilityBase);
+	DropInterface( (struct Interface *)IIntuition );
+	CloseLibrary(IntuitionBase);
 }
 
 void PrintSiteList()
@@ -584,10 +850,10 @@ void PrintSiteList()
 		if (sn)
 		{
 			Printf("Site: %s\n", sn->sn_Node.ln_Name);
-			Printf("RemoteDir: %s\n", sn->sn_RemoteDir ? sn->sn_RemoteDir : "");
-			Printf("LocalDir: %s\n", sn->sn_LocalDir ? sn->sn_LocalDir : "");
-			Printf("Loginname: %s\n", sn->sn_LoginName ? sn->sn_LoginName : "");
-			Printf("DirString: %s\n", sn->sn_DirString ? sn->sn_DirString : "");
+			Printf("RemoteDir: %s\n", sn->sn_RemoteDir? sn->sn_RemoteDir : "");
+			Printf("LocalDir : %s\n", sn->sn_LocalDir? sn->sn_LocalDir : "");
+			Printf("Loginname: %s\n", sn->sn_LoginName? sn->sn_LoginName : "");
+			Printf("DirString: %s\n", sn->sn_DirString? sn->sn_DirString : "");
 		}
 	}
 }
@@ -605,7 +871,7 @@ void GetToolTypes(struct WBStartup *msg)
 		{
 			if (key = FindToolType(infoobj->do_ToolTypes, "PUBSCREEN"))
 			{
-				strncpy(CurrentState.ScreenName, key, 255);
+				Strlcpy(CurrentState.ScreenName, key, sizeof(CurrentState.ScreenName));
 			}
 			if (key = FindToolType(infoobj->do_ToolTypes, "ICONIFIED"))
 			{
@@ -613,7 +879,7 @@ void GetToolTypes(struct WBStartup *msg)
 			}
 			if (key = FindToolType(infoobj->do_ToolTypes, "PORTNAME"))
 			{
-				strncpy(CurrentState.RexxPort, key, 50);
+				Strlcpy(CurrentState.RexxPort, key, sizeof(CurrentState.RexxPort));
 			}
 			if (key = FindToolType(infoobj->do_ToolTypes, "SETTINGS"))
 			{
@@ -630,7 +896,7 @@ void GetToolTypes(struct WBStartup *msg)
 	}
 }
 
-void ConvertFontName(char *dest, int *size, char *source)
+/*void ConvertFontName(char *dest, int *size, char *source)
 {
 	char *ptr;
 	if ((ptr = strstr(source, "/")))
@@ -646,6 +912,6 @@ void ConvertFontName(char *dest, int *size, char *source)
 			}
 		}
 	}
-}
+}*/
 
 /* EOF */
