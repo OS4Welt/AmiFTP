@@ -25,12 +25,13 @@ struct List *ReadRecentList(void)
 
 
 SetLBColumnInfoAttrs(columninfo,
-	LBCIA_Column,0, LBCIA_Weight,30,
-	LBCIA_Column,1, LBCIA_Weight,14, LBCIA_Separator,TRUE,
-	LBCIA_Column,2, LBCIA_Weight,14, LBCIA_Separator,TRUE,
-	LBCIA_Column,3, LBCIA_Weight,40, LBCIA_Separator,TRUE,
-	LBCIA_Column,4, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
-	LBCIA_Column,5, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,COL_NAME, LBCIA_Weight,30,
+	LBCIA_Column,COL_SIZE, LBCIA_Weight,14, LBCIA_Separator,TRUE,
+	LBCIA_Column,COL_TYPE, LBCIA_Weight,14, LBCIA_Separator,TRUE,
+	LBCIA_Column,COL_DATE, LBCIA_Weight,40, LBCIA_Separator,TRUE, LBCIA_Sortable,FALSE,
+	                       LBCIA_Title,GetAmiFTPString(MW_COL_DESC),
+	LBCIA_Column,COL_OWN, LBCIA_Weight, 1, LBCIA_Separator,FALSE, LBCIA_Title,NULL,
+	LBCIA_Column,COL_GRP, LBCIA_Weight, 1, LBCIA_Separator,FALSE, LBCIA_Title,NULL,
 TAG_DONE);
 
 
@@ -116,27 +117,27 @@ TAG_DONE);
     if (!node) {
 
 SetLBColumnInfoAttrs(columninfo,
-	LBCIA_Column,0, LBCIA_Weight,95,
-	LBCIA_Column,1, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
-	LBCIA_Column,2, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
-	LBCIA_Column,3, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
-	LBCIA_Column,4, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
-	LBCIA_Column,5, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,COL_NAME, LBCIA_Weight,95,
+	LBCIA_Column,COL_SIZE, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,COL_TYPE, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,COL_DATE, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,COL_OWN, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
+	LBCIA_Column,COL_GRP, LBCIA_Weight, 1, LBCIA_Separator,FALSE,
 TAG_DONE);
 
-	node=AllocListBrowserNode(6,
+	node=AllocListBrowserNode(TOT_COLS,
 				  LBNA_Flags, LBFLG_READONLY,
-				  LBNA_Column, 0,
+				  LBNA_Column, COL_NAME,
 				   LBNCA_Text, GetAmiFTPString(Str_NoNewAminetFiles),
-				  LBNA_Column, 1,
+				  LBNA_Column, COL_SIZE,
 				   LBNCA_Text, "",
-				  LBNA_Column, 2,
+				  LBNA_Column, COL_TYPE,
 				   LBNCA_Text, "",
-				  LBNA_Column, 3,
+				  LBNA_Column, COL_DATE,
 				   LBNCA_Text, "",
-				  LBNA_Column, 4,
+				  LBNA_Column, COL_OWN,
 				   LBNCA_Text, "",
-				  LBNA_Column, 5,
+				  LBNA_Column, COL_GRP,
 				   LBNCA_Text, "",
 				  TAG_DONE);
 	if (node)
@@ -258,25 +259,26 @@ static int ParseADT(struct List *list, char *buffer)
 	if (date > MainPrefs.mp_LastAminetDate)
 	  entry->new=1;
 
-	if (tmp=AllocListBrowserNode(6,
+	if (tmp=AllocListBrowserNode(TOT_COLS,
 				     LBNA_UserData, entry,
-				     LBNA_Column, 0,
+				     LBNA_Column, COL_NAME,
 				      LBNCA_Text, entry->name,
-				     LBNA_Column, 1,
+				     LBNA_Column, COL_SIZE,
 				      LBNCA_Text, entry->stringSize,
 				      LBNCA_Justification, LCJ_RIGHT,
-				     LBNA_Column, 2,
+				     LBNA_Column, COL_TYPE,
 				      LBNCA_Text, entry->owner,
 				      LBNCA_Justification, LCJ_CENTRE,
-				     LBNA_Column, 3,
+				     LBNA_Column, COL_DATE,
 				      LBNCA_Text, entry->group,
-				     LBNA_Column, 4,
+				     LBNA_Column, COL_OWN,
 				      LBNCA_CopyText, TRUE,
 				      LBNCA_Text, "",
-				     LBNA_Column,5,
+				     LBNA_Column,COL_GRP,
 				      LBNCA_CopyText, TRUE,
 				      LBNCA_Text, "",
 				     TAG_DONE)) {
+#ifndef __amigaos4__
 	    if (SortMode==SORTBYNAME) {
 		for (node=GetHead(list); node; node=GetSucc(node))
 		  if (strcmp(((struct dirlist *)node->ln_Name)->owner, entry->owner)>=0)
@@ -311,6 +313,10 @@ static int ParseADT(struct List *list, char *buffer)
 		else
 		  AddTail(list, tmp);
 	    }
+#else
+		  AddTail(list, tmp);
+#endif
+
 	    tmp->ln_Name=(void *)entry;
 	    if (date <= MainPrefs.mp_LastAminetDate && !MainPrefs.mp_ShowAllADTFiles)
 	      SetListBrowserNodeAttrs(tmp,
@@ -333,6 +339,7 @@ static int ParseADT(struct List *list, char *buffer)
     return 1;
 }
 
+#ifndef __amigaos4__
 static int SortADTNodesAlpha(const void *a, const void *b)
 {
     struct dirlist *nodea=(struct dirlist *)((struct Node *)*(ULONG *)a)->ln_Name;
@@ -381,3 +388,4 @@ struct List *sort_ADT(struct List *list, int type)
     }
     return list;
 }
+#endif
