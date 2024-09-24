@@ -820,10 +820,11 @@ int Dir_clicked(void)
 			AddCacheEntry(head, CurrentState.CurrentRemoteDir);
 			SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, LISTBROWSER_Labels,~0, TAG_DONE);
 			FileList = head;
-			if (SetGadgetAttrs((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL,
-			                   LISTBROWSER_Labels, FileList, LISTBROWSER_Striping,TRUE,
-			                   /*LISTBROWSER_AutoFit,TRUE,*/ LISTBROWSER_ColumnInfo,columninfo, LISTBROWSER_Selected,-1, LISTBROWSER_MakeVisible,0, TAG_DONE))
-				RefreshGList((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, 1);
+			SetAttrs(MG_List[MG_ListView],
+			         LISTBROWSER_Labels, FileList, LISTBROWSER_Striping,TRUE,
+			          /*LISTBROWSER_AutoFit,TRUE,*/ LISTBROWSER_ColumnInfo,columninfo, LISTBROWSER_Selected,-1, LISTBROWSER_MakeVisible,0, TAG_DONE);
+			IDoMethod(MG_List[MG_ListView], LBM_SORT, NULL, COL_NAME, LBMSORT_FORWARD, NULL);
+			RefreshGList((struct Gadget *) MG_List[MG_ListView], MainWindow, NULL, 1);
 			UpdateMainButtons(MB_NONESELECTED);
 		}
 		UpdateWindowTitle();

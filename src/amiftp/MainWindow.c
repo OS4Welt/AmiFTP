@@ -547,7 +547,7 @@ int filePen = 1;
 int drawerPen = 2;
 struct Window *OpenFTPWindow(const BOOL StartIconified)
 {
-	Object *g1,*g2, *g3;//, *but1, *but2, *buttonlayout;
+	Object *g1,*g2;//, *g3;//, *but1, *but2, *buttonlayout;
 	struct DiskObject *iconify = NULL;
 
 	Screen=LockPubScreen(MainPrefs.mp_OpenOnDefaultScreen? NULL : MainPrefs.mp_PubScreen);
@@ -703,6 +703,7 @@ TAG_DONE);
 	                   SPEEDBAR_ButtonType, MainPrefs.mp_ShowToolBar? MainPrefs.mp_ShowToolBar-1 : TAG_IGNORE,
 	                   SPEEDBAR_Font,       SBFont,
                     TAG_DONE),
+                    CHILD_WeightedHeight, 0,
 	               TAG_DONE),
 	               CHILD_WeightedHeight, 0,
 
@@ -720,7 +721,7 @@ TAG_DONE);
 LISTBROWSER_ColumnTitles,TRUE,
 LISTBROWSER_TitleClickable,TRUE,
 LISTBROWSER_SortColumn, COL_NAME,
-	                   //LISTBROWSER_MinVisible, 3,
+	                   //LISTBROWSER_MinVisible, 10,
 	                   //LISTBROWSER_Separators, FALSE,
 	                   //LISTBROWSER_AutoFit, TRUE,
 	                   //LISTBROWSER_Striping, TRUE,
@@ -730,10 +731,11 @@ LISTBROWSER_SortColumn, COL_NAME,
 	                   //CHILD_WeightedHeight,0,
 	               TAG_DONE),
 
-	               LAYOUT_AddChild, g3=NewObject(LayoutClass, NULL,//VLayoutObject,
-	               LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
-	               LAYOUT_EvenSize,    TRUE,//EvenSized,
-	                     LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartHGroup, //StartHGroup, Spacing(FALSE),
+//	               LAYOUT_AddChild, NewObject(LayoutClass, NULL,//VLayoutObject,
+	               LAYOUT_AddChild, MG_List[MG_LogWinGroup] = NewObject(LayoutClass, NULL,//VLayoutObject,
+                LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+	               //LAYOUT_EvenSize,    TRUE,
+//	                     LAYOUT_AddChild, NewObject(LayoutClass, NULL,//StartHGroup, //StartHGroup, Spacing(FALSE),
 	                     //LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
 	                         LAYOUT_AddChild, MG_List[MG_DLGetFile] = NewObject(GetFileClass, NULL,//GetFileObject,
 	                         GA_ID,        MG_DLGetFile,
@@ -747,15 +749,13 @@ LISTBROWSER_SortColumn, COL_NAME,
 	                         // STRINGA_Buffer, localdirbuffer,
 	                         //STRINGA_MaxChars, 80,
 	                         TAG_DONE),
-	                         //CHILD_WeightedWidth, 0,
 	                         CHILD_WeightedHeight, 0,
 	                         Label(GetAmiFTPString(MW_DownloadDir)),
-	                     TAG_DONE),
-	                     CHILD_WeightedHeight, 0,
-
-	                     CHILD_WeightedHeight, 0,
+//	                     TAG_DONE),
+//	                     CHILD_WeightedHeight, 0,
 	               TAG_DONE),
 	              CHILD_WeightedHeight, 0,
+
 	TAG_DONE);
 	if (!MainWindowLayout) {
 //	Printf("Failed to create layout\n");
@@ -772,7 +772,7 @@ LISTBROWSER_SortColumn, COL_NAME,
 	AppMessageHook.h_Entry    = (HOOKFUNC)AppMessageHookFunc;
 	AppMessageHook.h_SubEntry = NULL;
 	AppMessageHook.h_Data     = NULL;
-
+/*
 	if (!MainPrefs.mp_ShowToolBar) {
 //	SetAttrs(MainWindowLayout, LAYOUT_RemoveChild, MG_List[MG_SpeedBar], TAG_DONE);
 //	FreeSpeedBarList();
@@ -780,7 +780,7 @@ LISTBROWSER_SortColumn, COL_NAME,
 		IDoMethod(MG_List[MG_SpeedBarGroup], OM_REMMEMBER, MG_List[MG_SpeedBar]);
 	}
 	else { SetAttrs(MG_List[MG_SpeedBar], SPEEDBAR_ButtonType,MainPrefs.mp_ShowToolBar-1, TAG_DONE); }
-
+*/
 	BOOL firstStart = CurrentState.Width==0&&MainPrefs.mp_Width==0&&CurrentState.Height==0&&MainPrefs.mp_Height==0;
 	if (firstStart)
 	{
@@ -811,7 +811,7 @@ if( (iconify=GetIconTags("PROGDIR:AMIFTP", ICONGETA_FailIfUnavailable,FALSE, TAG
 
     MainWin_Object = NewObject(WindowClass, NULL,//WindowObject,
                        WA_Title,       "AmiFTP",//wintitle,
-                       WA_ScreenTitle, VERS " ("DATE") ©2022 Frank Menzel <goos.entwickler-x.de>",//wintitle,
+                       WA_ScreenTitle, VERS " ("DATE") © 2020 Frank Menzel <goos.entwickler-x.de>",//wintitle,
                        WA_PubScreen,   Screen,
                        WA_SizeGadget,  TRUE,
                        WA_SizeBBottom, TRUE,
@@ -828,18 +828,21 @@ if( (iconify=GetIconTags("PROGDIR:AMIFTP", ICONGETA_FailIfUnavailable,FALSE, TAG
                        WA_MenuHelp, TRUE,
                        WA_IDCMP,    IDCMP_MENUHELP,
 #ifdef _MENUCLASS_
-	WA_MenuStrip, menustripobj,
+                       WA_MenuStrip, menustripobj,
 #endif
                        WINDOW_IconifyGadget, TRUE,
                        WINDOW_IconTitle,     "AmiFTP",
                        //WINDOW_Icon,          GetDiskObject("PROGDIR:AMIFTP"),
                        WINDOW_Icon,          iconify,
                        WINDOW_AppPort,       AppPort,
-                       WINDOW_AppWindow,     TRUE,
-                       WINDOW_AppMsgHook,    &AppMessageHook,
-                       WINDOW_Layout,        MainWindowLayout,
+                       WINDOW_AppWindow,  TRUE,
+                       WINDOW_AppMsgHook, &AppMessageHook,
                        WINDOW_IDCMPHook,     &MainIDCMPHook,
                        WINDOW_IDCMPHookBits, IDCMP_RAWKEY,
+                       WINDOW_UniqueID,    "AmiFTP_main",
+                       WINDOW_PopupGadget, TRUE,
+
+                       WINDOW_Layout,        MainWindowLayout,
                      TAG_DONE);
 
 	if (!MainWin_Object) {
@@ -860,7 +863,6 @@ if( (iconify=GetIconTags("PROGDIR:AMIFTP", ICONGETA_FailIfUnavailable,FALSE, TAG
 
 	if (StartIconified) {
 		MainWindow=NULL;
-		//CA_Iconify(MainWin_Object);
 		IDoMethod(MainWin_Object, WM_ICONIFY);
 		return (struct Window*)1;
 	}
@@ -936,6 +938,7 @@ DBUG("CloseMainWindow()\n",NULL);
 		menustripobj = NULL;
 		hotlistmenu = NULL;
 #endif
+		CloseLogWindow();
 		DisposeObject(MainWin_Object);
 		MainWin_Object=NULL;
 		MainWindowLayout=NULL;
@@ -985,37 +988,23 @@ void UpdateMainButtons(const int state)
       return;
 
 #ifdef _MENUCLASS_
-disableMenuItem(MNU_Disconnect, FALSE); // enabling DISCONNECT entry
-disableMenuItem(MNU_Reconnect, FALSE);  // enabling RCONNECT entry
-disableMenuItem(MNU_RawCommand, FALSE); // enabling SEND_FT_CMD entry
-disableMenuItem(MNU_FilesTitle, FALSE); // enabling FILES menu
+    disableMenuItem(MNU_Disconnect, FALSE); // enabling DISCONNECT entry
+    disableMenuItem(MNU_Reconnect, FALSE);  // enabling RCONNECT entry
+    disableMenuItem(MNU_RawCommand, FALSE); // enabling SEND_FT_CMD entry
+    disableMenuItem(MNU_FilesTitle, FALSE); // enabling FILES menu
+    if(CurrentState.ADTMode) disableMenuItem(MNU_ToggleADT, FALSE); // enabling TOGGLEADT entry
 #endif
 
     switch (state) {
       case MB_DISCONNECTED:
 #ifdef _MENUCLASS_
-disableMenuItem(MNU_Disconnect, TRUE); // disabling DISCONNECT entry
-disableMenuItem(MNU_Reconnect, TRUE);  // disabling RCONNECT entry
-disableMenuItem(MNU_RawCommand, TRUE); // disabling SEND_FT_CMD entry
-disableMenuItem(MNU_FilesTitle, TRUE); // disabling FILES menu
+       disableMenuItem(MNU_Disconnect, TRUE); // disabling DISCONNECT entry
+       disableMenuItem(MNU_Reconnect, TRUE);  // disabling RCONNECT entry
+       disableMenuItem(MNU_RawCommand, TRUE); // disabling SEND_FT_CMD entry
+       disableMenuItem(MNU_FilesTitle, TRUE); // disabling FILES menu
+       disableMenuItem(MNU_ToggleADT, TRUE);  // disabling TOGGLEADT entry
 #endif
-        /*
-	if (MainPrefs.mp_ShowButtons) {
-	    if (CurrentState.ADTMode) {
-		DisableGadget(MG_List[MG_Readme], TRUE)
-	      }
-	    else {
-		DisableGadget(MG_List[MG_Parent], TRUE);
-	    }
-	    DisableGadget(MG_List[MG_Get], TRUE);
-	    DisableGadget(MG_List[MG_Put], TRUE);
-	    DisableGadget(MG_List[MG_View], TRUE);
-	    DisableGadget(MG_List[MG_Get2], TRUE);
-	    DisableGadget(MG_List[MG_Put2], TRUE);
-	    DisableGadget(MG_List[MG_View2], TRUE);
-	    DisableGadget(MG_List[MG_Disconnect], TRUE);
-	}
-              */
+
 	DisableGadget(MG_List[MG_DirName], TRUE);
 	DisableGadget(MG_List[MG_CacheList], TRUE);
 	//DisableGadget(MG_List[MG_Reload], TRUE);
@@ -1024,7 +1013,7 @@ disableMenuItem(MNU_FilesTitle, TRUE); // disabling FILES menu
 			   LISTBROWSER_ColumnInfo, NULL,//&dummycolumninfo,
 			   LISTBROWSER_Striping, FALSE,
 			   //LISTBROWSER_AutoFit, TRUE,
-LISTBROWSER_ColumnTitles,FALSE,
+LISTBROWSER_ColumnTitles, FALSE,
 			   TAG_DONE) && MainWindow)
 	  RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
 
@@ -1117,11 +1106,10 @@ void AttachToolList(const BOOL NoneSelected)
 DBUG("AttachToolList()\n",NULL);
 		SetAttrs((struct Gadget*)MG_List[MG_ListView],
 		         LISTBROWSER_Labels, FileList,
-		         //LISTBROWSER_ColumnInfo, &columninfo,
-		         LISTBROWSER_ColumnInfo, columninfo,
-LISTBROWSER_ColumnTitles,TRUE,
-LISTBROWSER_TitleClickable,TRUE,
-LISTBROWSER_SortColumn, COL_NAME,
+		         LISTBROWSER_ColumnInfo,     columninfo,
+		         LISTBROWSER_ColumnTitles,   TRUE,
+		         LISTBROWSER_TitleClickable, TRUE,
+		         LISTBROWSER_SortColumn,     COL_NAME,
 		         LISTBROWSER_Striping, TRUE,
 		         //NoneSelected?LISTBROWSER_AutoFit:TAG_IGNORE, TRUE,
 		         NoneSelected? LISTBROWSER_Selected:TAG_IGNORE, -1,
@@ -1129,31 +1117,9 @@ LISTBROWSER_SortColumn, COL_NAME,
 		        TAG_DONE);
 
 	if (MainWindow) {
-//RefreshGadgets((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL);
-	RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
-/*		if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
-		                   LISTBROWSER_Labels, FileList,
-		                   //LISTBROWSER_ColumnInfo, &columninfo,
-		                   LISTBROWSER_ColumnInfo, columninfo,
-		                   LISTBROWSER_Striping, TRUE,
-		                   //NoneSelected?LISTBROWSER_AutoFit:TAG_IGNORE, TRUE,
-		                   NoneSelected?LISTBROWSER_Selected:TAG_IGNORE, -1,
-		                   NoneSelected?LISTBROWSER_MakeVisible:TAG_IGNORE, 0,
-		                  TAG_DONE))
-			RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
+		RefreshGadgets((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL);
+		//RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
 	}
-	else
-		SetAttrs((struct Gadget*)MG_List[MG_ListView],
-		         LISTBROWSER_Labels, FileList,
-		         //LISTBROWSER_ColumnInfo, &columninfo,
-		         LISTBROWSER_ColumnInfo, columninfo,
-		         LISTBROWSER_Striping, TRUE,
-		         //NoneSelected?LISTBROWSER_AutoFit:TAG_IGNORE, TRUE,
-		         NoneSelected?LISTBROWSER_Selected:TAG_IGNORE, -1,
-		         NoneSelected?LISTBROWSER_MakeVisible:TAG_IGNORE, 0,
-		        TAG_DONE);
-*/
-}
 	if (NoneSelected) lsel=-1;
 }
 
@@ -1161,15 +1127,8 @@ void DetachToolList(void)
 {
 	SetAttrs(MG_List[MG_ListView], LISTBROWSER_Labels,~0, TAG_DONE);
 	if (MainWindow) {
-		RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
-		/*if (SetGadgetAttrs((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL,
-		                   LISTBROWSER_Labels, ~0, //LISTBROWSER_AutoFit, TRUE,
-		                  TAG_DONE)) {
-			RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
-		}
-		else {
-			SetAttrs(MG_List[MG_ListView], LISTBROWSER_Labels, ~0, TAG_DONE);
-		}*/
+		RefreshGadgets((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL);
+		//RefreshGList((struct Gadget*)MG_List[MG_ListView], MainWindow, NULL, 1);
 	}
 }
 
@@ -1180,9 +1139,6 @@ void UpdateRemoteDir(const char *dir)
 
 	if (MainWindow) {
 		SetGadgetAttrs((struct Gadget*)MG_List[MG_DirName], MainWindow, NULL, STRINGA_TextVal,dir, TAG_END);
-//		if (SetGadgetAttrs((struct Gadget*)MG_List[MG_DirName], MainWindow, NULL,
-//		                    STRINGA_TextVal, dir, TAG_END))
-//			RefreshGList((struct Gadget*)MG_List[MG_DirName], MainWindow, NULL, 1);
 	}
 
 	UpdateWindowTitle();
@@ -1195,8 +1151,6 @@ void UpdateLocalDir(const char *dir)
 
 	if (MainWindow) {
 		SetGadgetAttrs((struct Gadget*)MG_List[MG_DLGetFile], MainWindow, NULL, GETFILE_Drawer,dir, TAG_DONE);
-//		SetAttrs(MG_List[MG_DLGetFile], GETFILE_Drawer, dir, TAG_DONE);
-//		RefreshGList((struct Gadget*)MG_List[MG_DLGetFile], MainWindow, NULL, 1);
 	}
 
 	UpdateWindowTitle();
@@ -1209,9 +1163,6 @@ void UpdateSiteName(const char *site)
 
 	if (MainWindow) {
 		SetGadgetAttrs((struct Gadget*)MG_List[MG_SiteName], MainWindow, NULL, STRINGA_TextVal,site, TAG_END);
-//		if (SetGadgetAttrs((struct Gadget*)MG_List[MG_SiteName], MainWindow, NULL,
-//		                   STRINGA_TextVal, site, TAG_END))
-//			RefreshGList((struct Gadget*)MG_List[MG_SiteName], MainWindow, NULL, 1);
 	}
 }
 
@@ -1319,9 +1270,9 @@ void ChangeAmiFTPMode(void)
     RefreshGList((struct Gadget*)pagelayout, MainWindow, NULL, 1);*/
 }
 
-void UpdateWindowTitle()
+void UpdateWindowTitle(void)
 {
-	static char title[100] = VERS " ("DATE") ©2022 Frank Menzel <goos.entwickler-x.de>";
+	static char title[100] = VERS " ("DATE") © 2020 Frank Menzel <goos.entwickler-x.de>";
 	int numselfiles=0, numselbytes=0, round=0;
 	char *bytes="kB";
 	int freebytes=0;
@@ -1415,16 +1366,19 @@ void CreateInfoList(struct List *list)
 	//extern struct Image im;
 	//extern char *linfotext;
 	int i;
-	char *infostrings[5]={ VERS " ("DATE")",
-	                       NULL,//"Copyright ©1995-1998 by Magnus Lilja",
-	                       NULL,//"©2020 by Frank Menzel for Amiga OS4 community",
-	                       "<www.OS4Welt.de>",
-	                       NULL };
+	char *infostrings[]={ VERS " ("DATE")",
+	                      NULL,//"Copyright ©1995-1998 by Magnus Lilja",
+	                      NULL,//"©2020 by Frank Menzel for Amiga OS4 community",
+	                      "<www.OS4Welt.de>",
+	                      NULL };
 
 	//infostrings[0]=linfotext;
 	infostrings[1] = GetAmiFTPString(Str_AboutStr_info01);
 	infostrings[2] = GetAmiFTPString(Str_AboutStr_info02);
-	infostrings[4] = GetAmiFTPString(Str_AboutStr_info03);
+	if(Strlen(GetAmiFTPString(Str_AboutStr_info03)) != 0) {
+		infostrings[3] = GetAmiFTPString(Str_AboutStr_info03);
+		infostrings[4] = "<www.OS4Welt.de>";
+	}
 
 	NewList(list);
 

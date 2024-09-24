@@ -242,8 +242,8 @@ struct CurrentState {
     char CurrentRemoteDir[MAXPATHLEN+1];
     char PropFontName[256];
     char FixedFontName[256];
-    char LoginName[30];
-    char Password[90];//30];
+    char LoginName[60];//30];
+    char Password[60];//90];//30];
     char RexxPort[50];
     char LogFile[256];
     char Log;
@@ -259,6 +259,11 @@ struct CurrentState {
     WORD Width;
     struct TextFont *PropFont;
     struct TextFont *FixedFont;
+    int ShowHints;
+#ifdef _USE_LB_SORT_
+    int SortMode;
+    //int SortDirection;
+#endif
 };
 
 struct CacheNode {

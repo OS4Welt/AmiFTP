@@ -62,6 +62,9 @@
 #include <proto/listbrowser.h>
 #include <gadgets/listbrowser.h>
 
+#include <gadgets/texteditor.h>
+#include <gadgets/scroller.h>
+
 //#include <proto/penmap.h>
 #include <images/penmap.h>
 
@@ -80,11 +83,12 @@
 //#include <reaction/reaction_macros.h>
 #define Label(text)  \
 	CHILD_Label, NewObject(LabelClass, NULL, LABEL_Text,text, TAG_DONE)
+
 // the class pointer
 extern Class *ClickTabClass, *ListBrowserClass, *ButtonClass, *LabelClass, *StringClass,
       *GetFileClass, *GetFontClass, *SpeedBarClass, *IntegerClass, *ARexxClass,
       *FuelGaugeClass, *CheckBoxClass, *ChooserClass, *BitMapClass, *LayoutClass,
-      *WindowClass, *RequesterClass;
+      *WindowClass, *RequesterClass, *TextEditorClass, *ScrollerClass;
 // some interfaces needed
 extern struct ListBrowserIFace *IListBrowser;
 extern struct ClickTabIFace *IClickTab;
@@ -145,6 +149,7 @@ enum {
     MG_SiteName, MG_DirName, MG_CacheList,
     //MG_DLString, MG_DLButton,
     MG_DLGetFile,
+    MG_LogWinGroup, MG_LogWin, MG_LW_TED, MG_LW_TEDVSCROLLER,
     /*MG_Parent, MG_Get, MG_Put, MG_View,
     MG_Readme, MG_Get2, MG_Put2, MG_View2,
     MG_Connect, MG_Disconnect, MG_Reload,

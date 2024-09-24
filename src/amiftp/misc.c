@@ -9,10 +9,10 @@ BPTR LogWindow=0;
 
 void OpenLogWindow()
 {
-    if (!LogWindow) {
-	char *name=malloc(100);
-	if (name) {
-	    sprintf(name,"CON:%ld/%ld/%ld/%ld/AmiFTP Logwindow/INACTIVE/SCREEN %s",
+	if (!LogWindow) {
+	/*char *name=malloc(100);
+		if (name) {
+		    sprintf(name,"CON:%ld/%ld/%ld/%ld/AmiFTP Logwindow/INACTIVE/SCREEN %s",
 		    MainWindow?MainWindow->LeftEdge:40,
 		    MainWindow?MainWindow->TopEdge+MainWindow->Height:40,
 		    MainWindow?MainWindow->Width:400,
@@ -20,26 +20,67 @@ void OpenLogWindow()
 		    MainPrefs.mp_PubScreen);
 	    LogWindow=Open(name,MODE_NEWFILE);
 	    free(name);
+	}*/
+
+		if(MG_List[MG_LogWin] == NULL) {
+			MG_List[MG_LW_TEDVSCROLLER] = NewObject(ScrollerClass, NULL, //"scroller.gadget",
+			TAG_DONE);
+			MG_List[MG_LogWin] = NewObject(LayoutClass, NULL,
+				LAYOUT_SpaceInner, FALSE,
+				LAYOUT_AddChild, MG_List[MG_LW_TED] = NewObject(TextEditorClass, NULL,
+                //GA_TabCycle, TRUE,
+                GA_TEXTEDITOR_TextAttr,   ListViewAttrF,
+                GA_TEXTEDITOR_FixedFont,  TRUE,
+                GA_TEXTEDITOR_BevelStyle, BVS_BUTTON,
+                GA_TEXTEDITOR_ReadOnly,   TRUE,
+                GA_TEXTEDITOR_VertScroller, MG_List[MG_LW_TEDVSCROLLER],
+				TAG_DONE),
+				//CHILD_WeightedHeight, 0,
+				LAYOUT_AddChild, MG_List[MG_LW_TEDVSCROLLER],
+			TAG_DONE);
+DBUG("MG_List[MG_LogWin] = 0x%08lx\n",MG_List[MG_LogWin]);
+			IDoMethod(MG_List[MG_LogWinGroup], LM_ADDCHILD, MainWindow, MG_List[MG_LogWin], NULL);
+			IDoMethod(MainWin_Object, WM_RETHINK);
+			LogWindow = (BPTR)MG_List[MG_LogWin];
+		}
+
 	}
-    }
 }
 
-void CloseLogWindow()
+void CloseLogWindow(void)
 {
-    if (LogWindow) {
-	Close(LogWindow);
-	LogWindow=0;
-    }
+	if (LogWindow) {
+		//Close(LogWindow);
+		if( MG_List[MG_LogWin] ) {
+			IDoMethod(MG_List[MG_LogWinGroup], LM_REMOVECHILD, MainWindow, MG_List[MG_LogWin]);
+			MG_List[MG_LogWin] = MG_List[MG_LW_TED] = MG_List[MG_LW_TEDVSCROLLER] = NULL;
+			IDoMethod(MainWin_Object, WM_RETHINK);
+			//SetAttrs(MainWin_Object, WA_Height,0, TAG_DONE); // resize to minimum height
+			RethinkLayout( (struct Gadget*)MainWin_Object, MainWindow, NULL, TRUE );
+		}
+		LogWindow=0;
+	}
 }
 
 void LogMessage(char *mess, char c)
 {
-    if (mess) {
-	Write(LogWindow, mess, strlen(mess));
-	Write(LogWindow, "\n", 1);
-    }
-    else
-      Write(LogWindow, &c, 1);
+	if (mess) {
+		if( MG_List[MG_LogWin] ) {
+//uint32 line;
+//GetAttr(GA_TEXTEDITOR_CursorY, MG_List[MG_LW_TED], &line);
+//DBUG("MG_List[MG_LW_TED] lines %ld\n",line);
+//if(line == 50) { DoGadgetMethod( (struct Gadget*)MG_List[MG_LW_TED], MainWindow, NULL, GM_TEXTEDITOR_ClearText, NULL); }
+			IDoMethod(MG_List[MG_LW_TED],
+			          GM_TEXTEDITOR_InsertText, NULL, mess, GV_TEXTEDITOR_InsertText_Bottom, TAG_DONE);
+			//IDoMethod(MG_List[MG_LW_TED],
+			DoGadgetMethod( (struct Gadget*)MG_List[MG_LW_TED], MainWindow, NULL,
+			          GM_TEXTEDITOR_InsertText, NULL, "\n", GV_TEXTEDITOR_InsertText_Bottom, TAG_DONE);
+			//RefreshGadgets( (struct Gadget*)MG_List[MG_LW_TED], MainWindow, NULL );
+		}
+		/*Write(LogWindow, mess, strlen(mess));
+		Write(LogWindow, "\n", 1);*/
+	}
+	/*else Write(LogWindow, &c, 1);*/
 }
 
 int sgetc(const int sock)
@@ -286,10 +327,10 @@ int DLPath(Object *winobject, char *initialpath, char *newpath)
 }
 */
 
-int makeremotedir()
+/*int makeremotedir()
 {
-/*    if (command("MKD %s", dir)==ERROR) {
-    }*/
-}
+    //if (command("MKD %s", dir)==ERROR) {
+    //}
+}*/
 
 // EOF

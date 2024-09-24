@@ -16,7 +16,7 @@
 ; shortcut should look like this:
 ; Q\000Quit
 ;
-; $VER: amiftp.cd 2.5 (2024.08.06)
+; $VER: amiftp.cd 2.5 (2024.08.24)
 ;
 #language english
 ;
@@ -47,7 +47,7 @@ SLW_Cancel (/1/)
 _Cancel
 ;
 SLW_OK (/1/)
-OK
+_Close
 ;
 SLW_Up (/1/)
 Up
@@ -210,7 +210,7 @@ MW_View (/1/)
 _View
 ;
 MW_Connect (/1/)
-Co_nnect to...
+Co_nnect
 ;
 MW_Disconnect (/1/)
 Disco_nnect
@@ -727,4 +727,69 @@ Str_AboutStr_info03 (//100)
 ; used in AMINET/ADT mode
 MW_COL_DESC (//)
 Description
+;
+MPW_LogWindow (//)
+Log window
+;
+MPW_SortMode (//)
+Column sort mode
+;
+MENU_SortbySize (//)
+by Size
+;
+MENU_SortbyType  (//)
+by Type
+;
+;
+MENU_ShowHints (//)
+Show hints
+;
+; some hints on MainWindow
+;MW_SITE_HINT (//)
+;site
+;
+;MW_REMOTE_DRAWER_HINT (//)
+;remote drawer
+;
+;MW_HISTORY_DRAWER_HINT (//)
+;history/cached drawers
+;
+;MW_LISTBROWSER_HINT (//)
+;listbrowser
+;
+;MW_LOCAL_DRAWER_HINT (//)
+;local drawer
+;
+MW_TB_DISCONNECT_HINT (//)
+Disconnect from site
+;
+MW_TB_CONNECT_HINT (//)
+Connect to site
+;
+MW_TB_PARENT_HINT (//)
+Parent drawer
+;
+MW_TB_RELOAD_HINT (//)
+Reload current drawer
+;
+MW_TB_DOWNLOAD_HINT (//)
+Download selected item(s)
+;
+MW_TB_UPLOAD_HINT (//)
+Upload item(s)
+;
+MW_TB_NEWDRAWER_HINT (//)
+Create new drawer
+;
+MW_TB_DELETE_HINT (//)
+Delete selected item(s)
+;
+MW_TB_RENAME_HINT (//)
+Rename selected item(s)
+;
+MW_TB_VIEW_HINT (//)
+View selected item(s)
+;
+MW_TB_SETTINGS_HINT (//)
+Open settings window
 ;
