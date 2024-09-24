@@ -31,7 +31,8 @@ struct SitePrefsObject {
     int   spo_Proxy:1;
     int   spo_HotList:1;
     int   spo_Anonymous:1;
-    int   spo_MenuType:2;
+    //int   spo_MenuType:2;
+    ULONG spo_MenuType;
     int   spo_ShowChildren:1;
     int   spo_BarLabel:1;
     int   spo_ADT:1;
@@ -66,7 +67,8 @@ struct MainPrefsObject {
     ULONG mpo_BufferSize;
     int   mpo_PreserveAminetDir:1;
     int   mpo_DeleteFiles:1;
-    int   mpo_DisplayBeep:1;
+    //int   mpo_DisplayBeep:1;
+    WORD   mpo_DisplayBeep;
     int   mpo_ShowMOTD:1;
     int   mpo_GetReadme:1;
     int   mpo_SortMode:4;

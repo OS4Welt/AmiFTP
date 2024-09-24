@@ -47,12 +47,13 @@ struct Library *ClickTabBase = NULL, *ListBrowserBase = NULL, *LayoutBase = NULL
 struct ClassLibrary *ButtonBase = NULL, *BitMapBase = NULL, *CheckBoxBase = NULL,
                     *LabelBase = NULL, *WindowBase = NULL, *StringBase = NULL,
                     *GetFileBase = NULL, *GetFontBase = NULL, *FuelGaugeBase = NULL,
-                    *IntegerBase = NULL, *RequesterBase = NULL;
+                    *IntegerBase = NULL, *RequesterBase = NULL, *TextEditorBase = NULL,
+                    *ScrollerBase = NULL;
 // the class pointer
 Class *ClickTabClass, *ListBrowserClass, *ButtonClass, *LabelClass, *StringClass,
       *GetFileClass, *GetFontClass, *SpeedBarClass, *IntegerClass, *ARexxClass,
       *FuelGaugeClass, *CheckBoxClass, *ChooserClass, *BitMapClass, *LayoutClass,
-      *WindowClass, *RequesterClass;
+      *WindowClass, *RequesterClass, *TextEditorClass, *ScrollerClass;
 // some interfaces needed
 struct ListBrowserIFace *IListBrowser = NULL;
 struct ClickTabIFace *IClickTab = NULL;
@@ -685,7 +686,8 @@ DBUG("decimalSeperator: %c\n",decimalSeparator);
 	ITimer = (struct TimerIFace *) GetInterface((struct Library *) TimerBase, (CONST_STRPTR) "main", 1, NULL);
 
 //should open required classes here too
- //TextEditorBase = OpenClass("gadgets/texteditor.gadget", 52, &TextEditorClass);
+	TextEditorBase = OpenClass("gadgets/texteditor.gadget", 52, &TextEditorClass);
+	ScrollerBase   = OpenClass("gadgets/scroller.gadget", 52, &ScrollerClass);
 	RequesterBase = OpenClass("requester.class", 52, &RequesterClass);
 	GetFileBase   = OpenClass("gadget/getfile.gadget", 52, &GetFileClass);
 	GetFontBase   = OpenClass("gadget/getfont.gadget", 52, &GetFontClass);
@@ -751,29 +753,33 @@ void CleanUp(void)
 //Close CLASSES
  DropInterface( (struct Interface *)IARexx );
  CloseLibrary(ARexxBase);
-	//CloseClass(TextEditorBase);
-	CloseClass(GetFileBase);
-	CloseClass(GetFontBase);
-	CloseClass(RequesterBase);
-	CloseClass(IntegerBase);
-	CloseClass(StringBase);
-	CloseClass(LabelBase);
-	CloseClass(BitMapBase);
-	CloseClass(ButtonBase);
-	CloseClass(FuelGaugeBase);
-	CloseClass(CheckBoxBase);
-	CloseClass(WindowBase);
 
-	DropInterface( (struct Interface *)ISpeedBar );
-	CloseClass( (struct ClassLibrary *)SpeedBarBase );
-	DropInterface( (struct Interface *)IChooser );
-	CloseClass( (struct ClassLibrary *)ChooserBase );
-	DropInterface( (struct Interface *)ILayout );
-	CloseClass( (struct ClassLibrary *)LayoutBase );
-	DropInterface( (struct Interface *)IClickTab );
-	CloseClass( (struct ClassLibrary *)ClickTabBase );
-	DropInterface( (struct Interface *)IListBrowser );
-	CloseClass( (struct ClassLibrary *)ListBrowserBase );
+	if(IIntuition) {
+		CloseClass(ScrollerBase);
+		CloseClass(TextEditorBase);
+		CloseClass(GetFileBase);
+		CloseClass(GetFontBase);
+		CloseClass(RequesterBase);
+		CloseClass(IntegerBase);
+		CloseClass(StringBase);
+		CloseClass(LabelBase);
+		CloseClass(BitMapBase);
+		CloseClass(ButtonBase);
+		CloseClass(FuelGaugeBase);
+		CloseClass(CheckBoxBase);
+		CloseClass(WindowBase);
+
+		DropInterface( (struct Interface *)ISpeedBar );
+		CloseClass( (struct ClassLibrary *)SpeedBarBase );
+		DropInterface( (struct Interface *)IChooser );
+		CloseClass( (struct ClassLibrary *)ChooserBase );
+		DropInterface( (struct Interface *)ILayout );
+		CloseClass( (struct ClassLibrary *)LayoutBase );
+		DropInterface( (struct Interface *)IClickTab );
+		CloseClass( (struct ClassLibrary *)ClickTabBase );
+		DropInterface( (struct Interface *)IListBrowser );
+		CloseClass( (struct ClassLibrary *)ListBrowserBase );
+	}
 
 //Close LIBS
 	if(IApplication)

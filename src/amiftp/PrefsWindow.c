@@ -38,7 +38,7 @@ static char pubscreen[256];
 struct TextAttr fileListFontTextAttrs, interfaceFontTextAttrs;
 //static struct DrawInfo *drinfo;
 static struct List tablist;
-static Object *pagelayout;
+//static Object *pagelayout;
 static BOOL MainInterfaceRestart=FALSE, SpeedBarUpdated=FALSE;
 static ULONG LastPage=0;
 
@@ -147,7 +147,7 @@ ULONG HandleMainPrefsIDCMP(void)
 	    break;
 	  case WMHI_GADGETUP:
 	    switch (result & WMHI_GADGETMASK) {
-	      case MPG_Tab: {
+	      /*case MPG_Tab: {
 		  ULONG tabnum, pagenum;
 
 		  GetAttrs(MPG_List[MPG_Tab], CLICKTAB_Current, &tabnum, TAG_DONE);
@@ -158,7 +158,7 @@ ULONG HandleMainPrefsIDCMP(void)
 		      RethinkLayout((struct Gadget*)pagelayout, MainPrefsWindow, NULL, TRUE);
 		  }
 	    	break;
-	      }
+	      }*/
 
         case MPG_FilelistGetFontB:
         {
@@ -343,15 +343,16 @@ notify_array[3] = (STRPTR)GetAmiFTPString(MPW_AfterTransf_DoNothing);
                      LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
 
                      LAYOUT_AddChild, MPG_List[MPG_Tab]=NewObject(ClickTabClass, NULL,//ClickTabObject,
-                          GA_ID,        MPG_Tab,
-                          GA_RelVerify, TRUE,
+//                          GA_ID,        MPG_Tab,
+//                          GA_RelVerify, TRUE,
                           CLICKTAB_Labels,  &tablist,
                           CLICKTAB_Current, LastPage,
-                     TAG_DONE),
+//                     TAG_DONE),
 
-                     LAYOUT_AddChild, pagelayout=NewObject(LayoutClass, NULL,//LayoutObject,
-                       LAYOUT_SpaceOuter, TRUE,
-                     LAYOUT_AddChild, MPG_List[MPG_Page]=NewObject(NULL,"page.gadget",//PageObject,
+//                     LAYOUT_AddChild, pagelayout=NewObject(LayoutClass, NULL,//LayoutObject,
+//                       LAYOUT_SpaceOuter, TRUE,
+//                     LAYOUT_AddChild, MPG_List[MPG_Page]=NewObject(NULL,"page.gadget",//PageObject,
+                     CLICKTAB_PageGroup, MPG_List[MPG_Page]=NewObject(NULL, "page.gadget",
 
                      PAGE_Add, NewObject(LayoutClass, NULL,//LayoutObject, /* Start of page 0 General */
                      GA_TextAttr, AmiFTPAttrF,
